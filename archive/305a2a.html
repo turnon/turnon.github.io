@@ -1,0 +1,113 @@
+<!DOCTYPE html> <html> <head> <meta content="IE=edge" http-equiv=X-UA-Compatible> <meta charset=utf-8> <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name=viewport> <title>Zp Yuan strong parameter</title> <link href="/bundle-d18183fc.css" rel=stylesheet /> </head> <body> <nav> <div class=toc_container><a href="#table_of_content">table of content</a> <ol> <li> <a href="#ActiveModel::ForbiddenAttributesError">ActiveModel::ForbiddenAttributesError</a> </li> <li> <a href="#require/permit">require/permit</a> </li> <li> <a href="#完整调用栈">完整调用栈</a> </li> </ol> </div> <ul> <li class="toc-button "><a>目录</a></li> <li><a href="/index.html">笔记</a></li> <li><a href="http://whispering-fortress-75887.herokuapp.com/">统计</a></li> <li><a href="/about.html">关于</a></li> </ul> </nav> <aside> <div class=tags> <ul> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>42</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>10</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>9</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>8</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>5</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=underscore"> <span>underscore</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=java"> <span>java</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rubinius"> <span>rubinius</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> </ul> </div> </aside> <article> <h1 class=post-title>strong parameter</h1> <span class=post-date>2017-02-26</span> <a class=post-tag href="/index.html?tag=rails">rails</a> <a class=post-tag href="/index.html?tag=ruby">ruby</a> <div> <span><div><b id="ActiveModel::ForbiddenAttributesError">ActiveModel::ForbiddenAttributesError</b></div> <div><br></div> <div>因为active_record不像pojo那样可通过getter/setter来获取自身需要的属性，而是给啥key/value它就拼出啥sql，所以，如果前端给了多余的field，则sql会出现不存在于schema中的column，为免从db报错，应尽早拦截此种错误</div> <div><br></div> <div>另一方面，即使column存在，你也不一定每种动作都为model赋那么多值，所以，params应能提供限制mass_assignment的功能</div> <div><br></div> <div>于是，便有了strong parameter</div> <div><br></div> <div>如果使用params直接给model赋值，最终是会raise ActiveModel::ForbiddenAttributesError的，调用栈如下</div> <div><br></div> <div><a href="/images/305a2a/50e19f.png" target=_blank><img src="/images/305a2a/50e19f.png" type="image/png" style="height: auto;"></a></div> <div><br></div> <div>代码如下，如果是Parameters，则应permitted，如果不是，就无所谓，例如自己构造个hash来赋值</div> <div><br></div> <div class=ever-code><pre><code>module ActiveModel
+
+  class ForbiddenAttributesError &lt; StandardError
+  end
+
+  module ForbiddenAttributesProtection # :nodoc:
+    protected
+      def sanitize_for_mass_assignment(attributes)
+        if attributes.respond_to?(:permitted?)
+          raise ActiveModel::ForbiddenAttributesError if !attributes.permitted?
+          attributes.to_h
+        else
+          attributes
+        end
+      end
+      alias :sanitize_forbidden_attributes :sanitize_for_mass_assignment
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div><b id="require/permit">require/permit</b></div> <div><br></div> <div>使用require/permit来限制mass_assignment，调用栈如下</div> <div><br></div> <div><a href="/images/305a2a/de83bd.png" target=_blank><img src="/images/305a2a/de83bd.png" type="image/png" style="height: auto;"></a></div> <div><br></div> <div>require所做的就是，调用[]，如果返回的是一个Hash，则convert_hashes_to_parameters，将此子集重新包装为一个Parameters，塞回到父集中，并返回这个包装后的子集</div> <div><br></div> <div>如果是返回的是普通字符串或已包装为Parameters，则原样返回</div> <div><br></div> <div class=ever-code><pre><code>def convert_hashes_to_parameters(key, value)
+  converted = convert_value_to_parameters(value)
+  @parameters[key] = converted unless converted.equal?(value)
+  converted
+end
+
+def convert_value_to_parameters(value)
+  case value
+  when Array
+    return value if converted_arrays.member?(value)
+    converted = value.map { |_| convert_value_to_parameters(_) }
+    converted_arrays &lt;&lt; converted
+    converted
+  when Hash
+    self.class.new(value)
+  else
+    value
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>permit所做的就是，抽取filters所指的key/value，建立一个新的Parameters，并递归设置它及其子集@permitted = true。</div> <div><br></div> <div>（子集也会因为在permitted_scalar_filter中用[]抽取，而convert_hashes_to_parameters。当然非Hash的子集就没有permit!方法了，所以if v.respond_to? :permit!）</div> <div><br></div> <div class=ever-code><pre><code>def permit(*filters)
+  params = self.class.new
+
+  filters.flatten.each do |filter|
+    case filter
+    when Symbol, String
+      permitted_scalar_filter(params, filter)
+    when Hash then
+      hash_filter(params, filter)
+    end
+  end
+
+  unpermitted_parameters!(params) if self.class.action_on_unpermitted_parameters
+
+  params.permit!
+end
+
+def permitted_scalar_filter(params, key)
+  if has_key?(key) &amp;&amp; permitted_scalar?(self[key])
+    params[key] = self[key]
+  end
+
+  keys.grep(/\A#{Regexp.escape(key)}\(\d+[if]?\)\z/) do |k|
+    if permitted_scalar?(self[k])
+      params[k] = self[k]
+    end
+  end
+end
+
+def permit!
+  each_pair do |key, value|
+    Array.wrap(value).each do |v|
+      v.permit! if v.respond_to? :permit!
+    end
+  end
+
+  @permitted = true
+  self
+end</code></pre></div> <div><br></div> <div><br></div> <div>如果真的有多余的参数，而又想报警，可设置action_on_unpermitted_parameters来记录或抛异常</div> <div><br></div> <div class=ever-code><pre><code>def unpermitted_parameters!(params)
+  unpermitted_keys = unpermitted_keys(params)
+  if unpermitted_keys.any?
+    case self.class.action_on_unpermitted_parameters
+    when :log
+      name = "unpermitted_parameters.action_controller"
+      ActiveSupport::Notifications.instrument(name, keys: unpermitted_keys)
+    when :raise
+      raise ActionController::UnpermittedParameters.new(unpermitted_keys)
+    end
+  end
+end
+
+def unpermitted_keys(params)
+  self.keys - params.keys - self.always_permitted_parameters
+end</code></pre></div> <div><br></div> <div><br></div> <div>为controller提供的params方法，直接就是使用了Parameters.new ：</div> <div><br></div> <div class=ever-code><pre><code>module StrongParameters
+  extend ActiveSupport::Concern
+  include ActiveSupport::Rescuable
+
+  # Returns a new ActionController::Parameters object that
+  # has been instantiated with the &lt;tt&gt;request.parameters&lt;/tt&gt;.
+  def params
+    @_params ||= Parameters.new(request.parameters)
+  end
+
+  # Assigns the given +value+ to the +params+ hash. If +value+
+  # is a Hash, this will create an ActionController::Parameters
+  # object that has been instantiated with the given +value+ hash.
+  def params=(value)
+    @_params = value.is_a?(Hash) ? Parameters.new(value) : value
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>然后在action_controller/base.rb中，为controller增加params方法：</div> <div><br></div> <div class=ever-code><pre><code>MODULES = [
+  #...
+  StrongParameters,
+  #...
+]
+
+MODULES.each do |mod|
+  include mod
+end</code></pre></div> <div><br></div> <div><br></div> <div><b id="完整调用栈">完整调用栈</b></div> <div><br></div> <div><a href="/images/305a2a/8a3a74.html" target=_blank><img src="/images/305a2a/02327c.png" alt="strong_parameters.html"></a></div> <div><br></div> <div> <a href="/images/305a2a/db2fc8.html" target=_blank><img src="/images/305a2a/185499.png" alt="sanitize_for_mass_assignment.html"></a><br> </div></span> </div> </article> <script src="/javascripts/bundle-d6f5bf21.js"></script> </body> </html>

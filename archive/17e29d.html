@@ -1,0 +1,87 @@
+<!DOCTYPE html> <html> <head> <meta content="IE=edge" http-equiv=X-UA-Compatible> <meta charset=utf-8> <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name=viewport> <title>Zp Yuan sinatra响应块中可用的方法</title> <link href="/bundle-d18183fc.css" rel=stylesheet /> </head> <body> <nav> <div class=toc_container><a href="#table_of_content">table of content</a> <ol> <li> <a href="#halt">halt</a> </li> <li> <a href="#pass">pass</a> </li> <li> <a href="#redirect">redirect</a> </li> <li> <a href="#erb等各种template">erb等各种template</a> </li> </ol> </div> <ul> <li class="toc-button "><a>目录</a></li> <li><a href="/index.html">笔记</a></li> <li><a href="http://whispering-fortress-75887.herokuapp.com/">统计</a></li> <li><a href="/about.html">关于</a></li> </ul> </nav> <aside> <div class=tags> <ul> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>42</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>10</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>9</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>8</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>5</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=underscore"> <span>underscore</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=java"> <span>java</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rubinius"> <span>rubinius</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> </ul> </div> </aside> <article> <h1 class=post-title>sinatra响应块中可用的方法</h1> <span class=post-date>2016-12-10</span> <a class=post-tag href="/index.html?tag=ruby">ruby</a> <a class=post-tag href="/index.html?tag=sinatra">sinatra</a> <div> <span><div>来自1.4.7</div> <div><br></div> <div><b id=halt>halt</b></div> <div><br></div> <div>使流程直接跳回到invoke。</div> <div>使用时可带[status code、header、字符串]任意部分或全部，看invoke的逻辑，会被设置到response对象中。</div> <div>如果什么都不带，则响应会是200，而内容为空。因为Rack::Response初始化时默认status为200，而不带参数的halt又令Base#invoke和Base#call!不去修改response的body</div> <div><br></div> <div class=ever-code><pre><code>def halt(*response)
+  response = response.first if response.length == 1
+  throw :halt, response
+end
+
+def invoke
+  res = catch(:halt) { yield }
+  res = [res] if Fixnum === res or String === res
+  if Array === res and Fixnum === res.first
+    res = res.dup
+    status(res.shift)
+    body(res.pop)
+    headers(*res)
+  elsif res.respond_to? :each
+    body res
+  end
+  nil # avoid double setting the same response tuple twice
+end</code></pre></div> <div><br></div> <div><br></div> <div><b id=pass>pass</b></div> <div><br></div> <div>使流程直接跳到process_route的末尾，继而进入routes.each的下一循环。</div> <div>（如果你真的想交由下一个match的路由来处理的话）</div> <div><br></div> <div class=ever-code><pre><code>def pass(&amp;block)
+  throw :pass, block
+end
+
+def process_route(pattern, keys, conditions, block = nil, values = [])
+  route = @request.path_info
+  route = '/' if route.empty? and not settings.empty_path_info?
+  return unless match = pattern.match(route)
+  values += match.captures.map! { |v| force_encoding URI_INSTANCE.unescape(v) if v }
+
+  if values.any?
+    original, @params = params, params.merge('splat' =&gt; [], 'captures' =&gt; values)
+    keys.zip(values) { |k,v| Array === @params[k] ? @params[k] &lt;&lt; v : @params[k] = v if v }
+  end
+
+  catch(:pass) do
+    conditions.each { |c| throw :pass if c.bind(self).call == false }
+    block ? block[self, values] : yield(self, values)
+  end
+ensure
+  @params = original if original
+end</code></pre></div> <div><br></div> <div><br></div> <div><b id=redirect>redirect</b></div> <div><br></div> <div>根据http版本设status code，并设置header的Location，然后halt，跳回invoke。</div> <div>可带参数301（永久移动，迫使browser更新bookmark），这样回到invoke时，会以301替换掉302或303</div> <div><br></div> <div class=ever-code><pre><code>def redirect(uri, *args)
+  if env['HTTP_VERSION'] == 'HTTP/1.1' and env["REQUEST_METHOD"] != 'GET'
+    status 303
+  else
+    status 302
+  end
+
+  # According to RFC 2616 section 14.30, "the field value consists of a
+  # single absolute URI"
+  response['Location'] = uri(uri.to_s, settings.absolute_redirects?, settings.prefixed_redirects?)
+  halt(*args)
+end</code></pre></div> <div><br></div> <div><br></div> <div><b id="erb等各种template">erb等各种template</b></div> <div><br></div> <div>来自module Template。大概就是使用Tilt来加载具体的模板技术，然后以指定的scope或self来render。无指定scope的话，通过在响应块中设置application的实例变量来让模板引用到</div> <div><br></div> <div class=ever-code><pre><code>def erb(template, options = {}, locals = {}, &amp;block)
+  render(:erb, template, options, locals, &amp;block)
+end
+
+def render(engine, data, options = {}, locals = {}, &amp;block)
+  # ...
+  scope           = options.delete(:scope)          || self
+
+  # ...
+  begin
+    layout_was      = @default_layout
+    @default_layout = false
+    template        = compile_template(engine, data, options, views)
+    output          = template.render(scope, locals, &amp;block)
+  ensure
+    @default_layout = layout_was
+  end
+
+  # render layout if layout ...
+  output
+end
+
+def compile_template(engine, data, options, views)
+  eat_errors = options.delete :eat_errors
+  template_cache.fetch engine, data, options, views do
+    template = Tilt[engine]
+    raise "Template engine not found: #{engine}" if template.nil?
+
+    case data
+    when Symbol
+      # ...
+    when Proc, String
+      # ...
+    else
+      raise ArgumentError, "Sorry, don't know how to render #{data.inspect}."
+    end
+  end
+end</code></pre></div> <div><br></div></span> </div> </article> <script src="/javascripts/bundle-d6f5bf21.js"></script> </body> </html>

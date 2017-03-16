@@ -1,0 +1,63 @@
+<!DOCTYPE html> <html> <head> <meta content="IE=edge" http-equiv=X-UA-Compatible> <meta charset=utf-8> <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name=viewport> <title>Zp Yuan active_record-updated_at的disable如何影响block中的表现</title> <link href="/bundle-d18183fc.css" rel=stylesheet /> </head> <body> <nav> <ul> <li class="toc-button invisible"><a>目录</a></li> <li><a href="/index.html">笔记</a></li> <li><a href="http://whispering-fortress-75887.herokuapp.com/">统计</a></li> <li><a href="/about.html">关于</a></li> </ul> </nav> <aside> <div class=tags> <ul> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>42</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>10</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>9</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>8</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>5</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=underscore"> <span>underscore</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=java"> <span>java</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rubinius"> <span>rubinius</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> </ul> </div> </aside> <article> <h1 class=post-title>active_record-updated_at的disable如何影响block中的表现</h1> <span class=post-date>2017-03-07</span> <a class=post-tag href="/index.html?tag=concurrency">concurrency</a> <a class=post-tag href="/index.html?tag=metaprogramming">metaprogramming</a> <a class=post-tag href="/index.html?tag=rails">rails</a> <a class=post-tag href="/index.html?tag=ruby">ruby</a> <div> <span><div>总结：使用Thread.current。（相当于ThreadLocal，任何“非传参、非实例变量“的共享变量）</div> <div><br></div> <div>active_record-updated_at一经require，便会 ：</div> <div><br></div> <div>simply patches ActiveRecord::Relation#update_all to automatically specify updated_at as Time.current when:</div> <div><br></div> <div>1.An updated_at column exists on the table</div> <div>2.An updated_at value is not explicitly specified in the query</div> <div><br></div> <div>但也可通过disable来取消为某次update恢复“无updated_at”</div> <div><br></div> <div class=ever-code><pre><code>ActiveRecord::UpdatedAt.disable do
+  User.update_all(role: “member”)
+  User.find(123).update_column(name: "Sean")
+end</code></pre></div> <div><br></div> <div><br></div> <div>该block并没有接受任何AR作为参数，block中的User如何知道自己是否被disable了？</div> <div><br></div> <div>答案：用Thread.current来交互。源码很短，如下：</div> <div><br></div> <div>disable会设置Thread.current["UpdatedAt::DISABLED"]为true，然后才执行block，最后确保恢复原state</div> <div><br></div> <div class=ever-code><pre><code>require "active_record"
+require_relative "active_record/updated_at/relation"
+
+module ActiveRecord
+  module UpdatedAt
+    ActiveRecord::Relation.send(:include, Relation)
+
+    STATE = "#{name}::DISABLED".freeze
+
+    class &lt;&lt; self
+      def disable(state = true)
+        disabled_was = Thread.current[STATE]
+        Thread.current[STATE] = state
+        yield
+      ensure
+        Thread.current[STATE] = disabled_was
+      end
+
+      def enable(&amp;block)
+        disable(false, &amp;block)
+      end
+
+      def enabled?
+        !Thread.current[STATE]
+      end
+    end
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>UpdatedAt.enabled?是默认为true的。</div> <div><br></div> <div>包装原update_all，若确为true，且有updated_at栏位，且没填值，则拼接上updated_at = Time.current，再去update_all</div> <div><br></div> <div class=ever-code><pre><code>module ActiveRecord
+  module UpdatedAt
+    module Relation
+      def self.included(base)
+        base.class_eval do
+          alias_method :update_all_without_updated_at, :update_all
+          alias_method :update_all, :update_all_with_updated_at
+        end
+      end
+
+      def update_all_with_updated_at(query, *args, &amp;block)
+        attribute_exists = column_names.include?("updated_at")
+        already_specified = Array(query).flatten.grep(/\bupdated_at\b/).any?
+        enabled = UpdatedAt.enabled?
+        updated_at = Time.current
+
+        if attribute_exists &amp;&amp; !already_specified &amp;&amp; enabled
+          case query
+          when Array
+            query.first &lt;&lt; ", updated_at = ?"
+            query &lt;&lt; updated_at
+          when Hash
+            query[:updated_at] = updated_at
+          when String
+            query = ["#{query}, updated_at = ?", updated_at]
+          end
+        end
+
+        update_all_without_updated_at(query, *args, &amp;block)
+      end
+    end
+  end
+end</code></pre></div> <div><br></div></span> </div> </article> <script src="/javascripts/bundle-d6f5bf21.js"></script> </body> </html>

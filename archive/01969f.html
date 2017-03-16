@@ -1,0 +1,243 @@
+<!DOCTYPE html> <html> <head> <meta content="IE=edge" http-equiv=X-UA-Compatible> <meta charset=utf-8> <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name=viewport> <title>Zp Yuan ruby类变量的陷阱与替代实现</title> <link href="/bundle-d18183fc.css" rel=stylesheet /> </head> <body> <nav> <div class=toc_container><a href="#table_of_content">table of content</a> <ol> <li> <a href="#@@是不推荐使用的">@@是不推荐使用的</a> </li> <li> <a href="#替代1：类的实例变量">替代1：类的实例变量</a> </li> <li> <a href="#替代2：hanami_util的class_attribute">替代2：hanami util的class_attribute</a> </li> <li> <a href="#替代3：active_support的class_attribute">替代3：active support的class_attribute</a> </li> </ol> </div> <ul> <li class="toc-button "><a>目录</a></li> <li><a href="/index.html">笔记</a></li> <li><a href="http://whispering-fortress-75887.herokuapp.com/">统计</a></li> <li><a href="/about.html">关于</a></li> </ul> </nav> <aside> <div class=tags> <ul> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>42</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>10</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>9</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>8</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>5</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=underscore"> <span>underscore</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=java"> <span>java</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rubinius"> <span>rubinius</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> </ul> </div> </aside> <article> <h1 class=post-title>ruby类变量的陷阱与替代实现</h1> <span class=post-date>2016-10-23</span> <a class=post-tag href="/index.html?tag=metaprogramming">metaprogramming</a> <a class=post-tag href="/index.html?tag=ruby">ruby</a> <a class=post-tag href="/index.html?tag=versus">versus</a> <div> <span><div><b id="@@是不推荐使用的">@@是不推荐使用的</b></div> <div><br></div> <div>因为class variables are bound at compile-time</div> <div><br></div> <div>Like unqualified constants, class variables are bound to your current scope when the .rb file is being parsed.</div> <div>This will probably trip you up when you are writing a module or trait that defines class variables for other classes.</div> <div><br></div> <div>Say you have the following code:</div> <div><br></div> <div class=ever-code><pre><code>module Mod
+  def foo
+    @@foo
+  end
+end
+
+class Klass
+  include Mod
+end</code></pre></div> <div><br></div> <div><br></div> <div>@@foo does not mean Klass::@@foo (qualifier added to make my point; it is not valid Ruby expression). It actually means Mod::@@foo and is shared between Mod, all classes including Mod as well as all their subclasses.</div> <div><br></div> <div>Also note that only the class and module keywords can be used to change the scope to which class variables are bound. You can not change scope by using class_eval or instance_eval. For instance, the code below declares a variable @@counter that is shared between all classes of your application:</div> <div><br></div> <div class=ever-code><pre><code>ActiveRecord::Base.class_eval do
+  @@counter = 1
+end</code></pre></div> <div><br></div> <div><br></div> <div>When encountering such code, Ruby will warn you:</div> <div><br></div> <div class=ever-code><pre><code>warning: class variable access from toplevel</code></pre></div> <div><br></div> <div><br></div> <div>Unlike constants, which you can qualify like Klass::CONSTANT, there is no way to qualify a class variable like Klass::@@variable. When you want to tell Ruby that you mean another scope than the current scope, you need to use class_variable_get and class_variable_set.</div> <div><br></div> <div><b id="替代1：类的实例变量">替代1：类的实例变量</b></div> <div><br></div> <div>缺点就是无法让子类自动查找到</div> <div><br></div> <div><b id="替代2：hanami_util的class_attribute">替代2：hanami util的class_attribute</b></div> <div><br></div> <div>缺点，它是通过inherited的hook来将当前变量值传给子类，因而如果父类本身需要另外一些inherited逻辑，就比较麻烦</div> <div><br></div> <div>摘自utils/lib/hanami/utils/class_attribute.rb（de705e02b83f52df4edb4e9e37c79d053acb99da）：<br> </div> <div><br></div> <div class=ever-code><pre><code>require 'set'
+require 'hanami/utils/duplicable'
+
+module Hanami
+  module Utils
+    # Inheritable class level variable accessors.
+    # @since 0.1.0
+    #
+    # @see Hanami::Utils::ClassAttribute::ClassMethods
+    module ClassAttribute
+      def self.included(base)
+        base.extend ClassMethods
+      end
+
+      # @since 0.1.0
+      # @api private
+      module ClassMethods
+        # Defines a class level accessor for the given attribute(s).
+        #
+        # A value set for a superclass is automatically available by their
+        # subclasses, unless a different value is explicitely set within the
+        # inheritance chain.
+        #
+        # @param attributes [Array&lt;Symbol&gt;] a single or multiple attribute name(s)
+        #
+        # @return [void]
+        #
+        # @since 0.1.0
+        #
+        # @example
+        #   require 'hanami/utils/class_attribute'
+        #
+        #   class Vehicle
+        #     include Hanami::Utils::ClassAttribute
+        #     class_attribute :engines, :wheels
+        #
+        #     self.engines = 0
+        #     self.wheels  = 0
+        #   end
+        #
+        #   class Car &lt; Vehicle
+        #     self.engines = 1
+        #     self.wheels  = 4
+        #   end
+        #
+        #   class Airplane &lt; Vehicle
+        #     self.engines = 4
+        #     self.wheels  = 16
+        #   end
+        #
+        #   class SmallAirplane &lt; Airplane
+        #     self.engines = 2
+        #     self.wheels  = 8
+        #   end
+        #
+        #   Vehicle.engines # =&gt; 0
+        #   Vehicle.wheels  # =&gt; 0
+        #
+        #   Car.engines # =&gt; 1
+        #   Car.wheels  # =&gt; 4
+        #
+        #   Airplane.engines # =&gt; 4
+        #   Airplane.wheels  # =&gt; 16
+        #
+        #   SmallAirplane.engines # =&gt; 2
+        #   SmallAirplane.wheels  # =&gt; 8
+        def class_attribute(*attributes)
+          singleton_class.class_eval do
+            attr_accessor(*attributes)
+          end
+
+          class_attributes.merge(attributes)
+        end
+
+        protected
+
+        # @see Class#inherited
+        def inherited(subclass)
+          class_attributes.each do |attr|
+            value = send(attr)
+            value = Duplicable.dup(value)
+            subclass.class_attribute attr
+            subclass.send("#{attr}=", value)
+          end
+
+          super
+        end
+
+        private
+
+        # Class accessor for class attributes.
+        # @private
+        def class_attributes
+          @class_attributes ||= Set.new
+        end
+      end
+    end
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div><b id="替代3：active_support的class_attribute">替代3：active support的class_attribute</b></div> <div><br></div> <div>缺点：没明显缺点，就是有点复杂</div> <div><br></div> <div>摘自activesupport-5.0.0.1/lib/active_support/core_ext/class/attribute.rb：</div> <div><br></div> <div class=ever-code><pre><code>class Class
+  # 因是定义类的单例类的实例方法，所以子类也能访问到
+  #
+  #   class Base
+  #     class_attribute :setting
+  #   end
+  #
+  #   class Subclass &lt; Base
+  #   end
+  #
+  #   Base.setting = true
+  #   Subclass.setting            # =&gt; true
+  #   Subclass.setting = false
+  #   Subclass.setting            # =&gt; false
+  #   Base.setting                # =&gt; true
+  #
+  # 修改内容的话，会影响父类，因子类的单例类继承自父类的单例类
+  # 而父类的单例类的实例方法的定义有闭包
+  #
+  #   Base.setting = []
+  #   Base.setting                # =&gt; []
+  #   Subclass.setting            # =&gt; []
+  #
+  #   # Appending in child changes both parent and child because it is the same object:
+  #   Subclass.setting &lt;&lt; :foo
+  #   Base.setting               # =&gt; [:foo]
+  #   Subclass.setting           # =&gt; [:foo]
+  #
+  #   除非重新赋值
+  #
+  #   Base.setting = []
+  #   Subclass.setting += [:foo]
+  #   Base.setting               # =&gt; []
+  #   Subclass.setting           # =&gt; [:foo]
+  #
+  # For convenience, an instance predicate method is defined as well.
+  # To skip it, pass &lt;tt&gt;instance_predicate: false&lt;/tt&gt;.
+  #
+  #   Subclass.setting?       # =&gt; false
+  #
+  # 实例会先探测自己是否有该名字的实例变量，因此，可重写而不影响类变量
+  #
+  #   Base.setting = true
+  #   object = Base.new
+  #   object.setting          # =&gt; true
+  #   object.setting = false
+  #   object.setting          # =&gt; false
+  #   Base.setting            # =&gt; true
+  #
+  # To opt out of the instance reader method, pass &lt;tt&gt;instance_reader: false&lt;/tt&gt;.
+  #
+  #   object.setting          # =&gt; NoMethodError
+  #   object.setting?         # =&gt; NoMethodError
+  #
+  # To opt out of the instance writer method, pass &lt;tt&gt;instance_writer: false&lt;/tt&gt;.
+  #
+  #   object.setting = false  # =&gt; NoMethodError
+  #
+  # To opt out of both instance methods, pass &lt;tt&gt;instance_accessor: false&lt;/tt&gt;.
+  def class_attribute(*attrs)
+    options = attrs.extract_options!
+
+    # 默认带有，除非设false
+    instance_reader = options.fetch(:instance_accessor, true) &amp;&amp; options.fetch(:instance_reader, true)
+    instance_writer = options.fetch(:instance_accessor, true) &amp;&amp; options.fetch(:instance_writer, true)
+    instance_predicate = options.fetch(:instance_predicate, true)
+
+    attrs.each do |name|
+
+      # 定义class_reader
+      remove_possible_singleton_method(name)
+      define_singleton_method(name) { nil }
+
+      # 定义类class_reader?
+      remove_possible_singleton_method("#{name}?")
+      define_singleton_method("#{name}?") { !!public_send(name) } if instance_predicate
+
+      ivar = "@#{name}"
+
+      # 定义类writer，其做法是：
+      # 当被调用时，重定义class_reader
+      remove_possible_singleton_method("#{name}=")
+      define_singleton_method("#{name}=") do |val|
+        singleton_class.class_eval do
+          remove_possible_method(name)
+          define_method(name) { val }
+        end
+
+        # 如果是这样调用：
+        #   class &lt;&lt; A; class_attribute :v; end
+        # 则只有在：
+        #   class &lt;&lt; A; self.v = 123; end
+        # 才能从A.v访问到，因调用"#{name}="后才会定义reader
+        # 对于一般对象：
+        #   class &lt;&lt; A; class_attribute :v; end
+        # 也同理
+        # 不过，有人这样用吗……
+        if singleton_class?
+          class_eval do
+            remove_possible_method(name)
+            define_method(name) do
+              if instance_variable_defined? ivar
+                instance_variable_get ivar
+              else
+                singleton_class.send name
+              end
+            end
+          end
+        end
+        val
+      end
+
+      # 因instance_writer用的是attr_writer，修改实例变量
+      # 所以需先检查实例变量，没有的话，才用类变量
+      if instance_reader
+        remove_possible_method name
+        define_method(name) do
+          if instance_variable_defined?(ivar)
+            instance_variable_get ivar
+          else
+            self.class.public_send name
+          end
+        end
+
+        remove_possible_method "#{name}?"
+        define_method("#{name}?") { !!public_send(name) } if instance_predicate
+      end
+
+      if instance_writer
+        remove_possible_method "#{name}="
+        attr_writer name
+      end
+    end
+  end
+end</code></pre></div> <div><br></div> <div><br></div></span> </div> </article> <script src="/javascripts/bundle-d6f5bf21.js"></script> </body> </html>

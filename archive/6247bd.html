@@ -1,0 +1,101 @@
+<!DOCTYPE html> <html> <head> <meta content="IE=edge" http-equiv=X-UA-Compatible> <meta charset=utf-8> <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name=viewport> <title>Zp Yuan js closure examples</title> <link href="/bundle-d18183fc.css" rel=stylesheet /> </head> <body> <nav> <ul> <li class="toc-button invisible"><a>目录</a></li> <li><a href="/index.html">笔记</a></li> <li><a href="http://whispering-fortress-75887.herokuapp.com/">统计</a></li> <li><a href="/about.html">关于</a></li> </ul> </nav> <aside> <div class=tags> <ul> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>42</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>10</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>9</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>8</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>5</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=underscore"> <span>underscore</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=java"> <span>java</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rubinius"> <span>rubinius</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> </ul> </div> </aside> <article> <h1 class=post-title>js closure examples</h1> <span class=post-date>2015-05-21</span> <a class=post-tag href="/index.html?tag=javascript">javascript</a> <div> <span><div style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;"> <div>For archiving purposes, I (flying sheep) will put the article from the link below. The article was created by Morris and put under the Creative Commons Attribution / Share alike license, so I’ll recreate it as close to the original as possible.</div> <div><br></div> <div><strong>JavaScript Closures for Dummies</strong></div> <div><br></div> <div>Submitted by Morris on Tue, 2006-02-21 10:19. Community-edited since.</div> <div><br></div> <div><strong>Closures Are Not Magic</strong></div> <div><br></div> <div>This page explains closures so that a programmer can understand them — using working JavaScript code. It is not for gurus or functional programmers.</div> <div><br></div> <div>Closures are <em>not hard</em> to understand once the core concept is grokked. However, they are impossible to understand by reading any academic papers or academically oriented information about them!</div> <div><br></div> <div>This article is intended for programmers with some programming experience in a mainstream language, and who can read the following JavaScript function:</div> <div><br></div> <div class=ever-code><pre><code>function sayHello(name) {
+    var text = 'Hello ' + name;
+    var sayAlert = function() { alert(text); }
+    sayAlert();
+}</code></pre></div> <div><br></div> <div><br></div> <div><strong>An Example of a Closure</strong></div> <div><br></div> <div>两句话总结：</div> <ul> <li>闭包是， 函数返回后，仍然存活的函数内的局部变量</li> <li>或者说，闭包是， 函数返回后，不解除分配的栈帧</li> </ul> <div>以下代码返回一个指向函数的引用：</div> <div><br></div> <div class=ever-code><pre><code>function sayHello2(name) {
+    var text = 'Hello ' + name; // Local variable
+    var sayAlert = function() { alert(text); }
+    return sayAlert;
+}
+say2 = sayHello2('Bob');
+say2(); // alerts "Hello Bob"</code></pre></div> <div><br></div> <div><br></div> <div>C程序员会认为sayHello2返回了一个指向函数的指针，而sayAlert和say2都指向了这个函数</div> <div><br></div> <div>C的函数指针和js的函数引用有一个重大区别。在js中，你可以认为一个函数引用包含了一个指向函数的指针、以及一个隐藏的指向闭包的指针</div> <div><br></div> <div>上例有闭包，因为匿名函数function() { alert(text); }定义在sayHello2()之中。而在js中，于function中使用关键字function，就会产生闭包</div> <div><br></div> <div>在C以及其他大多数语言中，函数返回后，函数的局部变量就不可再被访问到了，因为它的栈帧消灭了</div> <div><br></div> <div>在js中，如上例，sayHello2返回后，局部变量text仍能被say2访问</div> <div><br></div> <div class=ever-code><pre><code>function() { alert(text); } // Output of say2.toString();</code></pre></div> <div><br></div> <div><br></div> <div>从以上片段可看出，say2持有对text的引用，而text的值为'Bob'，因为sayHello2()的局部变量都在匿名函数function() { alert(text); }所创建闭包中</div> <div><br></div> <div><strong>More examples</strong></div> <div><br></div> <div>不掌握以下例子，很容易写出有bug的代码</div> <div><br></div> <div><strong>Example 3</strong></div> <div><br></div> <div>本例说明，局部变量不是被复制，只是被引用。感觉就像函数返回了，但栈帧保留着</div> <div><br></div> <div class=ever-code><pre><code>function say667() {
+    // Local variable that ends up within closure
+    var num = 666;
+    var sayAlert = function() { alert(num); }
+    num++;
+    return sayAlert;
+}
+var sayNumber = say667();
+sayNumber(); // alerts 667</code></pre></div> <div><br></div> <div><br></div> <div><strong>Example 4</strong></div> <div><br></div> <div>三个全局函数共享一个闭包，因为它们都是在同一次setupSomeGlobals()中声明的</div> <div><br></div> <div class=ever-code><pre><code>function setupSomeGlobals() {
+    // Local variable that ends up within closure
+    var num = 666;
+    // Store some references to functions as global variables
+    gAlertNumber = function() { alert(num); }
+    gIncreaseNumber = function() { num++; }
+    gSetNumber = function(x) { num = x; }
+}
+
+setupSomeGlobals();
+gIncreaseNumber();
+gAlertNumber(); // 667
+gSetNumber(5);
+gAlertNumber(); // 5
+
+var oldAlert = gAlertNumber;
+
+setupSomeGlobals();
+gAlertNumber(); // 666
+
+oldAlert() // 5</code></pre></div> <div><br></div> <div><br></div> <div>每次调用setupSomeGlobals()，都会产生了新的闭包，并被全局的gAlertNumber、gIncreaseNumber、gSetNumber变量所共享。</div> <div><br></div> <div><strong>Example 5</strong></div> <div><br></div> <div>这是一个常见的陷阱：在循环中定义函数，要小心！</div> <div><br></div> <div class=ever-code><pre><code>function buildList(list) {
+    var result = [];
+    for (var i = 0; i &lt; list.length; i++) {
+        var item = 'element' + ' ' + list[i];
+        result.push(function() { console.log(item + ' ' + list[i]) });
+    }
+    return result;
+}
+
+function testList() {
+    var fnlist = buildList(['a', 'b', 'c']);
+    // Using j only to help prevent confusion -- could use i.
+    for (var j = 0; j &lt; fnlist.length; j++) {
+        fnlist[j]();
+    }
+}
+
+testList();</code></pre></div> <div><br></div> <div><br></div> <div>在result.push(function() { console.log(item + ' ' + list[i]) });这一行，我们将三个匿名函数引用压入result中，若你对匿名函数不熟，试想这样：</div> <div><br></div> <div>pointer = function() {console.log(item + ' ' + list[i])};</div> <div>result.push(pointer);</div> <div><br></div> <div>运行testList();，你会看到"element c undefined"弹出三次。因为，就像例子4，这里所产生的闭包只有一个，item最后一次赋值是i=2时，得item = 'element' + ' ' +  list[2] = 'element c'，而 i 最后一次赋值是 i=2 后的 i++，于是等于3，list[i]为undefined</div> <div><br></div> <div>而如果改成这样，再用一个function包裹，并在里面值传递var j = i（因为是基本类型，所以其实是复制），并立即自执行，则使得list[j]获得不同的值：</div> <div><br></div> <div class=ever-code><pre><code>function buildList(list) {
+    var result = [];
+    for (var i = 0; i &lt; list.length; i++) {
+        var item = 'element' + ' ' + list[i];
+        (function() {
+            var j = i;
+            result.push(function() { console.log(item + ' ' + list[j]) });
+        })();
+    }
+    return result;
+}</code></pre></div> <div><br></div> <div><br></div> <div>或者这样：</div> <div><br></div> <div class=ever-code><pre><code>function buildList(list) {
+    var result = [];
+    for (var i = 0; i &lt; list.length; i++) {
+        var item = 'element' + ' ' + list[i];
+        (function(j) {
+            result.push(function() { console.log(item + ' ' + list[j]) });
+        })(i);
+    }
+    return result;
+}</code></pre></div> <div><br></div> <div><br></div> <div><strong>Example 6</strong></div> <div><br></div> <div>本例说明两个问题：</div> <div>变量提升，如var alice</div> <div>链式调用，如sayAlice()()</div> <div><br></div> <div class=ever-code><pre><code>function sayAlice() {
+    var sayAlert = function() { alert(alice); }
+    // Local variable that ends up within closure
+    var alice = 'Hello Alice';
+    return sayAlert;
+}
+sayAlice()();</code></pre></div> <div><br></div> <div><br></div> <div>奇技：因为变量提升的关系，变量sayAlert也处于闭包之中，能被sayAlice中定义的所有函数使用，包括被自身所指向的函数递归地使用</div> <div><br></div> <div><strong>Example 7</strong></div> <div><br></div> <div>每次调用外部函数，都会产生新的闭包</div> <div><br></div> <div class=ever-code><pre><code>function newClosure(someNum, someRef) {
+    // Local variables that end up within closure
+    var num = someNum;
+    var anArray = [1,2,3];
+    var ref = someRef;
+    return function(x) {
+        num += x;
+        anArray.push(num);
+        alert('num: ' + num +
+            '\nanArray ' + anArray.toString() +
+            '\nref.someVar ' + ref.someVar);
+      }
+}
+obj = {someVar: 4};
+fn1 = newClosure(4, obj);
+fn2 = newClosure(5, obj);
+fn1(1); // num: 5; anArray: 1,2,3,5; ref.someVar: 4;
+fn2(1); // num: 6; anArray: 1,2,3,6; ref.someVar: 4;
+obj.someVar++;
+fn1(2); // num: 7; anArray: 1,2,3,5,7; ref.someVar: 5;
+fn2(2); // num: 8; anArray: 1,2,3,6,8; ref.someVar: 5;</code></pre></div> <div><br></div> <div><br></div> <div><strong>Summary</strong></div> <div><br></div> <div>“栈帧”这一说法其实不准确，它只是方便理解而已。看懂基本现象后，可再深入挖掘细节。</div> <div><br></div> <div>Closure is when a function can remember and access its lexical scope even when it’s invoked outside its lexical scope.</div> <div><br></div> <div><strong>Final points:</strong></div> <ul> <li>在function内使用function，就会产生闭包</li> <li>Whenever you use eval() inside a function, a closure is used. The text you eval can reference local variables of the function, and within eval you can even create new local variables by using eval('var foo = …')</li> <li>在function内使用new Function(...)（Function构造器），不会产生闭包</li> <li>A closure in JavaScript is like keeping a copy of all the local variables, just as they were when a function exited.</li> <li>It is probably best to think that a closure is always created just on entry to a function, and the local variables are added to that closure.</li> <li>A new set of local variables is kept every time a function with a closure is called (given that the function contains a function declaration inside it, and a reference to that inside function is either returned or an external reference is kept for it in some way).</li> <li>Two functions might look like they have the same source text, but have completely different behaviour because of their 'hidden' closure. I don't think JavaScript code can actually find out if a function reference has a closure or not.</li> <li>如果你想动态地改变代码（例如，myFunction = Function(myFunction.toString().replace(/Hello/,'Hola')); ），而myFunction 是一个闭包时，那就是改变不了的。（当然，没什么人会想要在运行时改变代码，但……）</li> <li>多层嵌套function可实现多层嵌套闭包</li> <li>I think normally a closure is the term for both the function along with the variables that are captured. Note that I do not use that definition in this article!</li> <li>I suspect that closures in JavaScript differ from those normally found in functional languages.</li> </ul> <div><strong>Links</strong></div> <ul> <li> <a href="http://trimpath.com/project/wiki/TrimBreakpoint">TrimBreakpoint</a> is a tricky use of closures to let you inspect local variables for a function from a popup breakpoint window.</li> <li>Douglas Crockford使用闭包来模拟一个对象的<a href="http://www.crockford.com/javascript/private.html">private attributes and private methods</a> </li> <li>大意地使用闭包会<a href="http://www.codeproject.com/jscript/LeakPatterns.asp">cause memory leaks in IE</a> </li> </ul> </div></span> </div> </article> <script src="/javascripts/bundle-d6f5bf21.js"></script> </body> </html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html> <html> <head> <meta content="IE=edge" http-equiv=X-UA-Compatible> <meta charset=utf-8> <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name=viewport> <title>Zp Yuan redirect_to</title> <link href="/bundle-d18183fc.css" rel=stylesheet /> </head> <body> <nav> <ul> <li class="toc-button invisible"><a>目录</a></li> <li><a href="/index.html">笔记</a></li> <li><a href="http://whispering-fortress-75887.herokuapp.com/">统计</a></li> <li><a href="/about.html">关于</a></li> </ul> </nav> <aside> <div class=tags> <ul> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>42</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>10</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>9</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>8</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>5</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=underscore"> <span>underscore</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=java"> <span>java</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rubinius"> <span>rubinius</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> </ul> </div> </aside> <article> <h1 class=post-title>redirect_to</h1> <span class=post-date>2015-05-25</span> <a class=post-tag href="/index.html?tag=rails">rails</a> <a class=post-tag href="/index.html?tag=ruby">ruby</a> <div> <span><div style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;"> <div>trace一下redirect_to （来自rails guide第一篇）</div> <div><br></div> <div class=ever-code><pre><code>class CommentsController &lt; ApplicationController
+  def create
+    @article = Article.find(params[:article_id])
+    @comment = @article.comments.create(comment_params)
+    binding.trace_tree(html: true, tmp: ['rails', 'redirect_to_article.html']) do
+      redirect_to article_path(@article)
+    end
+  end
+
+  private
+
+  def comment_params
+    params.require(:comment).permit(:commenter, :body)
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>从所得调用栈中，发现有多个redirect_to</div> <div><br></div> <div><a href="/images/b455c5/50e19f.png" target=_blank><img src="/images/b455c5/50e19f.png" type="image/png" style="height: auto;"></a></div> <div><br></div> <div><br></div> <div>先看第一个，turbolinks-5.0.1/lib/turbolinks/redirection.rb，它是个module，其redirect_to会调super</div> <div><br></div> <div class=ever-code><pre><code>module Turbolinks
+  module Redirection
+    extend ActiveSupport::Concern
+
+    included do
+      before_action :set_turbolinks_location_header_from_session if respond_to?(:before_action)
+    end
+
+    def redirect_to(url = {}, options = {})
+      turbolinks = options.delete(:turbolinks)
+
+      super.tap do
+        if turbolinks != false &amp;&amp; request.xhr? &amp;&amp; !request.get?
+          visit_location_with_turbolinks(location, turbolinks)
+        else
+          if request.headers["Turbolinks-Referrer"]
+            store_turbolinks_location_in_session(location)
+          end
+        end
+      end
+    end</code></pre></div> <div><br></div> <div><br></div> <div>估计调用栈上其它redirect_to也是这种做法，于是查找下controller的继承链上哪些地方有定义redirect_to</div> <div><br></div> <div class=ever-code><pre><code>irb(main):003:0&gt; CommentsController.ancestors.select{|klass| klass.instance_methods.include? :redirect_to}
+=&gt; [CommentsController, ApplicationController, ActionController::Base, Turbolinks::Redirection, ActionController::Instrumentation, ActionController::Flash, ActionController::Redirecting]
+irb(main):004:0&gt; CommentsController.ancestors.select{|klass| klass.instance_methods(false).include? :redirect_to}
+=&gt; [Turbolinks::Redirection, ActionController::Instrumentation, ActionController::Flash, ActionController::Redirecting]</code></pre></div> <div><br></div> <div><br></div> <div>与调用栈顺序一致，应该就是不断地super</div> <div><br></div> <div>其中最核心的应该是actionpack-5.0.2/lib/action_controller/metal/redirecting.rb，它所做的就是在controller自身保存status、location、body，以备controller的调用者再挖出来拼接成响应报文</div> <div><br></div> <div class=ever-code><pre><code>def redirect_to(options = {}, response_status = {}) #:doc:
+  raise ActionControllerError.new("Cannot redirect to nil!") unless options
+  raise AbstractController::DoubleRenderError if response_body
+
+  self.status        = _extract_redirect_to_status(options, response_status)
+  self.location      = _compute_redirect_to_location(request, options)
+  self.response_body = "&lt;html&gt;&lt;body&gt;You are being &lt;a href=\"#{ERB::Util.unwrapped_html_escape(location)}\"&gt;redirected&lt;/a&gt;.&lt;/body&gt;&lt;/html&gt;"
+end</code></pre></div> <div><br></div> <div><br></div> <div>源码还带有一些用例</div> <div><br></div> <div class=ever-code><pre><code># === Examples:
+#
+#   redirect_to action: "show", id: 5
+#   redirect_to post
+#   redirect_to "http://www.rubyonrails.org"
+#   redirect_to "/images/screenshot.jpg"
+#   redirect_to articles_url
+#   redirect_to proc { edit_post_url(@post) }</code></pre></div> <div><br></div> <div><br></div> <div>_compute_redirect_to_location能处理各种类型的参数，以便设置LOCATION，令用例得以实现</div> <div><br></div> <div class=ever-code><pre><code>def _compute_redirect_to_location(request, options) #:nodoc:
+  case options
+  # The scheme name consist of a letter followed by any combination of
+  # letters, digits, and the plus ("+"), period ("."), or hyphen ("-")
+  # characters; and is terminated by a colon (":").
+  # See http://tools.ietf.org/html/rfc3986#section-3.1
+  # The protocol relative scheme starts with a double slash "//".
+  when /\A([a-z][a-z\d\-+\.]*:|\/\/).*/i
+    options
+  when String
+    request.protocol + request.host_with_port + options
+  when :back
+    ActiveSupport::Deprecation.warn(&lt;&lt;-MESSAGE.squish)
+      `redirect_to :back` is deprecated and will be removed from Rails 5.1.
+      Please use `redirect_back(fallback_location: fallback_location)` where
+      `fallback_location` represents the location to use if the request has
+      no HTTP referer information.
+    MESSAGE
+    request.headers["Referer"] or raise RedirectBackError
+  when Proc
+    _compute_redirect_to_location request, options.call
+  else
+    url_for(options)
+  end.delete("\0\r\n")
+end</code></pre></div> <div><br></div> <div><br></div> <div>完整trace如下</div> <div><br></div> <div> <a href="/images/b455c5/c8466f.html" target=_blank><img src="/images/b455c5/5784b5.png" alt="redirect_to_article.html"></a><br> </div> </div></span> </div> </article> <script src="/javascripts/bundle-d6f5bf21.js"></script> </body> </html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html> <html> <head> <meta content="IE=edge" http-equiv=X-UA-Compatible> <meta charset=utf-8> <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name=viewport> <title>Zp Yuan I am a puts debuggerer</title> <link href="/bundle-d18183fc.css" rel=stylesheet /> </head> <body> <nav> <div class=toc_container><a href="#table_of_content">table of content</a> <ol> <li> <a href="#I_know_where_I_am_but_not_how_I_got_here">I know where I am but not how I got here</a> </li> <li> <a href="#I_only_want_to_print_the_call_stack_once">I only want to print the call stack once</a> </li> <li> <a href="#I_only_want_to_see_the_stack_in_certain_cases">I only want to see the stack in certain cases</a> </li> <li> <a href="#I’m_calling_a_method,_but_I_don’t_know_where_it_goes">I’m calling a method, but I don’t know where it goes</a> </li> <li> <a href="#Get_instance_method_location_without_an_instance">Get instance method location without an instance</a> </li> <li> <a href="#Introspect_method_arguments">Introspect method arguments</a> </li> <li> <a href="#I’m_calling_super_but_I_don’t_know_where_that_goes">I’m calling super but I don’t know where that goes</a> </li> <li> <a href="#What_if_the_thing_implements_the_method_method?">What if the thing implements the method method?</a> </li> <li> <a href="#I’m_calling_something_but_I_don’t_know_where_it_goes_(again)">I’m calling something but I don’t know where it goes (again)</a> </li> <li> <a href="#I_know_an_exception_is_getting_raised,_but_I_don’t_know_where">I know an exception is getting raised, but I don’t know where</a> </li> <li> <a href="#I_want_to_run_a_command_line_tool_with_-d">I want to run a command line tool with -d</a> </li> <li> <a href="#I_want_to_use_the_-d_flag_but_I_don’t_know_how_to_run_the_process">I want to use the -d flag but I don’t know how to run the process</a> </li> <li> <a href="#I_need_to_find_where_this_object_came_from">I need to find where this object came from</a> </li> <li> <a href="#I_need_to_require_something_really,_really_early">I need to require something really, really early</a> </li> <li> <a href="#An_object_is_being_mutated,_but_I_don’t_know_where">An object is being mutated, but I don’t know where</a> </li> <li> <a href="#I_have_a_deadlock,_but_I_don’t_know_where">I have a deadlock, but I don’t know where</a> </li> <li> <a href="#I_want_to_know_when_a_method_is_executed,_but_only_at_a_certain_time">I want to know when a method is executed, but only at a certain time</a> </li> <li> <a href="#set_breakpoint">set breakpoint</a> </li> </ol> </div> <ul> <li class="toc-button "><a>目录</a></li> <li><a href="/index.html">笔记</a></li> <li><a href="http://whispering-fortress-75887.herokuapp.com/">统计</a></li> <li><a href="/about.html">关于</a></li> </ul> </nav> <aside> <div class=tags> <ul> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>42</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>10</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>9</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>8</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>5</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=underscore"> <span>underscore</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=java"> <span>java</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rubinius"> <span>rubinius</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> </ul> </div> </aside> <article> <h1 class=post-title>I am a puts debuggerer</h1> <span class=post-date>2016-08-08</span> <a class=post-tag href="/index.html?tag=debug">debug</a> <a class=post-tag href="/index.html?tag=ruby">ruby</a> <div> <span><div><b id=I_know_where_I_am_but_not_how_I_got_here>I know where I am but not how I got here</b></div> <div><br></div> <div>假设你想知道这个block何时/什么情况下会被调用：</div> <div><br></div> <div class=ever-code><pre><code>LOOKUP = Hash.new { |h, k| h[k] = Type.new(k) unless k.blank? }</code></pre></div> <div><br></div> <div><br></div> <div>可用caller输出调用栈：</div> <div><br></div> <div class=ever-code><pre><code>LOOKUP = Hash.new { |h, k|
+  puts "#" * 90
+  puts caller
+  puts "#" * 90
+  h[k] = Type.new(k) unless k.blank?
+}</code></pre></div> <div><br></div> <div><br></div> <div>要是经常这样调试，可以在vim建个快捷键：</div> <div><br></div> <div class=ever-code><pre><code>" puts the caller
+nnoremap &lt;leader&gt;wtf oputs "#" * 90&lt;c-m&gt;puts caller&lt;c-m&gt;puts "#" * 90&lt;esc&gt;</code></pre></div> <div><br></div> <div><br></div> <div>这样输入&lt;leader&gt;wtf，就会把上面的调试代码插入进去了。</div> <div><br></div> <div><b id=I_only_want_to_print_the_call_stack_once>I only want to print the call stack once</b></div> <div><br></div> <div>那就用exit。或者raise，直接报exception调用栈并退出。</div> <div><br></div> <div><b id=I_only_want_to_see_the_stack_in_certain_cases>I only want to see the stack in certain cases</b></div> <div><br></div> <div>那就加上条件判断，或容纳在原本的条件判断里：</div> <div><br></div> <div class=ever-code><pre><code>LOOKUP = Hash.new { |h, k|
+  unless k.blank?
+    puts "#" * 90
+    puts caller
+    puts "#" * 90
+    h[k] = Type.new(k)
+  end
+}</code></pre></div> <div><br></div> <div><br></div> <div><b id="I’m_calling_a_method,_but_I_don’t_know_where_it_goes">I’m calling a method, but I don’t know where it goes</b></div> <div><br></div> <div>假设你想知道render是在哪里定义的：</div> <div><br></div> <div class=ever-code><pre><code>def show
+  render params[:id]
+end</code></pre></div> <div><br></div> <div><br></div> <div>可改成这样：</div> <div><br></div> <div class=ever-code><pre><code>def show
+  p method(:render).source_location
+  render params[:id]
+end</code></pre></div> <div><br></div> <div><br></div> <div>运行：</div> <div><br></div> <div class=ever-code><pre><code>$ curl http://localhost:3000/users/xxxx</code></pre></div> <div><br></div> <div><br></div> <div>打印出：</div> <div><br></div> <div class=ever-code><pre><code>Processing by UsersController#show as */*
+  Parameters: {"id"=&gt;"xxxx"}
+["/Users/aaron/git/rails/actionpack/lib/action_controller/metal/instrumentation.rb", 40]
+Completed 500 Internal Server Error in 35ms (ActiveRecord: 0.0ms)</code></pre></div> <div><br></div> <div><br></div> <div>这就知道它是在instrumentation.rb的第40行了。</div> <div><br></div> <div>也可在irb/console中设置简便方法：</div> <div><br></div> <div class=ever-code><pre><code>def msl obj, method_name;obj.method(method_name).source_location;end</code></pre></div> <div><br></div> <div><br></div> <div><b id=Get_instance_method_location_without_an_instance>Get instance method location without an instance</b></div> <div><br></div> <div class=ever-code><pre><code>User.instance_method(:github_url).source_location</code></pre></div> <div><br></div> <div><br></div> <div><b id=Introspect_method_arguments>Introspect method arguments</b></div> <div><br></div> <div>有方法如下：</div> <div><br></div> <div class=ever-code><pre><code>def parse(input, skip_code_comments: false, ignore_whitespace: true)
+  # do stuff
+end</code></pre></div> <div><br></div> <div><br></div> <div>则：</div> <div><br></div> <div class=ever-code><pre><code>method(:parse).parameters
+#=&gt; [[:req, :input], [:key, :skip_code_comments], [:key, :ignore_whitespace]]</code></pre></div> <div><br></div> <div><br></div> <div><b id="I’m_calling_super_but_I_don’t_know_where_that_goes">I’m calling super but I don’t know where that goes</b></div> <div><br></div> <div>那里的render是有调用super的，所以，继续：</div> <div><br></div> <div class=ever-code><pre><code>def show
+  p method(:render).source_location
+  render params[:id]
+end</code></pre></div> <div><br></div> <div><br></div> <div>改为：</div> <div><br></div> <div class=ever-code><pre><code>def show
+  p method(:render).super_method.source_location
+  render params[:id]
+end</code></pre></div> <div><br></div> <div><br></div> <div>再运行一次，可见：</div> <div><br></div> <div class=ever-code><pre><code>Processing by UsersController#show as */*
+  Parameters: {"id"=&gt;"xxxx"}
+["/Users/aaron/git/rails/actionpack/lib/action_controller/metal/rendering.rb", 34]
+Completed 500 Internal Server Error in 34ms (ActiveRecord: 0.0ms)</code></pre></div> <div><br></div> <div><br></div> <div>如果想再上一层，那就再加多个super_method（或循环super_method），直到你找到你想要的</div> <div><br></div> <div><b id="What_if_the_thing_implements_the_method_method?">What if the thing implements the method method?</b></div> <div><br></div> <div>但如果method被重新定义过：</div> <div><br></div> <div class=ever-code><pre><code>def index
+  p request.method(:headers).source_location
+  @users = User.all
+end</code></pre></div> <div><br></div> <div><br></div> <div>那就显然返回不了你想要的：</div> <div><br></div> <div class=ever-code><pre><code>ArgumentError (wrong number of arguments (given 1, expected 0)):
+  app/controllers/users_controller.rb:5:in `index'</code></pre></div> <div><br></div> <div><br></div> <div>这时，只需获取Kernel的method，再将其绑定到你想检查的对象上去运行：</div> <div><br></div> <div class=ever-code><pre><code>def index
+  method = Kernel.instance_method(:method)
+  p method.bind(request).call(:headers).source_location
+  @users = User.all
+end</code></pre></div> <div><br></div> <div><br></div> <div>就可以了：</div> <div><br></div> <div class=ever-code><pre><code>Processing by UsersController#index as */*
+["/Users/aaron/git/rails/actionpack/lib/action_dispatch/http/request.rb", 201]</code></pre></div> <div><br></div> <div><br></div> <div>甚至，你还可以查到这个重定义的method是在哪里写的：</div> <div><br></div> <div class=ever-code><pre><code>def index
+  method = Kernel.instance_method(:method)
+  p method.bind(request).call(:method).source_location
+  @users = User.all
+end</code></pre></div> <div><br></div> <div><br></div> <div><b id="I’m_calling_something_but_I_don’t_know_where_it_goes_(again)">I’m calling something but I don’t know where it goes (again)</b></div> <div><br></div> <div>比刚才的更进一步，想知道一个方法直接/间接调用了哪些方法：</div> <div><br></div> <div class=ever-code><pre><code># GET /users
+# GET /users.json
+def index
+  @users = User.all
+  tp = TracePoint.new(:call) do |x|
+    p x
+  end
+  tp.enable
+  render 'index'
+ensure
+  tp.disable
+end</code></pre></div> <div><br></div> <div><br></div> <div>如果连C实现也想定位，可改成:c_call。不过，TracePoint的信息量很大……</div> <div><br></div> <div><b id="I_know_an_exception_is_getting_raised,_but_I_don’t_know_where">I know an exception is getting raised, but I don’t know where</b></div> <div><br></div> <div>有时，一般的调用栈不能显示异常真正的发生位置（下例Rails 3.0.0）：</div> <div><br></div> <div>ActiveRecord::Base.logger = Logger.new $stdout</div> <div><br></div> <div>User.connection.execute "oh no!"</div> <div><br></div> <div>明显这会报错，但看看报出来的是什么样？</div> <div><br></div> <div class=ever-code><pre><code>  SQL (0.1ms)  oh no!
+SQLite3::SQLException: near "oh": syntax error: oh no!
+activerecord-3.0.0/lib/active_record/connection_adapters/abstract_adapter.rb:202:in `rescue in log': SQLite3::SQLException: near "oh": syntax error: oh no! (ActiveRecord::StatementInvalid)
+    from activerecord-3.0.0/lib/active_record/connection_adapters/abstract_adapter.rb:194:in `log'
+    from activerecord-3.0.0/lib/active_record/connection_adapters/sqlite_adapter.rb:135:in `execute'
+    from test.rb:6:in `&lt;top (required)&gt;'
+    from railties-3.0.0/lib/rails/commands/runner.rb:48:in `eval'
+    from railties-3.0.0/lib/rails/commands/runner.rb:48:in `&lt;top (required)&gt;'
+    from railties-3.0.0/lib/rails/commands.rb:39:in `require'
+    from railties-3.0.0/lib/rails/commands.rb:39:in `&lt;top (required)&gt;'
+    from script/rails:6:in `require'
+    from script/rails:6:in `&lt;main&gt;'</code></pre></div> <div><br></div> <div><br></div> <div>看起来是abstract_adapter.rb的202，但很快你会发现，那是rescue in log，它只不过是接受了异常，然后再度抛出。那么，到底那里才是首次抛出呢？你可以加些puts到rescue in log里，或用-d：</div> <div><br></div> <div class=ever-code><pre><code>[aaron@TC okokok (master)]$ bundle exec ruby -d script/rails runner test.rb</code></pre></div> <div><br></div> <div><br></div> <div>-d标志会报警告，以及所有raise。信息量是很大，但在靠近末端，你会发现：</div> <div><br></div> <div class=ever-code><pre><code>Exception `NameError' at activesupport-3.0.0/lib/active_support/core_ext/module/remove_method.rb:3 - method `_validators' not defined in Class
+Exception `SQLite3::SQLException' at sqlite3-1.3.11/lib/sqlite3/database.rb:91 - near "oh": syntax error
+Exception `SQLite3::SQLException' at activesupport-3.0.0/lib/active_support/notifications/instrumenter.rb:24 - near "oh": syntax error
+  SQL (0.1ms)  oh no!
+SQLite3::SQLException: near "oh": syntax error: oh no!
+Exception `ActiveRecord::StatementInvalid' at activerecord-3.0.0/lib/active_record/connection_adapters/abstract_adapter.rb:202 - SQLite3::SQLException: near "oh": syntax error: oh no!
+Exception `ActiveRecord::StatementInvalid' at railties-3.0.0/lib/rails/commands/runner.rb:48 - SQLite3::SQLException: near "oh": syntax error: oh no!
+activerecord-3.0.0/lib/active_record/connection_adapters/abstract_adapter.rb:202:in `rescue in log': SQLite3::SQLException: near "oh": syntax error: oh no! (ActiveRecord::StatementInvalid)
+    from activerecord-3.0.0/lib/active_record/connection_adapters/abstract_adapter.rb:194:in `log'
+    from activerecord-3.0.0/lib/active_record/connection_adapters/sqlite_adapter.rb:135:in `execute'
+    from test.rb:6:in `&lt;top (required)&gt;'
+    from railties-3.0.0/lib/rails/commands/runner.rb:48:in `eval'
+    from railties-3.0.0/lib/rails/commands/runner.rb:48:in `&lt;top (required)&gt;'
+    from railties-3.0.0/lib/rails/commands.rb:39:in `require'
+    from railties-3.0.0/lib/rails/commands.rb:39:in `&lt;top (required)&gt;'
+    from script/rails:6:in `require'
+    from script/rails:6:in `&lt;main&gt;'</code></pre></div> <div><br></div> <div><br></div> <div>在这里抛了：</div> <div><br></div> <div class=ever-code><pre><code>Exception `SQLite3::SQLException' at sqlite3-1.3.11/lib/sqlite3/database.rb:91 - near "oh": syntax error</code></pre></div> <div><br></div> <div><br></div> <div>然后这里又重新抛出：</div> <div><br></div> <div class=ever-code><pre><code>Exception `SQLite3::SQLException' at activesupport-3.0.0/lib/active_support/notifications/instrumenter.rb:24 - near "oh": syntax error</code></pre></div> <div><br></div> <div><br></div> <div>不过，正常的设计应该是，重新抛出时也应给出原本的错误信息。</div> <div><br></div> <div><b id=I_want_to_run_a_command_line_tool_with_-d>I want to run a command line tool with -d</b></div> <div><br></div> <div>假设你想在rspec上用刚才的方法，可以的：</div> <div><br></div> <div class=ever-code><pre><code>$ ruby -d -S rspec</code></pre></div> <div><br></div> <div><br></div> <div><b id="I_want_to_use_the_-d_flag_but_I_don’t_know_how_to_run_the_process">I want to use the -d flag but I don’t know how to run the process</b></div> <div><br></div> <div>Rake的测试任务是发起子进程的，它不会带上-d，这只能通过设置环境变量RUBYOPT来做到：</div> <div><br></div> <div class=ever-code><pre><code>[aaron@TC okokok (master)]$ RUBYOPT=-d bundle exec rake test</code></pre></div> <div><br></div> <div><br></div> <div>于是，上例的rspec会变成这样：</div> <div><br></div> <div class=ever-code><pre><code>$ RUBYOPT=-d rspec</code></pre></div> <div><br></div> <div><br></div> <div><b id=I_need_to_find_where_this_object_came_from>I need to find where this object came from</b></div> <div><br></div> <div>有时，你要查的对象是从别处注入来的，你打印调用栈的话，可能会信息量很大，很难查：</div> <div><br></div> <div class=ever-code><pre><code>def foo
+  x = baz
+  bar x
+end
+
+def bar x
+  puts "#" * 90
+  puts caller
+  puts "#" * 90
+  p x
+end
+
+def baz; zot;        end
+def zot; Object.new; end
+
+foo</code></pre></div> <div><br></div> <div><br></div> <div>对于此种情况，可以用2.1引入的objspace，检查对象是在何处生成的：</div> <div><br></div> <div class=ever-code><pre><code>require 'objspace'
+ObjectSpace.trace_object_allocations_start
+
+def foo
+  x = baz
+  bar x
+end
+
+def bar x
+  p ObjectSpace.allocation_sourcefile(x) =&gt; ObjectSpace.allocation_sourceline(x)
+end
+
+def baz; zot;        end
+def zot; Object.new; end
+
+foo</code></pre></div> <div><br></div> <div><br></div> <div>运行结果：</div> <div><br></div> <div class=ever-code><pre><code>[aaron@TC tlm.com (master)]$ ruby x.rb
+{"x.rb"=&gt;14}
+[aaron@TC tlm.com (master)]$</code></pre></div> <div><br></div> <div><br></div> <div>虽然运行会比较慢，但值得！</div> <div><br></div> <div><b id="I_need_to_require_something_really,_really_early">I need to require something really, really early</b></div> <div><br></div> <div>上述的技术，只能记录trace_object_allocations_start之后生成的对象。如果你有个对象是很早生成，而且存在于一个很早就require的文件当中，早到你不知从何找起，那么，我们就需要把trace_object_allocations_start尽早require。</div> <div><br></div> <div>假设你想检查以下x.rb中，User::BLACKLISTED_CLASS_METHODS是在哪里赋值的：</div> <div><br></div> <div class=ever-code><pre><code>require 'active_record'
+
+ActiveRecord::Base.establish_connection adapter: 'sqlite3', database: ':memory:'
+
+ActiveRecord::Base.connection.instance_eval do
+  create_table :users
+end
+
+class User &lt; ActiveRecord::Base; end
+p ObjectSpace.allocation_sourcefile(User::BLACKLISTED_CLASS_METHODS) =&gt;
+    ObjectSpace.allocation_sourceline(User::BLACKLISTED_CLASS_METHODS)</code></pre></div> <div><br></div> <div><br></div> <div>那就写个y.rb：</div> <div><br></div> <div class=ever-code><pre><code>require 'objspace'
+ObjectSpace.trace_object_allocations_start</code></pre></div> <div><br></div> <div><br></div> <div>然后在命令行require它：</div> <div><br></div> <div class=ever-code><pre><code>[aaron@TC tlm.com (master)]$ ruby -I. -ry x.rb
+{"/Users/aaron/.rbenv/versions/ruby-trunk/lib/ruby/gems/2.4.0/gems/activerecord-5.0.0.beta1/lib/active_record/attribute_methods.rb"=&gt;35}
+[aaron@TC tlm.com (master)]$</code></pre></div> <div><br></div> <div><br></div> <div>上句意思是，-I将.加到LOADPATH，-ry即require 'y'，然后运行x.rb。你会发现它就在attribute_methdos.rb的35行赋值。此技术可跟RUBYOPT结合使用：</div> <div><br></div> <div class=ever-code><pre><code>$ RUBYOPT='-I. -ry' rake test</code></pre></div> <div><br></div> <div><br></div> <div><b id="An_object_is_being_mutated,_but_I_don’t_know_where">An object is being mutated, but I don’t know where</b></div> <div><br></div> <div>有时，你知道某个对象被改动了，但不知这发生在何处。那么你可以在可能出现改动之前，现将其freeze：</div> <div><br></div> <div class=ever-code><pre><code>def initialize
+  super()
+
+  @cv = new_cond
+
+  @sharing = Hash.new(0)
+  @sharing.freeze
+  @waiting = {}
+  @exclusive_thread = nil
+  @exclusive_depth = 0
+end</code></pre></div> <div><br></div> <div><br></div> <div>然后静观报错：</div> <div><br></div> <div class=ever-code><pre><code>active_support/concurrency/share_lock.rb:151:in `delete': can't modify frozen Hash (RuntimeError)
+    from active_support/concurrency/share_lock.rb:151:in `yield_shares'
+    from active_support/concurrency/share_lock.rb:79:in `block in stop_exclusive'</code></pre></div> <div><br></div> <div><br></div> <div>如果这是你预测到的地方，那就将freeze移到此处改动之后，再跑。</div> <div><br></div> <div>不过，如果是重新赋值（而非修改内容），则不会检查freeze不freeze</div> <div><br></div> <div><b id="I_have_a_deadlock,_but_I_don’t_know_where">I have a deadlock, but I don’t know where</b></div> <div><br></div> <div>写个x.rb：</div> <div><br></div> <div class=ever-code><pre><code>trap(:INFO) {
+  Thread.list.each do |t|
+    puts "#" * 90
+    p t
+    puts t.backtrace
+    puts "#" * 90
+  end
+}</code></pre></div> <div><br></div> <div><br></div> <div>启动server时require它：</div> <div><br></div> <div class=ever-code><pre><code>$ ruby -I. -rx bin/rails s</code></pre></div> <div><br></div> <div><br></div> <div>当server死锁时，CTRL+T（如果是Linux，就kill SIGINFO），然后trap接管后就会将每个线程打印：</div> <div><br></div> <div class=ever-code><pre><code>##########################################################################################
+#&lt;Thread:0x007f90bc07cb38 run&gt;
+omglolwut/x.rb:7:in `backtrace'
+omglolwut/x.rb:7:in `block (2 levels) in &lt;top (required)&gt;'
+omglolwut/x.rb:4:in `each'
+omglolwut/x.rb:4:in `block in &lt;top (required)&gt;'
+gems/puma-2.16.0/lib/rack/handler/puma.rb:43:in `join'
+gems/puma-2.16.0/lib/rack/handler/puma.rb:43:in `run'
+gems/rack-2.0.0.alpha/lib/rack/server.rb:296:in `start'
+rails/commands/server.rb:78:in `start'
+rails/commands/commands_tasks.rb:90:in `block in server'
+rails/commands/commands_tasks.rb:85:in `tap'
+rails/commands/commands_tasks.rb:85:in `server'
+rails/commands/commands_tasks.rb:49:in `run_command!'
+rails/command.rb:20:in `run'
+rails/commands.rb:19:in `&lt;top (required)&gt;'
+bin/rails:4:in `require'
+bin/rails:4:in `&lt;main&gt;'
+##########################################################################################
+##########################################################################################
+#&lt;Thread:0x007f90bef3b668@/Users/aaron/.rbenv/versions/ruby-trunk/lib/ruby/gems/2.4.0/gems/puma-2.16.0/lib/puma/reactor.rb:136 sleep&gt;
+lib/puma/reactor.rb:29:in `select'
+lib/puma/reactor.rb:29:in `run_internal'
+lib/puma/reactor.rb:138:in `block in run_in_thread'
+##########################################################################################
+##########################################################################################
+#&lt;Thread:0x007f90bef3b500@/Users/aaron/.rbenv/versions/ruby-trunk/lib/ruby/gems/2.4.0/gems/puma-2.16.0/lib/puma/thread_pool.rb:216 sleep&gt;
+lib/puma/thread_pool.rb:219:in `sleep'
+lib/puma/thread_pool.rb:219:in `block in start!'
+##########################################################################################
+##########################################################################################
+#&lt;Thread:0x007f90bef3b3c0@/Users/aaron/.rbenv/versions/ruby-trunk/lib/ruby/gems/2.4.0/gems/puma-2.16.0/lib/puma/thread_pool.rb:187 sleep&gt;
+lib/puma/thread_pool.rb:190:in `sleep'
+lib/puma/thread_pool.rb:190:in `block in start!'
+##########################################################################################
+##########################################################################################
+#&lt;Thread:0x007f90bef3b258@/Users/aaron/.rbenv/versions/ruby-trunk/lib/ruby/gems/2.4.0/gems/puma-2.16.0/lib/puma/server.rb:296 sleep&gt;
+lib/puma/server.rb:322:in `select'
+lib/puma/server.rb:322:in `handle_servers'
+lib/puma/server.rb:296:in `block in run'
+##########################################################################################
+##########################################################################################
+#&lt;Thread:0x007f90c1ef9a08@/Users/aaron/.rbenv/versions/ruby-trunk/lib/ruby/gems/2.4.0/gems/puma-2.16.0/lib/puma/thread_pool.rb:61 sleep&gt;
+lib/ruby/2.4.0/monitor.rb:111:in `sleep'
+lib/ruby/2.4.0/monitor.rb:111:in `wait'
+lib/ruby/2.4.0/monitor.rb:111:in `wait'
+lib/ruby/2.4.0/monitor.rb:132:in `wait_until'
+action_dispatch/http/response.rb:170:in `block in await_commit'
+lib/ruby/2.4.0/monitor.rb:214:in `mon_synchronize'
+action_dispatch/http/response.rb:169:in `await_commit'
+action_controller/metal/live.rb:270:in `process'
+action_controller/metal.rb:193:in `dispatch'
+action_controller/metal.rb:265:in `dispatch'
+action_dispatch/routing/route_set.rb:50:in `dispatch'
+action_dispatch/routing/route_set.rb:32:in `serve'
+##########################################################################################
+##########################################################################################
+#&lt;Thread:0x007f90bd1d5f38@/Users/aaron/git/rails/actionpack/lib/action_controller/metal/live.rb:279 sleep&gt;
+lib/ruby/2.4.0/monitor.rb:111:in `sleep'
+lib/ruby/2.4.0/monitor.rb:111:in `wait'
+lib/ruby/2.4.0/monitor.rb:111:in `wait'
+lib/ruby/2.4.0/monitor.rb:123:in `wait_while'
+active_support/concurrency/share_lock.rb:57:in `block (2 levels) in start_exclusive'
+active_support/concurrency/share_lock.rb:154:in `yield_shares'
+active_support/concurrency/share_lock.rb:56:in `block in start_exclusive'
+lib/ruby/2.4.0/monitor.rb:214:in `mon_synchronize'
+active_support/concurrency/share_lock.rb:51:in `start_exclusive'
+active_support/concurrency/share_lock.rb:113:in `exclusive'
+active_support/dependencies/interlock.rb:12:in `loading'
+active_support/dependencies.rb:37:in `load_interlock'
+active_support/dependencies.rb:369:in `require_or_load'
+active_support/dependencies.rb:529:in `load_missing_constant'
+active_support/dependencies.rb:212:in `const_missing'
+active_support/dependencies.rb:561:in `load_missing_constant'
+active_support/dependencies.rb:212:in `const_missing'
+app/controllers/users_controller.rb:9:in `index'
+##########################################################################################</code></pre></div> <div><br></div> <div><br></div> <div>（为了方便示例，上面是截短过的）可以看出，最后两个线程死锁。</div> <div><br></div> <div><b id="I_want_to_know_when_a_method_is_executed,_but_only_at_a_certain_time">I want to know when a method is executed, but only at a certain time</b></div> <div><br></div> <div>自己控制何时输出调试信息：检查$foo（当然不要跟其它变量重名）：</div> <div><br></div> <div class=ever-code><pre><code>def start_exclusive(purpose: nil, compatible: [], no_wait: false)
+  if $foo
+    puts "#" * 90
+    puts caller
+    puts "#" * 90
+  end
+  # ..
+end</code></pre></div> <div><br></div> <div><br></div> <div>在x.rb捕获信号，设置$foo：</div> <div><br></div> <div class=ever-code><pre><code>trap(:INFO) {
+  puts "turning on debugging!"
+  $foo = true
+}</code></pre></div> <div><br></div> <div><br></div> <div>然后，想调试时，发信。</div> <div><br></div> <div><b id=set_breakpoint>set breakpoint</b></div> <div><br></div> <div class=ever-code><pre><code># In activerecord-4.2.4/lib/active_record/store.rb
+define_method("#{key}=") do |value|
+  require 'pry'
+  if key == :contact_method
+    binding.pry
+  end
+  write_store_attribute(store_attribute, key, value)
+end</code></pre></div> <div><br></div></span> </div> </article> <script src="/javascripts/bundle-d6f5bf21.js"></script> </body> </html>

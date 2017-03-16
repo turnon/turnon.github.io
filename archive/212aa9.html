@@ -1,0 +1,91 @@
+<!DOCTYPE html> <html> <head> <meta content="IE=edge" http-equiv=X-UA-Compatible> <meta charset=utf-8> <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name=viewport> <title>Zp Yuan sinatra自定义500 error和not_found</title> <link href="/bundle-d18183fc.css" rel=stylesheet /> </head> <body> <nav> <div class=toc_container><a href="#table_of_content">table of content</a> <ol> <li> <a href="#404">404</a> </li> <li> <a href="#500">500</a> </li> </ol> </div> <ul> <li class="toc-button "><a>目录</a></li> <li><a href="/index.html">笔记</a></li> <li><a href="http://whispering-fortress-75887.herokuapp.com/">统计</a></li> <li><a href="/about.html">关于</a></li> </ul> </nav> <aside> <div class=tags> <ul> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>42</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>10</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>9</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>8</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>5</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=underscore"> <span>underscore</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=java"> <span>java</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rubinius"> <span>rubinius</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> </ul> </div> </aside> <article> <h1 class=post-title>sinatra自定义500 error和not_found</h1> <span class=post-date>2016-12-11</span> <a class=post-tag href="/index.html?tag=ruby">ruby</a> <a class=post-tag href="/index.html?tag=sinatra">sinatra</a> <div> <span><div>来自1.4.7</div> <div><br></div> <div><b id=404>404</b></div> <div><br></div> <div>not_found所做的就是在@errors建立两个键值关系 ：404 =&gt; “404处理块” ，Sinatra::NotFound =&gt; “404处理块”。可以看成是error(404){}的别名写法</div> <div><br></div> <div class=ever-code><pre><code>def error(*codes, &amp;block)
+  args  = compile! "ERROR", //, block
+  codes = codes.map { |c| Array(c) }.flatten
+  codes &lt;&lt; Exception if codes.empty?
+  codes.each { |c| (@errors[c] ||= []) &lt;&lt; args }
+end
+
+# Sugar for `error(404) { ... }`
+def not_found(&amp;block)
+  error(404, &amp;block)
+  error(Sinatra::NotFound, &amp;block)
+end
+
+class NotFound &lt; NameError #:nodoc:
+  def http_status; 404 end
+end</code></pre></div> <div><br></div> <div><br></div> <div>当所有route都走完（没有halt回invoke时），会调route_missing，引发Sinatra::NotFound</div> <div><br></div> <div class=ever-code><pre><code>def route!(base = settings, pass_block = nil)
+  if routes = base.routes[@request.request_method]
+    # routes.each ...
+  end
+
+  # Run routes defined in superclass ...
+  route_missing
+end
+
+def route_missing
+  if @app
+    forward
+  else
+    raise NotFound
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>于是handle_exception!</div> <div><br></div> <div class=ever-code><pre><code>def dispatch!
+  invoke do
+    static! if settings.static? &amp;&amp; (request.get? || request.head?)
+    filter! :before
+    route!
+  end
+rescue ::Exception =&gt; boom
+  invoke { handle_exception!(boom) }
+ensure
+  begin
+    filter! :after unless env['sinatra.static_file']
+  rescue ::Exception =&gt; boom
+    invoke { handle_exception!(boom) } unless @env['sinatra.error']
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>handle_exception!会发现Sinatra::NotFound的http_status，于是，设置status code 404</div> <div><br></div> <div class=ever-code><pre><code>def handle_exception!(boom)
+  @env['sinatra.error'] = boom
+
+  if boom.respond_to? :http_status
+    status(boom.http_status)
+  elsif settings.use_code? and boom.respond_to? :code and boom.code.between? 400, 599
+    status(boom.code)
+  else
+    status(500)
+  end
+
+  status(500) unless status.between? 400, 599
+
+  if server_error?
+    dump_errors! boom if settings.dump_errors?
+    raise boom if settings.show_exceptions? and settings.show_exceptions != :after_handler
+  end
+
+  if not_found?
+    headers['X-Cascade'] = 'pass' if settings.x_cascade?
+    body '&lt;h1&gt;Not Found&lt;/h1&gt;'
+  end
+
+  res = error_block!(boom.class, boom) || error_block!(status, boom)
+  return res if res or not server_error?
+  raise boom if settings.raise_errors? or settings.show_exceptions?
+  error_block! Exception, boom
+end</code></pre></div> <div><br></div> <div><br></div> <div>之后error_block!，覆盖if not_found?中的body '&lt;h1&gt;Not Found&lt;/h1&gt;'。</div> <div>注意reverse_each，即是，not_found可多次定义，后来的覆盖先定的，子类的覆盖父类的</div> <div><br></div> <div class=ever-code><pre><code>def error_block!(key, *block_params)
+  base = settings
+  while base.respond_to?(:errors)
+    next base = base.superclass unless args_array = base.errors[key]
+    args_array.reverse_each do |args|
+      first = args == args_array.first
+      args += [block_params]
+      resp = process_route(*args)
+      return resp unless resp.nil? &amp;&amp; !first
+    end
+  end
+  return false unless key.respond_to? :superclass and key.superclass &lt; Exception
+  error_block!(key.superclass, *block_params)
+end</code></pre></div> <div><br></div> <div><br></div> <div><b id=500>500</b></div> <div><br></div> <div>若不带参数，只带block来调用error方法，则是走handle_exception!的status(500)</div> <div><br></div> <div class=ever-code><pre><code>if boom.respond_to? :http_status
+  status(boom.http_status)
+elsif settings.use_code? and boom.respond_to? :code and boom.code.between? 400, 599
+  status(boom.code)
+else
+  status(500)
+end</code></pre></div> <div><br></div> <div><br></div> <div>然后error_block!又会重新找出500 =&gt; “500处理块”</div> <div><br></div> <div>当然，error可以用来定义其它error status code的处理方法</div> <div><br></div></span> </div> </article> <script src="/javascripts/bundle-d6f5bf21.js"></script> </body> </html>

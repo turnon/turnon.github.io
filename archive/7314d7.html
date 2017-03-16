@@ -1,0 +1,58 @@
+<!DOCTYPE html> <html> <head> <meta content="IE=edge" http-equiv=X-UA-Compatible> <meta charset=utf-8> <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name=viewport> <title>Zp Yuan Minitest::Mock</title> <link href="/bundle-d18183fc.css" rel=stylesheet /> </head> <body> <nav> <ul> <li class="toc-button invisible"><a>目录</a></li> <li><a href="/index.html">笔记</a></li> <li><a href="http://whispering-fortress-75887.herokuapp.com/">统计</a></li> <li><a href="/about.html">关于</a></li> </ul> </nav> <aside> <div class=tags> <ul> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>42</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>10</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>9</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>8</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>5</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=underscore"> <span>underscore</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=java"> <span>java</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rubinius"> <span>rubinius</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> </ul> </div> </aside> <article> <h1 class=post-title>Minitest::Mock</h1> <span class=post-date>2017-01-09</span> <a class=post-tag href="/index.html?tag=minitest">minitest</a> <a class=post-tag href="/index.html?tag=ruby">ruby</a> <div> <span><div>要点：</div> <div><br></div> <div>可使用delegator</div> <div><br></div> <div>每次expect只能被call一次</div> <div><br></div> <div>verify方法可加在每个test末尾，以验证是否所有expect都被正确地call过</div> <div><br></div> <div>摘自5.10：</div> <div><br></div> <div class=ever-code><pre><code>def method_missing sym, *args, &amp;block # :nodoc:
+  # 若未定义expect，也未定义delegator，或delegator没该方法，则报错
+  unless @expected_calls.key?(sym) then
+    if @delegator &amp;&amp; @delegator.respond_to?(sym)
+      return @delegator.public_send(sym, *args, &amp;block)
+    else
+      raise NoMethodError, "unmocked method %p, expected one of %p" %
+        [sym, @expected_calls.keys.sort_by(&amp;:to_s)]
+    end
+  end
+
+  # 若@actual_calls显示已call过，则报错
+  # （一次expect只能call一次）
+  index = @actual_calls[sym].length
+  expected_call = @expected_calls[sym][index]
+
+  unless expected_call then
+    raise MockExpectationError, "No more expects available for %p: %p" %
+      [sym, args]
+  end
+
+  expected_args, retval, val_block =
+    expected_call.values_at(:args, :retval, :block)
+
+  if val_block then
+    # keep "verify" happy
+    @actual_calls[sym] &lt;&lt; expected_call
+
+    raise MockExpectationError, "mocked method %p failed block w/ %p" %
+      [sym, args] unless val_block.call(*args, &amp;block)
+
+    return retval
+  end
+
+  # 如果与expect的参数，数量或类型或值不同，报错
+  # （expect会默认零参数）
+  if expected_args.size != args.size then
+    raise ArgumentError, "mocked method %p expects %d arguments, got %d" %
+      [sym, expected_args.size, args.size]
+  end
+
+  zipped_args = expected_args.zip(args)
+  fully_matched = zipped_args.all? { |mod, a|
+    mod === a or mod == a
+  }
+
+  unless fully_matched then
+    raise MockExpectationError, "mocked method %p called with unexpected arguments %p" %
+      [sym, args]
+  end
+
+  @actual_calls[sym] &lt;&lt; {
+    :retval =&gt; retval,
+    :args =&gt; zipped_args.map! { |mod, a| mod === a ? mod : a },
+  }
+
+  retval
+end</code></pre></div> <div><br></div> <div><br></div></span> </div> </article> <script src="/javascripts/bundle-d6f5bf21.js"></script> </body> </html>

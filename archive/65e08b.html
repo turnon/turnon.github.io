@@ -1,0 +1,72 @@
+<!DOCTYPE html> <html> <head> <meta content="IE=edge" http-equiv=X-UA-Compatible> <meta charset=utf-8> <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name=viewport> <title>Zp Yuan proxy pattern</title> <link href="/bundle-d18183fc.css" rel=stylesheet /> </head> <body> <nav> <div class=toc_container><a href="#table_of_content">table of content</a> <ol> <li> <a href="#ruby">ruby</a> </li> <li> <a href="#js virtual">js virtual</a> </li> <li> <a href="#js_cache">js cache</a> </li> </ol> </div> <ul> <li class="toc-button "><a>目录</a></li> <li><a href="/index.html">笔记</a></li> <li><a href="http://whispering-fortress-75887.herokuapp.com/">统计</a></li> <li><a href="/about.html">关于</a></li> </ul> </nav> <aside> <div class=tags> <ul> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>42</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>10</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>9</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>8</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>5</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=underscore"> <span>underscore</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=java"> <span>java</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rubinius"> <span>rubinius</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> </ul> </div> </aside> <article> <h1 class=post-title>proxy pattern</h1> <span class=post-date>2015-05-07</span> <a class=post-tag href="/index.html?tag=javascript">javascript</a> <a class=post-tag href="/index.html?tag=pattern">pattern</a> <a class=post-tag href="/index.html?tag=ruby">ruby</a> <a class=post-tag href="/index.html?tag=underscore">underscore</a> <div> <span><div style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;"> <div>代理对象需与实际对象接口一样，令调用者察觉不到调用的是代理还是本题</div> <div>主要有protection（常用于拦截）、virtual（常用于惰性执行）、cache，另有remote、synchronization、counting、firewal</div> <div><br></div> <div><b id=ruby>ruby</b></div> <div><br></div> <div>使用 virtual proxy 延迟实例化</div> <div><br></div> <div class=ever-code><pre><code>class VirtualAccountProxy
+
+  def initialize(starting_balance=0)
+    @starting_balance=starting_balance
+  end
+
+  def deposit(amount)
+    return subject .deposit(amount)
+  end
+
+  def withdraw(amount)
+    return subject .withdraw(amount)
+  end
+
+  def balance
+    return subject .balance
+  end
+
+  def subject
+    @subject || (@subject = BankAccount.new(@starting_balance))
+  end
+
+end</code></pre></div> <div><br></div> <div><br></div> <div>改进，通过block，使代理类与“实例的new”解耦</div> <div><br></div> <div class=ever-code><pre><code>class VirtualAccountProxy
+
+  def initialize(&amp;creation_block)
+    @creation_block = creation_block
+  end
+
+  # Other methods omitted ...
+
+  def subject
+    @subject || (@subject = @creation_block.call)
+  end
+
+end</code></pre></div> <div><br></div> <div><br></div> <div>通过method_missing，直接调用被代理对象的对应方法</div> <div><br></div> <div class=ever-code><pre><code>class AccountProtectionProxy
+
+  def initialize(real_account, owner_name)
+    @subject = real_account
+    @owner_name = owner_name
+  end
+
+  def method_missing(name, *args)
+    check_access
+    @subject.send( name, *args )
+  end
+
+  def check_access
+    if Etc.getlogin != @owner_name
+      raise "Illegal access: #{Etc.getlogin} cannot access account."
+    end
+  end
+
+end</code></pre></div> <div><br></div> <div><br></div> <div><b id="js virtual">js virtual</b></div> <div><br></div> <div>见underscore的after</div> <div><br></div> <div class=ever-code><pre><code>_.after = function(times, func) {
+  return function() {
+    if (--times &lt; 1) {
+      return func.apply(this, arguments);
+    }
+  };
+};</code></pre></div> <div><br></div> <div><br></div> <div>也可设置setTimeout，并在其中做清除定时器的动作</div> <div><br></div> <div class=ever-code><pre><code>_.afterMs = function(times, func) {
+  return function() {
+    // to do ...
+  };
+};</code></pre></div> <div><br></div> <div><br></div> <div><b id=js_cache>js cache</b></div> <div><br></div> <div>见underscore的memoize</div> <div><br></div> <div class=ever-code><pre><code>_.memoize = function(func, hasher) {
+  var memoize = function(key) {
+    var cache = memoize.cache;
+    var address = '' + (hasher ? hasher.apply(this, arguments) : key);
+    if (!_.has(cache, address)) cache[address] = func.apply(this, arguments);
+    return cache[address];
+  };
+  memoize.cache = {};
+  return memoize;
+};</code></pre></div> <div><br></div> <div><br></div> </div></span> </div> </article> <script src="/javascripts/bundle-d6f5bf21.js"></script> </body> </html>

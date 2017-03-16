@@ -1,0 +1,131 @@
+<!DOCTYPE html> <html> <head> <meta content="IE=edge" http-equiv=X-UA-Compatible> <meta charset=utf-8> <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name=viewport> <title>Zp Yuan belongs_to干什么</title> <link href="/bundle-d18183fc.css" rel=stylesheet /> </head> <body> <nav> <ul> <li class="toc-button invisible"><a>目录</a></li> <li><a href="/index.html">笔记</a></li> <li><a href="http://whispering-fortress-75887.herokuapp.com/">统计</a></li> <li><a href="/about.html">关于</a></li> </ul> </nav> <aside> <div class=tags> <ul> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>42</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>10</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>9</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>8</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>5</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=underscore"> <span>underscore</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=java"> <span>java</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rubinius"> <span>rubinius</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> </ul> </div> </aside> <article> <h1 class=post-title>belongs_to干什么</h1> <span class=post-date>2017-03-06</span> <a class=post-tag href="/index.html?tag=rails">rails</a> <a class=post-tag href="/index.html?tag=ruby">ruby</a> <div> <span><div>trace一下belongs_to</div> <div><br></div> <div class=ever-code><pre><code>class Comment &lt; ApplicationRecord
+  binding.trace_tree(html: true, tmp: ['rails', 'belongs_to.html']) do
+    belongs_to :article
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>基本上它干的就是两件事build reflection，然后add reflection</div> <div><br></div> <div><a href="/images/2d4f4d/50e19f.png" target=_blank><img src="/images/2d4f4d/50e19f.png" type="image/png" style="height: auto;"></a></div> <div><br></div> <div>源码如下</div> <div><br></div> <div class=ever-code><pre><code>def belongs_to(name, scope = nil, options = {})
+  reflection = Builder::BelongsTo.build(self, name, scope, options)
+  Reflection.add_reflection self, name, reflection
+end</code></pre></div> <div><br></div> <div><br></div> <div>require是来自于autoload（activerecord-5.0.2/lib/active_record/associations.rb）</div> <div><br></div> <div class=ever-code><pre><code>module Builder #:nodoc:
+  autoload :Association,           'active_record/associations/builder/association'
+  autoload :SingularAssociation,   'active_record/associations/builder/singular_association'
+  autoload :CollectionAssociation, 'active_record/associations/builder/collection_association'
+
+  autoload :BelongsTo,           'active_record/associations/builder/belongs_to'
+  autoload :HasOne,              'active_record/associations/builder/has_one'
+  autoload :HasMany,             'active_record/associations/builder/has_many'
+  autoload :HasAndBelongsToMany, 'active_record/associations/builder/has_and_belongs_to_many'
+end</code></pre></div> <div><br></div> <div><br></div> <div>build继承自Assosiation，最后根据macro辗转返回BelongToReflection</div> <div><br></div> <div class=ever-code><pre><code>module ActiveRecord::Associations::Builder
+  class Association
+    def self.build(model, name, scope, options, &amp;block)
+      #...
+      reflection = create_reflection model, name, scope, options, extension
+      define_accessors model, reflection
+      #...
+      reflection
+    end
+
+    def self.create_reflection(model, name, scope, options, extension = nil)
+      #...
+      ActiveRecord::Reflection.create(macro, name, scope, options, model)
+    end
+
+    def self.define_accessors(model, reflection)
+      mixin = model.generated_association_methods
+      name = reflection.name
+      define_readers(mixin, name)
+      define_writers(mixin, name)
+    end
+  end
+
+  class SingularAssociation &lt; Association
+  end
+
+  class BelongsTo &lt; SingularAssociation #:nodoc:
+    def self.macro
+      :belongs_to
+    end
+  end
+
+end</code></pre></div> <div><br></div> <div><br></div> <div>create根据macro来决定用哪种Reflection（那为什么不直接传具体Reflection呢……为什么要macro而不是klass呢……）</div> <div><br></div> <div class=ever-code><pre><code>module ActiveRecord
+  # = Active Record Reflection
+  module Reflection # :nodoc:
+
+    def self.create(macro, name, scope, options, ar)
+      klass = case macro
+              when :composed_of
+                AggregateReflection
+              when :has_many
+                HasManyReflection
+              when :has_one
+                HasOneReflection
+              when :belongs_to
+                BelongsToReflection
+              else
+                raise "Unsupported Macro: #{macro}"
+              end
+
+      reflection = klass.new(name, scope, options, ar)
+      options[:through] ? ThroughReflection.new(reflection) : reflection
+    end</code></pre></div> <div><br></div> <div><br></div> <div>现在看回define_accessors</div> <div><br></div> <div><a href="/images/2d4f4d/de83bd.png" target=_blank><img src="/images/2d4f4d/de83bd.png" type="image/png" style="height: auto;"></a></div> <div><br></div> <div>它分为三层，分别在BelongsTo，SingularAssociation，Association，每次都先super。</div> <div><br></div> <div>先看看Association的</div> <div><br></div> <div class=ever-code><pre><code>def self.define_accessors(model, reflection)
+  mixin = model.generated_association_methods
+  name = reflection.name
+  define_readers(mixin, name)
+  define_writers(mixin, name)
+end
+
+def self.define_readers(mixin, name)
+  mixin.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+    def #{name}(*args)
+      association(:#{name}).reader(*args)
+    end
+  CODE
+end
+
+def self.define_writers(mixin, name)
+  mixin.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+    def #{name}=(value)
+      association(:#{name}).writer(value)
+    end
+  CODE
+end</code></pre></div> <div><br></div> <div><br></div> <div>generated_association_methods是每次都返回同一个module GeneratedAssociationMethods的，以便Association的每个层次的子类都能在其中定义accessors让model上溯得到</div> <div><br></div> <div class=ever-code><pre><code>def generated_association_methods
+  @generated_association_methods ||= begin
+    mod = const_set(:GeneratedAssociationMethods, Module.new)
+    include mod
+    mod
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>定义完comment.article和comment.article=后，到<span style="color: rgb(0, 0, 0); font-family: Tahoma; font-size: medium; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; orphans: auto; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); display: inline !important; float: none;">SingularAssociation了。这里产生build_article，create_article，create_article!</span> </div> <div><br></div> <div class=ever-code><pre><code>def self.define_accessors(model, reflection)
+  super
+  mixin = model.generated_association_methods
+  name = reflection.name
+
+  define_constructors(mixin, name) if reflection.constructable?
+
+  mixin.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+    def reload_#{name}
+      association(:#{name}).force_reload_reader
+    end
+  CODE
+end
+
+# Defines the (build|create)_association methods for belongs_to or has_one association
+def self.define_constructors(mixin, name)
+  mixin.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+    def build_#{name}(*args, &amp;block)
+      association(:#{name}).build(*args, &amp;block)
+    end
+
+    def create_#{name}(*args, &amp;block)
+      association(:#{name}).create(*args, &amp;block)
+    end
+
+    def create_#{name}!(*args, &amp;block)
+      association(:#{name}).create!(*args, &amp;block)
+    end
+  CODE
+end</code></pre></div> <div><br></div> <div><span style="background-color: rgb(255, 255, 255);"><br></span></div> <div>最后是BelongsTo（暂时未明add_counter_cache_methods 是干啥）</div> <div><br></div> <div class=ever-code><pre><code>def self.define_accessors(mixin, reflection)
+  super
+  add_counter_cache_methods mixin
+end</code></pre></div> <div><br></div> <div><br></div> <div>再回到Reflection.add_reflection，所做的就是给model的_reflections加入刚才生成的reflection</div> <div><br></div> <div class=ever-code><pre><code>def self.add_reflection(ar, name, reflection)
+  ar.clear_reflections_cache
+  ar._reflections = ar._reflections.merge(name.to_s =&gt; reflection)
+end</code></pre></div> <div><br></div> <div><br></div> <div>完整trace如下</div> <div><br></div> <div> <a href="/images/2d4f4d/145e7c.html" target=_blank><img src="/images/2d4f4d/75635f.png" alt="belongs_to.html"></a><br> </div></span> </div> </article> <script src="/javascripts/bundle-d6f5bf21.js"></script> </body> </html>
