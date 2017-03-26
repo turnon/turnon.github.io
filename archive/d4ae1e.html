@@ -1,0 +1,96 @@
+<!DOCTYPE html> <html> <head> <meta content="IE=edge" http-equiv=X-UA-Compatible> <meta charset=utf-8> <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name=viewport> <title>Zp Yuan kaminari浅析</title> <link href="/bundle-d18183fc.css" rel=stylesheet /> </head> <body> <nav> <ul> <li class="toc-button invisible"><a>目录</a></li> <li><a href="/index.html">笔记</a></li> <li><a href="http://whispering-fortress-75887.herokuapp.com/">统计</a></li> <li><a href="/about.html">关于</a></li> </ul> </nav> <aside> <div class=tags> <ul> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>45</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>13</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>10</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>8</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>6</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=underscore"> <span>underscore</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=java"> <span>java</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rubinius"> <span>rubinius</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> </ul> </div> </aside> <article> <h1 class=post-title>kaminari浅析</h1> <span class=post-date>2017-03-20</span> <a class=post-tag href="/index.html?tag=rails">rails</a> <a class=post-tag href="/index.html?tag=ruby">ruby</a> <div> <span><div>如无意外，kaminari就是monkey patch了actionview和activerecord</div> <div><br></div> <div class=ever-code><pre><code>require 'kaminari/core'
+require 'kaminari/actionview'
+require 'kaminari/activerecord'</code></pre></div> <div><br></div> <div><br></div> <div>对activerecord的patch基本上就是include Kaminari::ActiveRecordModelExtension</div> <div><br></div> <div class=ever-code><pre><code># frozen_string_literal: true
+require 'kaminari/activerecord/active_record_relation_methods'
+
+module Kaminari
+  module ActiveRecordModelExtension
+    extend ActiveSupport::Concern
+
+    included do
+      include Kaminari::ConfigurationMethods
+
+      # Fetch the values at the specified page number
+      #   Model.page(5)
+      eval &lt;&lt;-RUBY, nil, __FILE__, __LINE__ + 1
+        def self.#{Kaminari.config.page_method_name}(num = nil)
+          per_page = max_per_page &amp;&amp; (default_per_page &gt; max_per_page) ? max_per_page : default_per_page
+          limit(per_page).offset(per_page * ((num = num.to_i - 1) &lt; 0 ? 0 : num)).extending do
+            include Kaminari::ActiveRecordRelationMethods
+            include Kaminari::PageScopeMethods
+          end
+        end
+      RUBY
+    end
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>由此获得page方法，它所做的就是帮你做limit和offset，并extend一些方法</div> <div><br></div> <div><a href="/images/d4ae1e/50e19f.png" target=_blank><img src="/images/d4ae1e/50e19f.png" type="image/png" style="height: auto;"></a></div> <div><br></div> <div><br></div> <div>extending方法来源于ActiveRecord::QueryMethods，它会mixin到Relation中</div> <div><br></div> <div>它用途就是动态生生module然后extend当前Relation</div> <div><br></div> <div class=ever-code><pre><code>def extending(*modules, &amp;block)
+  if modules.any? || block
+    spawn.extending!(*modules, &amp;block)
+  else
+    self
+  end
+end
+
+def extending!(*modules, &amp;block) # :nodoc:
+  modules &lt;&lt; Module.new(&amp;block) if block
+  modules.flatten!
+
+  self.extending_values += modules
+  extend(*extending_values) if extending_values.any?
+
+  self
+end</code></pre></div> <div><br></div> <div><br></div> <div>extending与inlcudes、joins之类同属于MULTI_VALUE_METHODS（暂不明为何这样归类）</div> <div><br></div> <div class=ever-code><pre><code>module ActiveRecord
+  class Relation
+    MULTI_VALUE_METHODS  = [:includes, :eager_load, :preload, :select, :group,
+                            :order, :joins, :left_joins, :left_outer_joins, :references,
+                            :extending, :unscope]</code></pre></div> <div><br></div> <div><br></div> <div><span style="color: rgb(0, 0, 0); font-family: Tahoma; font-size: medium; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; orphans: auto; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); display: inline !important; float: none;">extending_values定义如下</span></div> <div><br></div> <div class=ever-code><pre><code>module ActiveRecord
+  module QueryMethods
+
+    # ...
+
+    FROZEN_EMPTY_ARRAY = [].freeze
+    Relation::MULTI_VALUE_METHODS.each do |name|
+      class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+        def #{name}_values
+          @values[:#{name}] || FROZEN_EMPTY_ARRAY
+        end
+
+        def #{name}_values=(values)
+          assert_mutability!
+          @values[:#{name}] = values
+        end
+      CODE
+    end</code></pre></div> <div><br></div> <div><br></div> <div>view中paginate的大概执行过程如下</div> <div><br></div> <div><a href="/images/d4ae1e/de83bd.png" target=_blank><img src="/images/d4ae1e/de83bd.png" type="image/png"></a></div> <div><br></div> <div>它使用total_count来计算页码</div> <div><br></div> <div class=ever-code><pre><code>module Kaminari
+  module Helpers
+    module HelperMethods
+
+      def paginate(scope, paginator_class: Kaminari::Helpers::Paginator, template: nil, **options)
+        options[:total_pages] ||= scope.total_pages
+        options.reverse_merge! current_page: scope.current_page, per_page: scope.limit_value, remote: false
+
+        paginator = paginator_class.new (template || self), options
+        paginator.to_s
+      end</code></pre></div> <div><br></div> <div><br></div> <div>total_count就是排除掉limit和offset后的Relation的count（如果已loaded且发现不足一页，则直接返回条数）</div> <div><br></div> <div class=ever-code><pre><code>def total_count(column_name = :all, _options = nil) #:nodoc:
+  return @total_count if defined?(@total_count) &amp;&amp; @total_count
+
+  # There are some cases that total count can be deduced from loaded records
+  if loaded?
+    # Total count has to be 0 if loaded records are 0
+    return @total_count = 0 if (current_page == 1) &amp;&amp; @records.empty?
+    # Total count is calculable at the last page
+    per_page = (defined?(@_per) &amp;&amp; @_per) || default_per_page
+    return @total_count = (current_page - 1) * per_page + @records.length if @records.any? &amp;&amp; (@records.length &lt; per_page)
+  end
+
+  # #count overrides the #select which could include generated columns referenced in #order, so skip #order here, where it's irrelevant to the result anyway
+  c = except(:offset, :limit, :order)
+  # Remove includes only if they are irrelevant
+  c = c.except(:includes) unless references_eager_loaded_tables?
+  # .group returns an OrderedHash that responds to #count
+  c = c.count(column_name)
+  @total_count = if c.is_a?(Hash) || c.is_a?(ActiveSupport::OrderedHash)
+    c.count
+  else
+    c.respond_to?(:count) ? c.count(column_name) : c
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>controller部分的完整trace如下</div> <div><br></div> <div>（view的跑太久了未跑完）</div> <div><br></div> <div> <a href="/images/d4ae1e/ea6616.html" target=_blank><img src="/images/d4ae1e/1e24fa.png" alt="kaminari_controller.html"></a><br> </div></span> </div> </article> <script src="/javascripts/bundle-d6f5bf21.js"></script> </body> </html>
