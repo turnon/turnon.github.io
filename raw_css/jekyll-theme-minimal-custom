@@ -1,0 +1,61 @@
+/* line 1, jekyll-theme-minimal-custom.scss */
+.hovertag {
+  background-color: #636363;
+  color: white; }
+
+/* line 6, jekyll-theme-minimal-custom.scss */
+.archive li {
+  list-style: none;
+  margin-bottom: 2rem;
+  display: none; }
+
+/* line 12, jekyll-theme-minimal-custom.scss */
+.archive li h1 a {
+  color: #00bcd4; }
+
+/* line 16, jekyll-theme-minimal-custom.scss */
+a.post-tag {
+  color: #a4a4a4; }
+
+/* line 20, jekyll-theme-minimal-custom.scss */
+section a.post-tag:before {
+  content: "/ "; }
+
+/* line 24, jekyll-theme-minimal-custom.scss */
+.archive ul {
+  padding: 0 0 0 0; }
+
+/* line 28, jekyll-theme-minimal-custom.scss */
+article h1 {
+  color: #00bcd4;
+  margin-bottom: 0; }
+
+/* line 33, jekyll-theme-minimal-custom.scss */
+article > div {
+  margin-top: 2rem; }
+
+/* line 37, jekyll-theme-minimal-custom.scss */
+.ever-code + div {
+  line-height: .1rem; }
+
+/* line 41, jekyll-theme-minimal-custom.scss */
+#about h1 {
+  color: #00bcd4; }
+
+/* line 45, jekyll-theme-minimal-custom.scss */
+#about ul {
+  padding-left: 1rem; }
+
+/* line 49, jekyll-theme-minimal-custom.scss */
+#about > ul > li > a {
+  font-size: 1.2rem; }
+
+/* line 53, jekyll-theme-minimal-custom.scss */
+#about li {
+  list-style: none; }
+
+/* line 57, jekyll-theme-minimal-custom.scss */
+iframe#st {
+  width: 100%;
+  border: none;
+  height: 5500px; }
