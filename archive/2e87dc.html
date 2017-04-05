@@ -1,0 +1,196 @@
+<!doctype html> <html> <head> <meta charset=utf-8> <meta http-equiv=X-UA-Compatible content="chrome=1"> <title>Zp Yuan migrate与rollback</title> <link href="/bundle-c1bc5672.css" rel=stylesheet /> <meta name=viewport content="width=device-width"> <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]--> </head> <body> <div class=wrapper> <header> <ul> <li><a href="/index.html"><strong>笔记</strong></a></li> <li><a href="/statistics.html"><strong>统计</strong></a></li> <li><a href="/about.html"><strong>关于</strong></a></li> </ul> <div class=tags> <ol> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>48</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>16</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>10</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>8</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>6</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=underscore"> <span>underscore</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=java"> <span>java</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rubinius"> <span>rubinius</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> <li></li> </ol> </div> </header> <section> <article> <h1 class=post-title>migrate与rollback</h1> <span class=post-date>2017-04-05</span> <a class=post-tag href="/index.html?tag=rails">rails</a> <a class=post-tag href="/index.html?tag=ruby">ruby</a> <div> <span><div>想了解下migration中change是如何判断和执行正向与反向的操作的，于是trace一下</div> <div><br></div> <div class=ever-code><pre><code>class CreateProducts &lt; ActiveRecord::Migration[5.0]
+  def change
+    binding.trace_tree(html: true, tmp: ['rails', 'migrate.html']) do
+      create_table :products do |t|
+        t.string :title
+        t.text :description
+        t.string :image_url
+        t.decimal :price
+
+        t.timestamps
+      end
+    end
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>因之前已跑过一次migrate，所以现在rollback</div> <div><br></div> <div class=ever-code><pre><code>bin/rails db:rollback</code></pre></div> <div><br></div> <div><br></div> <div>完整调用栈如下</div> <div><br></div> <div> <a href="/images/2e87dc/ff3a6f.html" target=_blank><img src="/images/2e87dc/6432ea.png" alt="rollback.html"></a><br> </div> <div><br></div> <div>查找create_table语句，发现它被传到say_with_time和benchmark之中</div> <div><br></div> <div><a href="/images/2e87dc/50e19f.png" target=_blank><img src="/images/2e87dc/50e19f.png" type="image/png" style="height: auto;"></a></div> <div><br></div> <div>这两个东西其实就是这么一回事，本来还以为是重定义了方法来拦截的</div> <div><br></div> <div class=ever-code><pre><code>def say_with_time(message)
+  say(message)
+  result = nil
+  time = Benchmark.measure { result = yield }
+  say "%.4fs" % time.real, :subitem
+  say("#{result} rows", :subitem) if result.is_a?(Integer)
+  result
+end</code></pre></div> <div><br></div> <div><br></div> <div>再回头看看rollback时create_table的走向，可见这时调的create_table来自CommandRecorder。byebug一下，发现它是一个connection的wrapper</div> <div><br></div> <div class=ever-code><pre><code>[840, 849] in /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb
+   840:               (method == :remove_foreign_key &amp;&amp; !arguments.second.is_a?(Hash))
+   841:               arguments[1] = proper_table_name(arguments.second, table_name_options)
+   842:             end
+   843:           end
+   844:         end
+=&gt; 845:         return super unless connection.respond_to?(method)
+   846:         connection.send(method, *arguments, &amp;block)
+   847:       end
+   848:     end
+   849:
+(byebug) connection
+#&lt;ActiveRecord::Migration::CommandRecorder:0x007f5743342230 @commands=[], @delegate=#&lt;ActiveRecord::ConnectionAdapters::SQLite3Adapter:0x007f5743281558......</code></pre></div> <div><br></div> <div><br></div> <div>根据其注释所说就是用于track执行过的migration（以便能在中途失败时（正向/反向）回滚，因为一般数据库是不支持多个schema的rollback的？）</div> <div><br></div> <div class=ever-code><pre><code># &lt;tt&gt;ActiveRecord::Migration::CommandRecorder&lt;/tt&gt; records commands done during
+# a migration and knows how to reverse those commands. The CommandRecorder
+# knows how to invert the following commands:</code></pre></div> <div><br></div> <div><br></div> <div>这样的话，把inverse_of、invert_create_table之类的东西也定义在这里也算很合理</div> <div><br></div> <div class=ever-code><pre><code>module ActiveRecord
+  class Migration
+    class CommandRecorder
+
+      def inverse_of(command, args, &amp;block)
+        method = :"invert_#{command}"
+        raise IrreversibleMigration, &lt;&lt;-MSG.strip_heredoc unless respond_to?(method, true)
+          This migration uses #{command}, which is not automatically reversible.
+          To make the migration reversible you can either:
+          1. Define #up and #down methods in place of the #change method.
+          2. Use the #reversible method to define reversible behavior.
+        MSG
+        send(method, args, &amp;block)
+      end
+
+      module StraightReversions
+        private
+        { transaction:       :transaction,
+          execute_block:     :execute_block,
+          create_table:      :drop_table,
+          create_join_table: :drop_join_table,
+          add_column:        :remove_column,
+          add_timestamps:    :remove_timestamps,
+          add_reference:     :remove_reference,
+          enable_extension:  :disable_extension
+        }.each do |cmd, inv|
+          [[inv, cmd], [cmd, inv]].uniq.each do |method, inverse|
+            class_eval &lt;&lt;-EOV, __FILE__, __LINE__ + 1
+              def invert_#{method}(args, &amp;block)    # def invert_create_table(args, &amp;block)
+                [:#{inverse}, args, block]          #   [:drop_table, args, block]
+              end                                   # end
+            EOV
+          end
+        end
+      end
+
+      include StraightReversions
+
+    end
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>是否调用inverse_of，由@reverting来控制</div> <div><br></div> <div class=ever-code><pre><code>class CommandRecorder
+
+  def initialize(delegate = nil)
+    @commands = []
+    @delegate = delegate
+    @reverting = false
+  end
+
+  def revert
+    @reverting = !@reverting
+    previous = @commands
+    @commands = []
+    yield
+  ensure
+    @commands = previous.concat(@commands.reverse)
+    @reverting = !@reverting
+  end
+
+  def record(*command, &amp;block)
+    if @reverting
+      @commands &lt;&lt; inverse_of(*command, &amp;block)
+    else
+      @commands &lt;&lt; (command &lt;&lt; block)
+    end
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>控制@reverting似乎只有revert方法（其实还有attr_accessor :reverting暴露了），但往后的调用栈中并没看到，于是查查往前的</div> <div><br></div> <div class=ever-code><pre><code>From: /home/z/test_rails/depot/db/migrate/20170405081554_create_products.rb @ line 5 CreateProducts#change:
+
+     2: def change
+     3:   binding.pry
+     4:   #binding.trace_tree(html: true, tmp: ['rails', 'migrate.html']) do
+ =&gt;  5:     create_table :products do |t|
+     6:       t.string :title
+     7:       t.text :description
+     8:       t.string :image_url
+     9:       t.decimal :price
+    10:
+    11:       t.timestamps
+    12:     end
+    13:   #end
+    14: end
+
+[1] pry(#&lt;CreateProducts&gt;)&gt; _bs_
+=&gt; [#&lt;Binding:70030881821840 CreateProducts#change /home/z/test_rails/depot/db/migrate/20170405081554_create_products.rb:3&gt;,
+ #&lt;Binding:70030887961480 CreateProducts#block in exec_migration /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:787&gt;,
+ #&lt;Binding:70030888016200 CreateProducts#block (2 levels) in revert /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:676&gt;,
+ #&lt;Binding:70030888073540 ActiveRecord::Migration::CommandRecorder#revert /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration/command_recorder.rb:59&gt;,
+ #&lt;Binding:70030881714980 CreateProducts#block in revert /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:676&gt;,
+ #&lt;Binding:70030888133260 CreateProducts#suppress_messages /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:823&gt;,
+ #&lt;Binding:70030888187940 CreateProducts#revert /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:675&gt;,
+ #&lt;Binding:70030888254640 CreateProducts#exec_migration /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:787&gt;,
+ #&lt;Binding:70030888295740 CreateProducts#block (2 levels) in migrate /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:773&gt;,
+ #&lt;Binding:70030888313360 Benchmark.measure /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:293&gt;,
+ #&lt;Binding:70030888377280 CreateProducts#block in migrate /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:772&gt;,
+ #&lt;Binding:70030881460780 ActiveRecord::ConnectionAdapters::ConnectionPool#with_connection /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/connection_pool.rb:398&gt;,
+ #&lt;Binding:70030888445260 CreateProducts#migrate /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:771&gt;,
+ #&lt;Binding:70030888487660 ActiveRecord::MigrationProxy#migrate /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:951&gt;,
+ #&lt;Binding:70030888539340 ActiveRecord::Migrator#block in execute_migration_in_transaction /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:1214&gt;,
+ #&lt;Binding:70030881312180 ActiveRecord::Migrator#block in ddl_transaction /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:1282&gt;,
+ #&lt;Binding:70030881291440 ActiveRecord::ConnectionAdapters::SQLite3Adapter#block in transaction /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232&gt;,
+ #&lt;Binding:70030888687820 ActiveRecord::ConnectionAdapters::TransactionManager#within_new_transaction /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/transaction.rb:189&gt;,
+ #&lt;Binding:70030881241360 ActiveRecord::ConnectionAdapters::SQLite3Adapter#transaction /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232&gt;,
+ #&lt;Binding:70030888759820 ActiveRecord::Base.transaction /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:211&gt;,
+ #&lt;Binding:70030888811440 ActiveRecord::Migrator#ddl_transaction /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:1282&gt;,
+ #&lt;Binding:70030881133600 ActiveRecord::Migrator#execute_migration_in_transaction /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:1213&gt;,
+ #&lt;Binding:70030888864360 ActiveRecord::Migrator#block in migrate_without_lock /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:1185&gt;,
+ #&lt;Binding:70030888924420 ActiveRecord::Migrator#migrate_without_lock /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:1184&gt;,
+ #&lt;Binding:70030881025020 ActiveRecord::Migrator#migrate /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:1134&gt;,
+ #&lt;Binding:70030888986260 ActiveRecord::Migrator.down /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:1013&gt;,
+ #&lt;Binding:70030889040040 ActiveRecord::Migrator.move /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:1094&gt;,
+ #&lt;Binding:70030880920880 ActiveRecord::Migrator.rollback /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:995&gt;,
+ #&lt;Binding:70030889111880 Object#block (2 levels) in &lt;top (required)&gt; /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/railties/databases.rake:144&gt;,
+ #&lt;Binding:70030880846180 Rake::Task#block in execute /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb:250&gt;,
+......</code></pre></div> <div><br></div> <div><br></div> <div>从rake到change的调用栈如上，不想细看的话，大致可总结为Rake::Task#block in execute，然后ActiveRecord::Migrator.rollback，直到CreateProducts#exec_migration，然后CreateProducts#revert</div> <div><br></div> <div>exec_migration如下，根据CLI的rake参数，direction就可确定了，于是，是revert还是直接不revert，也可确定了。</div> <div><br></div> <div>（根据源码来看，change优先于up和down）</div> <div><br></div> <div class=ever-code><pre><code>def exec_migration(conn, direction)
+  @connection = conn
+  if respond_to?(:change)
+    if direction == :down
+      revert { change }
+    else
+      change
+    end
+  else
+    send(direction)
+  end
+ensure
+  @connection = nil
+end</code></pre></div> <div><br></div> <div><br></div> <div>（注意这个revert是Migration的revert，不是CommandRecorder的revert，不过这是在下面trace正向的时候才发现的）</div> <div><br></div> <div>rollback分析暂告一段落。到这里，其实正向的migrate是没什么好看的，不过也顺便trace一下，调用栈如下</div> <div><br></div> <div> <a href="/images/2e87dc/ce5070.html" target=_blank><img src="/images/2e87dc/7bbf0d.png" alt="migrate.html"></a><br> </div> <div><br></div> <div><br></div> <div>与rollback不同的是，这次的connection并没有包裹在CommandRecorder中，为什么呢？</div> <div><br></div> <div><a href="/images/2e87dc/de83bd.png" target=_blank><img src="/images/2e87dc/de83bd.png" type="image/png" style="height: auto;"></a></div> <div><br></div> <div><br></div> <div>因为@connection是在exec_migration传入的，所以检查下exec_migration之上有些什么操作</div> <div><br></div> <div class=ever-code><pre><code>From: /home/z/test_rails/depot/db/migrate/20170405081554_create_products.rb @ line 5 CreateProducts#change:
+
+     2: def change
+     3:   binding.pry
+     4:   #binding.trace_tree(html: true, tmp: ['rails', 'migrate.html']) do
+ =&gt;  5:     create_table :products do |t|
+     6:       t.string :title
+     7:       t.text :description
+     8:       t.string :image_url
+     9:       t.decimal :price
+    10:
+    11:       t.timestamps
+    12:     end
+    13:   #end
+    14: end
+
+[1] pry(#&lt;CreateProducts&gt;)&gt; _bs_
+=&gt; [#&lt;Binding:70054489213400 CreateProducts#change /home/z/test_rails/depot/db/migrate/20170405081554_create_products.rb:3&gt;,
+ #&lt;Binding:70054495916120 CreateProducts#exec_migration /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/migration.rb:789&gt;,
+......</code></pre></div> <div><br></div> <div><br></div> <div>不过，这下就发现了正向比反向短很多，exec_migration之后，马上就到了change，这才发现反向时exec_migration所调的revert是定义在Migration中的，而且也只有在这里，才会生成CommandRecorder</div> <div><br></div> <div class=ever-code><pre><code>def revert(*migration_classes)
+  run(*migration_classes.reverse, revert: true) unless migration_classes.empty?
+  if block_given?
+    if connection.respond_to? :revert
+      connection.revert { yield }
+    else
+      recorder = CommandRecorder.new(connection)
+      @connection = recorder
+      suppress_messages do
+        connection.revert { yield }
+      end
+      @connection = recorder.delegate
+      recorder.commands.each do |cmd, args, block|
+        send(cmd, *args, &amp;block)
+      end
+    end
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>而根据rails guide介绍，不支持整批回滚的数据库，在migrate中断时，需要自己手动整好：</div> <div><br></div> <div>On databases that support transactions with statements that change the schema, migrations are wrapped in a transaction. If the database does not support this then when a migration fails the parts of it that succeeded will not be rolled back. You will have to rollback the changes that were made by hand</div></span> </div> </article> </section> <footer> </footer> </div> <script src="/javascripts/bundle-dad8ae3e.js"></script> </body> </html>
