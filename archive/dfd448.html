@@ -47,4 +47,4 @@ require_all 'jekyll/commands'</code></pre></div> <div><br></div> <div><br></div>
           end
         end</code></pre></div> <div><br></div> <div><br></div> <div>最后，回到bin/jekyll，为@subclass中每个命令子类定义选项，实质上选项的具体已在init_with_program中写好</div> <div><br></div> <div><br></div> <div class=ever-code><pre><code>Mercenary.program(:jekyll) do |p|
   #...
-  Jekyll::Command.subclasses.each { |c| c.init_with_program(p) }</code></pre></div> <div><br></div> <div><br></div> <div>这个框架使得想扩展命令时，只需扩展commands中的内容即可</div></span> </div> </article> </section> <footer> </footer> </div> <script src="/javascripts/bundle-be29678e.js"></script> </body> </html>
+  Jekyll::Command.subclasses.each { |c| c.init_with_program(p) }</code></pre></div> <div><br></div> <div><br></div> <div>这个框架使得想扩展命令时，只需扩展commands中的内容即可</div></span> </div> </article> </section> <footer> </footer> </div> <script src="/javascripts/bundle-853f63ec.js"></script> </body> </html>

@@ -129,4 +129,4 @@ irb(main):024:0&gt; Article.transaction{ar4.save!; ar6.save!}
 ActiveRecord::RecordInvalid: Validation failed: Title is too short (minimum is 5 characters)
 #...
 irb(main):025:0&gt; ar6
-=&gt; #&lt;Article id: nil, title: "fffff", text: "f", created_at: nil, updated_at: nil&gt;</code></pre></div> <div><br></div> <div><br></div> <div>现实中，如果两个对象是很相关的，则通常会有association，这样validate会自动中止association的save</div></span> </div> </article> </section> <footer> </footer> </div> <script src="/javascripts/bundle-be29678e.js"></script> </body> </html>
+=&gt; #&lt;Article id: nil, title: "fffff", text: "f", created_at: nil, updated_at: nil&gt;</code></pre></div> <div><br></div> <div><br></div> <div>现实中，如果两个对象是很相关的，则通常会有association，这样validate会自动中止association的save</div></span> </div> </article> </section> <footer> </footer> </div> <script src="/javascripts/bundle-853f63ec.js"></script> </body> </html>

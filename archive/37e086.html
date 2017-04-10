@@ -81,4 +81,4 @@ end</code></pre></div> <div><br></div> <div><br></div> <div>而Cookie是完整�
   else
     session_data
   end
-end</code></pre></div> <div><br></div> <div><br></div> <div>之后没啥问题的话，就是set_cookie了，实际调用的是Utils.set_cookie_header来修改headers</div> <div><br></div> <div class=ever-code><pre><code>Utils.set_cookie_header!(headers, @key, cookie)</code></pre></div> <div><br></div> <div><br></div> <div>最后，call/context/commit_session返回[status, headers, body]</div></span> </div> </article> </section> <footer> </footer> </div> <script src="/javascripts/bundle-be29678e.js"></script> </body> </html>
+end</code></pre></div> <div><br></div> <div><br></div> <div>之后没啥问题的话，就是set_cookie了，实际调用的是Utils.set_cookie_header来修改headers</div> <div><br></div> <div class=ever-code><pre><code>Utils.set_cookie_header!(headers, @key, cookie)</code></pre></div> <div><br></div> <div><br></div> <div>最后，call/context/commit_session返回[status, headers, body]</div></span> </div> </article> </section> <footer> </footer> </div> <script src="/javascripts/bundle-853f63ec.js"></script> </body> </html>

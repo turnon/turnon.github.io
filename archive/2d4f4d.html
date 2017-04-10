@@ -128,4 +128,4 @@ end</code></pre></div> <div><br></div> <div><span style="background-color: rgb(2
 end</code></pre></div> <div><br></div> <div><br></div> <div>再回到Reflection.add_reflection，所做的就是给model的_reflections加入刚才生成的reflection</div> <div><br></div> <div class=ever-code><pre><code>def self.add_reflection(ar, name, reflection)
   ar.clear_reflections_cache
   ar._reflections = ar._reflections.merge(name.to_s =&gt; reflection)
-end</code></pre></div> <div><br></div> <div><br></div> <div>完整trace如下</div> <div><br></div> <div> <a href="/images/2d4f4d/145e7c.html" target=_blank><img src="/images/2d4f4d/75635f.png" alt="belongs_to.html"></a><br> </div></span> </div> </article> </section> <footer> </footer> </div> <script src="/javascripts/bundle-be29678e.js"></script> </body> </html>
+end</code></pre></div> <div><br></div> <div><br></div> <div>完整trace如下</div> <div><br></div> <div> <a href="/images/2d4f4d/145e7c.html" target=_blank><img src="/images/2d4f4d/75635f.png" alt="belongs_to.html"></a><br> </div></span> </div> </article> </section> <footer> </footer> </div> <script src="/javascripts/bundle-853f63ec.js"></script> </body> </html>

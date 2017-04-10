@@ -179,4 +179,4 @@ ensure
   @params = original if original
 end</code></pre></div> <div><br></div> <div><br></div> <div>如果match，则运行刚才调用process_route 时所带的block，内含route_eval。因之前已将响应方法包装成{ |a,p| unbound_method.bind(a).call }，所以yield(self, values)使响应方法能以params访问到dup出来的Base的@params</div> <div><br></div> <div>而route_eval是执行响应方法块并以throw :halt来返回响应方法块的返回值的</div> <div><br></div> <div class=ever-code><pre><code>def route_eval
   throw :halt, yield
-end</code></pre></div> <div><br></div> <div><br></div> <div>于是，便跳出route!，让dipatch!的invoke能拦截:halt返回值并设置response</div> <div><br></div> <div>再回到call!，最终，@response.finish，以符合rack规范的方式返回[status, header, body]，完成响应。</div></span> </div> </article> </section> <footer> </footer> </div> <script src="/javascripts/bundle-be29678e.js"></script> </body> </html>
+end</code></pre></div> <div><br></div> <div><br></div> <div>于是，便跳出route!，让dipatch!的invoke能拦截:halt返回值并设置response</div> <div><br></div> <div>再回到call!，最终，@response.finish，以符合rack规范的方式返回[status, header, body]，完成响应。</div></span> </div> </article> </section> <footer> </footer> </div> <script src="/javascripts/bundle-853f63ec.js"></script> </body> </html>
