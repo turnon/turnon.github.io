@@ -1,0 +1,129 @@
+<!doctype html> <html> <head> <meta charset=utf-8> <meta http-equiv=X-UA-Compatible content="chrome=1"> <title>Zp Yuan ActiveSupport::Rescuable</title> <link href="/bundle-1857e13f.css" rel=stylesheet /> <meta name=viewport content="width=device-width"> <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]--> </head> <body> <div class=wrapper> <header> <ul> <li class=current><a href="/index.html"><strong>笔记</strong></a></li> <li><a href="/statistics.html"><strong>统计</strong></a></li> <li><a href="/about.html"><strong>关于</strong></a></li> </ul> <div class=tags> <ol> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>51</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>21</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>9</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>5</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=underscore"> <span>underscore</span> <span>1</span> </a> </li> </ol> </div> </header> <section> <article> <h1 class=post-title>ActiveSupport::Rescuable</h1> <span class=post-date>2017-04-11</span> <a class=post-tag href="/index.html?tag=rails">rails</a> <a class=post-tag href="/index.html?tag=ruby">ruby</a> <div> <span><div>以下例子摘自Agile Web Development with Rails 5的Iteration E2</div> <div><br></div> <div class=ever-code><pre><code>class CartsController &lt; ApplicationController
+
+  binding.trace_tree(html: true, tmp: ['rails', 'rescue_from.html']) do
+    rescue_from ActiveRecord::RecordNotFound, with: :invalid_cart
+  end
+  #...
+end</code></pre></div> <div><br></div> <div><br></div> <div>完整调用栈如下</div> <div><br></div> <div><a href="/images/dee565/4ae0c0.html" target=_blank><img src="/images/dee565/9e49e2.png" alt="rescue_from.html"></a></div> <div><br></div> <div>可见rescue_from是来自activesupport-5.0.2/lib/active_support/rescuable.rb</div> <div><br></div> <div>此方法极其简单，就是将Error类型作为key，with作为value，暂存到rescue_handlers，以备匹配Error然后调用，其中with可以是方法名或block</div> <div><br></div> <div class=ever-code><pre><code>module ActiveSupport
+  # Rescuable module adds support for easier exception handling.
+  module Rescuable
+    extend Concern
+
+    included do
+      class_attribute :rescue_handlers
+      self.rescue_handlers = []
+    end
+
+    module ClassMethods
+      def rescue_from(*klasses, with: nil, &amp;block)
+        unless with
+          if block_given?
+            with = block
+          else
+            raise ArgumentError, 'Need a handler. Pass the with: keyword argument or provide a block.'
+          end
+        end
+
+        klasses.each do |klass|
+          key = if klass.is_a?(Module) &amp;&amp; klass.respond_to?(:===)
+            klass.name
+          elsif klass.is_a?(String)
+            klass
+          else
+            raise ArgumentError, "#{klass.inspect} must be an Exception class or a String referencing an Exception class"
+          end
+
+          # Put the new handler at the end because the list is read in reverse.
+          self.rescue_handlers += [[key, with]]
+        end
+      end
+    end
+
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>不过，这里并不会重定义方法以作拦截。rescue_handlers的使用是由其他地方发起的</div> <div><br></div> <div>于是，检查下invalid_cart的caller</div> <div><br></div> <div class=ever-code><pre><code>From: /home/z/test_rails/depot/app/controllers/carts_controller.rb @ line 81 CartsController#invalid_cart:
+
+    79:     def invalid_cart
+    80: binding.pry
+ =&gt; 81:       logger.error "Attempt to access invalid cart #{params[:id]}"
+    82:       redirect_to store_index_url, notice: 'Invalid cart'
+    83:     end
+
+[1] pry(#&lt;CartsController&gt;)&gt; _bs_
+=&gt; [#&lt;Binding:70245290801400 CartsController#invalid_cart /home/z/test_rails/depot/app/controllers/carts_controller.rb:80&gt;,
+ #&lt;Binding:70245290186860 CartsController.block in handler_for_rescue /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/rescuable.rb:101&gt;,
+ #&lt;Binding:70245289547340 CartsController.rescue_with_handler /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/rescuable.rb:89&gt;,
+ #&lt;Binding:70245289177500 CartsController#rescue_with_handler /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/rescuable.rb:158&gt;,
+ #&lt;Binding:70245286947220 CartsController#rescue in process_action /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.0.2/lib/action_controller/metal/rescue.rb:23&gt;,
+ #&lt;Binding:70245286435320 CartsController#process_action /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.0.2/lib/action_controller/metal/rescue.rb:20&gt;,
+ #&lt;Binding:70244861574420 CartsController#block in process_action /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.0.2/lib/action_controller/metal/instrumentation.rb:32&gt;,
+ #&lt;Binding:70244861528940 ActiveSupport::Notifications.block in instrument /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/notifications.rb:164&gt;,
+ #&lt;Binding:70244947270040 ActiveSupport::Notifications::Instrumenter#instrument /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/notifications/instrumenter.rb:21&gt;,
+ #&lt;Binding:70244947247960 ActiveSupport::Notifications.instrument /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/notifications.rb:164&gt;,
+ #&lt;Binding:70244947227060 CartsController#process_action /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.0.2/lib/action_controller/metal/instrumentation.rb:30&gt;,
+ #&lt;Binding:70244947205700 CartsController#process_action /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.0.2/lib/action_controller/metal/params_wrapper.rb:248&gt;,
+ #&lt;Binding:70244947184720 CartsController#process_action /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/railties/controller_runtime.rb:18&gt;,
+ #&lt;Binding:70244947161340 CartsController#process /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.0.2/lib/abstract_controller/base.rb:126&gt;,
+ #&lt;Binding:70244861475780 CartsController#process /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionview-5.0.2/lib/action_view/rendering.rb:30&gt;,
+ #&lt;Binding:70244861446440 CartsController#dispatch /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.0.2/lib/action_controller/metal.rb:190&gt;,
+ #&lt;Binding:70244861408100 CartsController.dispatch /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.0.2/lib/action_controller/metal.rb:262&gt;,
+ #...</code></pre></div> <div><br></div> <div><br></div> <div>首先，rescue_with_handler是include Rescuable而得的，没什么好看，但值得注意的是，Rescuable中handler的查找是reverse_each，即是后定义的优先</div> <div><br></div> <div class=ever-code><pre><code>def find_rescue_handler(exception)
+  if exception
+    # Handlers are in order of declaration but the most recently declared
+    # is the highest priority match, so we search for matching handlers
+    # in reverse.
+    _, handler = rescue_handlers.reverse_each.detect do |class_or_name, _|
+      if klass = constantize_rescue_handler_class(class_or_name)
+        klass === exception
+      end
+    end
+
+    handler
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>再往上看，rescue关键字出现在ActionController::Rescue</div> <div><br></div> <div class=ever-code><pre><code>module ActionController #:nodoc:
+  # This module is responsible for providing `rescue_from` helpers
+  # to controllers and configuring when detailed exceptions must be
+  # shown.
+  module Rescue
+    extend ActiveSupport::Concern
+    include ActiveSupport::Rescuable
+
+    private
+      def process_action(*args)
+        super
+      rescue Exception =&gt; exception
+        request.env['action_dispatch.show_detailed_exceptions'] ||= show_detailed_exceptions?
+        rescue_with_handler(exception) || raise
+      end
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>猜想是ApplicationController会include各种各样的module，然后层层super，以达到一种数据流的效果</div> <div><br></div> <div>检查controller的继承链，会发现就是这样</div> <div><br></div> <div class=ever-code><pre><code>[7] pry(#&lt;CartsController&gt;)&gt; puts self.class.ancestors
+CartsController
+#&lt;Module:0x007fc684b13990&gt;
+ApplicationController
+#&lt;Module:0x007fc684b3a2c0&gt;
+#&lt;Module:0x007fc683d73d58&gt;
+#&lt;Module:0x007fc683d73d80&gt;
+ActionController::Base
+#...
+ActionController::Rescue
+#...
+ActiveSupport::Rescuable
+#...
+AbstractController::Base
+#...
+Kernel
+BasicObject
+=&gt; nil</code></pre></div> <div><br></div> <div><br></div> <div>在actionpack-5.0.2/lib/action_controller/base.rb中：</div> <div><br></div> <div class=ever-code><pre><code>MODULES = [
+  #...
+
+  Cookies,
+  Flash,
+  #...
+
+  # Append rescue at the bottom to wrap as much as possible.
+  Rescue,
+
+]
+
+MODULES.each do |mod|
+  include mod
+end</code></pre></div> <div><br></div> <div><br></div> <div>总结起来，rescue_from这种做法的目的是，使编写controller时无需为每个action重复rescue，因为action是用process_action来动态调用各种action的，这样就可以统一地rescue</div></span> </div> </article> </section> <footer> </footer> </div> <script src="/javascripts/bundle-853f63ec.js"></script> </body> </html>
