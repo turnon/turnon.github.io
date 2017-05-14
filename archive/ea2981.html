@@ -1,0 +1,61 @@
+<!doctype html> <html> <head> <meta charset=utf-8> <meta http-equiv=X-UA-Compatible content="chrome=1"> <title>Zp Yuan attr_internal是什么</title> <link href="/bundle-1857e13f.css" rel=stylesheet /> <meta name=viewport content="width=device-width"> <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]--> </head> <body> <div class=wrapper> <header> <ul> <li class=current><a href="/index.html"><strong>笔记</strong></a></li> <li><a href="/statistics.html"><strong>统计</strong></a></li> <li><a href="/about.html"><strong>关于</strong></a></li> </ul> <div class=tags> <ol> <li> <a class=post-tag href="/index.html?tag=ruby"> <span>ruby</span> <span>61</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rails"> <span>rails</span> <span>31</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=metaprogramming"> <span>metaprogramming</span> <span>12</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=versus"> <span>versus</span> <span>11</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=sinatra"> <span>sinatra</span> <span>7</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=test"> <span>test</span> <span>5</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=rack"> <span>rack</span> <span>4</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=minitest"> <span>minitest</span> <span>3</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=debug"> <span>debug</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=concurrency"> <span>concurrency</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=pattern"> <span>pattern</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=javascript"> <span>javascript</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jekyll"> <span>jekyll</span> <span>2</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=middleman"> <span>middleman</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=functional"> <span>functional</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=tilt"> <span>tilt</span> <span>1</span> </a> </li> <li> <a class=post-tag href="/index.html?tag=jquery"> <span>jquery</span> <span>1</span> </a> </li> </ol> </div> </header> <section> <article> <h1 class=post-title>attr_internal是什么</h1> <span class=post-date>2017-05-02</span> <a class=post-tag href="/index.html?tag=metaprogramming">metaprogramming</a> <a class=post-tag href="/index.html?tag=rails">rails</a> <a class=post-tag href="/index.html?tag=ruby">ruby</a> <div> <span><div>检查view中flash、session来自何处时</div> <div><br></div> <div class=ever-code><pre><code>[2] pry(#&lt;#&lt;Class:0x007feb62d4aa30&gt;&gt;)&gt; method(:flash).source_location
+=&gt; ["/home/z/.rbenv/versions/2.3.3/lib/ruby/gems/2.3.0/gems/actionview-5.0.2/lib/action_view/helpers/controller_helper.rb", 10]</code></pre></div> <div><br></div> <div><br></div> <div>可得知这些方法都被委托到:controller上，而:controller是一种叫attr_internal的东西</div> <div><br></div> <div class=ever-code><pre><code>module ActionView
+  module Helpers
+    # This module keeps all methods and behavior in ActionView
+    # that simply delegates to the controller.
+    module ControllerHelper #:nodoc:
+      attr_internal :controller, :request
+
+      delegate :request_forgery_protection_token, :params, :session, :cookies, :response, :headers,
+               :flash, :action_name, :controller_name, :controller_path, :to =&gt; :controller
+
+      def assign_controller(controller)
+        if @_controller = controller
+          @_request = controller.request if controller.respond_to?(:request)
+          @_config  = controller.config.inheritable_copy if controller.respond_to?(:config)
+          @_default_form_builder = controller.default_form_builder if controller.respond_to?(:default_form_builder)
+        end
+      end
+
+      def logger
+        controller.logger if controller.respond_to?(:logger)
+      end
+    end
+  end
+end</code></pre></div> <div><br></div> <div><br></div> <div>去看看attr_internal是什么</div> <div><br></div> <div class=ever-code><pre><code>[9] pry(#&lt;#&lt;Class:0x007feb62d4aa30&gt;&gt;)&gt; self.class.method(:attr_internal).source_location
+=&gt; ["/home/z/.rbenv/versions/2.3.3/lib/ruby/gems/2.3.0/gems/activesupport-5.0.2/lib/active_support/core_ext/module/attr_internal.rb", 14]</code></pre></div> <div><br></div> <div><br></div> <div>源码如下</div> <div><br></div> <div class=ever-code><pre><code>class Module
+  # Declares an attribute reader backed by an internally-named instance variable.
+  def attr_internal_reader(*attrs)
+    attrs.each {|attr_name| attr_internal_define(attr_name, :reader)}
+  end
+
+  # Declares an attribute writer backed by an internally-named instance variable.
+  def attr_internal_writer(*attrs)
+    attrs.each {|attr_name| attr_internal_define(attr_name, :writer)}
+  end
+
+  # Declares an attribute reader and writer backed by an internally-named instance
+  # variable.
+  def attr_internal_accessor(*attrs)
+    attr_internal_reader(*attrs)
+    attr_internal_writer(*attrs)
+  end
+  alias_method :attr_internal, :attr_internal_accessor
+
+  class &lt;&lt; self; attr_accessor :attr_internal_naming_format end
+  self.attr_internal_naming_format = '@_%s'
+
+  private
+    def attr_internal_ivar_name(attr)
+      Module.attr_internal_naming_format % attr
+    end
+
+    def attr_internal_define(attr_name, type)
+      internal_name = attr_internal_ivar_name(attr_name).sub(/\A@/, '')
+      # use native attr_* methods as they are faster on some Ruby implementations
+      send("attr_#{type}", internal_name)
+      attr_name, internal_name = "#{attr_name}=", "#{internal_name}=" if type == :writer
+      alias_method attr_name, internal_name
+      remove_method internal_name
+    end
+end</code></pre></div> <div><br></div> <div><br></div> <div>简单来说，它跟attr_accessor类似，但它会令xxx访问的@_xxx实例变量，而非@xxx</div> <div><br></div> <div>此外，它也可只定义reader或writer</div></span> </div> </article> </section> <footer> </footer> </div> <script src="/javascripts/bundle-853f63ec.js"></script> </body> </html>
