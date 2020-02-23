@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>initializers中的Rails.application.config.filter_parameters</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="initializers中的Rails.application.config.filter_parameters" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="filter_parameters的作用是（摘自rails 4 way）：…" />
+<meta property="og:description" content="filter_parameters的作用是（摘自rails 4 way）：…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-06-03T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"filter_parameters的作用是（摘自rails 4 way）：…","@type":"BlogPosting","headline":"initializers中的Rails.application.config.filter_parameters","dateModified":"2017-06-03T00:00:00+00:00","url":"/2017/06/03/f92e2628b0b275b192fc3f5bcbcd71b5.html","datePublished":"2017-06-03T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/06/03/f92e2628b0b275b192fc3f5bcbcd71b5.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">initializers中的Rails.application.config.filter_parameters</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-06-03T00:00:00+00:00" itemprop="datePublished">Jun 3, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>filter_parameters的作用是（摘自rails 4 way）：</div>
+<div><br /></div>
+<div>When a request is made to your application, by default Rails logs details such as the request path, HTTP  method, IP Address, and parameters. If an attacker somehow gained access to your logs, they may be able to  view sensitive information, like passwords and credit card numbers</div>
+<div><br /></div>
+<div>The filter_parameter_logging.rb initializer let’s you specify what request parameters should be filtered  from your log files. If Rails receives a request parameter included in the filter_parameters collection, it will  mark it as [FILTERED] in your logs</div>
+<div><br /></div>
+<div>一般在自动生成的rails项目中的，config/initializers/filter_parameter_logging.rb中，都会预先提供这一行</div>
+<div><br /></div>
+<pre><code>Rails.application.config.filter_parameters += [:password]</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>看看filter_parameters定义在哪里</div>
+<div><br /></div>
+<pre><code>$ depot git:(master) rails c
+irb(main):002:0&gt; Rails.application.config.method(:filter_parameters).source_location
+=&gt; [&#34;/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.0.2/lib/rails/application/configuration.rb&#34;, 12]</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>到源码里看，可发现filter_parameters是attr_accessor，于是对@filter_parameters进行跟踪</div>
+<div><br /></div>
+<pre><code>module Rails
+  class Application
+    class Configuration &lt; ::Rails::Engine::Configuration
+      attr_accessor :allow_concurrency, :asset_host, :autoflush_log,
+                    :cache_classes, :cache_store, :consider_all_requests_local, :console,
+                    :eager_load, :exceptions_app, :file_watcher, :filter_parameters,
+                    :force_ssl, :helpers_paths, :logger, :log_formatter, :log_tags,
+                    :railties_order, :relative_url_root, :secret_key_base, :secret_token,
+                    :ssl_options, :public_file_server,
+                    :session_options, :time_zone, :reload_classes_only_on_change,
+                    :beginning_of_week, :filter_redirect, :x, :enable_dependency_loading
+
+      attr_writer :log_level
+      attr_reader :encoding, :api_only, :static_cache_control
+
+      def initialize(*)
+        super
+        self.encoding = &#34;utf-8&#34;
+        @allow_concurrency               = nil
+        @consider_all_requests_local     = false
+        #@filter_parameters               = []
+        @filter_parameters               = Called.on [], log: &#39;/tmp/filter_parameters.html&#39;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>但唯一一处会调用它的，就是config/initializers/filter_parameter_logging.rb</div>
+<div><br /></div>
+<div><img src="/assets/files/f92e2628b0b275b192fc3f5bcbcd71b5/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div>于是直接搜索所有源码</div>
+<div><br /></div>
+<pre><code>$ gems git:(master) grep filter_parameters -rn *
+actionpack-5.0.2/CHANGELOG.md:662:        config.filter_parameters += [ &#34;credit_card.code&#34; ]
+actionpack-5.0.2/lib/action_dispatch/http/request.rb:10:require &#39;action_dispatch/http/filter_parameters&#39;
+railties-5.0.2/lib/rails/application.rb:22:  # &#34;cache_classes&#34;, &#34;consider_all_requests_local&#34;, &#34;filter_parameters&#34;,
+railties-5.0.2/lib/rails/application.rb:249:          &#34;action_dispatch.parameter_filter&#34; =&gt; config.filter_parameters,
+railties-5.0.2/lib/rails/application/configuration.rb:14:                    :eager_load, :exceptions_app, :file_watcher, :filter_parameters,
+railties-5.0.2/lib/rails/application/configuration.rb:29:        @filter_parameters               = Called.on [], log: &#39;/tmp/filter_parameters.html&#39;
+railties-5.0.2/lib/rails/generators/rails/app/templates/config/initializers/filter_parameter_logging.rb:4:Rails.application.config.filter_parameters += [:password]</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>发现railties-5.0.2/lib/rails/application.rb有将它复制到hash中，源码如下，看上去像是一些全局环境设定什么的</div>
+<div><br /></div>
+<pre><code>def env_config
+  @app_env_config ||= begin
+    validate_secret_key_config!
+
+    super.merge(
+      &#34;action_dispatch.parameter_filter&#34; =&gt; config.filter_parameters,
+      &#34;action_dispatch.redirect_filter&#34; =&gt; config.filter_redirect,
+      &#34;action_dispatch.secret_token&#34; =&gt; secrets.secret_token,
+      &#34;action_dispatch.secret_key_base&#34; =&gt; secrets.secret_key_base,
+      &#34;action_dispatch.show_exceptions&#34; =&gt; config.action_dispatch.show_exceptions,
+      &#34;action_dispatch.show_detailed_exceptions&#34; =&gt; config.consider_all_requests_local,
+      &#34;action_dispatch.logger&#34; =&gt; Rails.logger,
+      &#34;action_dispatch.backtrace_cleaner&#34; =&gt; Rails.backtrace_cleaner,
+      &#34;action_dispatch.key_generator&#34; =&gt; key_generator,
+      &#34;action_dispatch.http_auth_salt&#34; =&gt; config.action_dispatch.http_auth_salt,
+      &#34;action_dispatch.signed_cookie_salt&#34; =&gt; config.action_dispatch.signed_cookie_salt,
+      &#34;action_dispatch.encrypted_cookie_salt&#34; =&gt; config.action_dispatch.encrypted_cookie_salt,
+      &#34;action_dispatch.encrypted_signed_cookie_salt&#34; =&gt; config.action_dispatch.encrypted_signed_cookie_salt,
+      &#34;action_dispatch.cookies_serializer&#34; =&gt; config.action_dispatch.cookies_serializer,
+      &#34;action_dispatch.cookies_digest&#34; =&gt; config.action_dispatch.cookies_digest
+    )
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>哪里会用到action_dispatch.parameter_filter 这个条目呢？搜索parameter_filter，得</div>
+<div><br /></div>
+<pre><code>$ gems git:(master) grep parameter_filter -rn *
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:1:require &#39;action_dispatch/http/parameter_filter&#39;
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:13:    #   env[&#34;action_dispatch.parameter_filter&#34;] = [:password]
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:16:    #   env[&#34;action_dispatch.parameter_filter&#34;] = [:foo, &#34;bar&#34;]
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:19:    #   env[&#34;action_dispatch.parameter_filter&#34;] = [ &#34;credit_card.code&#34; ]
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:23:    #   env[&#34;action_dispatch.parameter_filter&#34;] = -&gt; (k, v) do
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:41:        @filtered_parameters ||= parameter_filter.filter(parameters)
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:56:      def parameter_filter
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:57:        parameter_filter_for fetch_header(&#34;action_dispatch.parameter_filter&#34;) {
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:63:        user_key = fetch_header(&#34;action_dispatch.parameter_filter&#34;) {
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:66:        parameter_filter_for(Array(user_key) + ENV_MATCH)
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:69:      def parameter_filter_for(filters)
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:77:          parameter_filter.filter([[$1, $2]]).first.join(&#34;=&#34;)
+railties-5.0.2/lib/rails/application.rb:249:          &#34;action_dispatch.parameter_filter&#34; =&gt; config.filter_parameters,</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>发现是ActionDispatch。actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb源码如下，似乎是用config所设定的action_dispatch.parameter_filter的那些key，来new一个ParameterFilter，然后用这个ParameterFilter来过滤请求参数</div>
+<div><br /></div>
+<pre><code>module ActionDispatch
+  module Http
+    # Allows you to specify sensitive parameters which will be replaced from
+    # the request log by looking in the query string of the request and all
+    # sub-hashes of the params hash to filter. Filtering only certain sub-keys
+    # from a hash is possible by using the dot notation: &#39;credit_card.number&#39;.
+    # If a block is given, each key and value of the params hash and all
+    # sub-hashes is passed to it, the value or key can be replaced using
+    # String#replace or similar method.
+    #
+    #   env[&#34;action_dispatch.parameter_filter&#34;] = [:password]
+    #   =&gt; replaces the value to all keys matching /password/i with &#34;[FILTERED]&#34;
+    #
+    #   env[&#34;action_dispatch.parameter_filter&#34;] = [:foo, &#34;bar&#34;]
+    #   =&gt; replaces the value to all keys matching /foo|bar/i with &#34;[FILTERED]&#34;
+    #
+    #   env[&#34;action_dispatch.parameter_filter&#34;] = [ &#34;credit_card.code&#34; ]
+    #   =&gt; replaces { credit_card: {code: &#34;xxxx&#34;} } with &#34;[FILTERED]&#34;, does not
+    #   change { file: { code: &#34;xxxx&#34;} }
+    #
+    #   env[&#34;action_dispatch.parameter_filter&#34;] = -&gt; (k, v) do
+    #     v.reverse! if k =~ /secret/i
+    #   end
+    #   =&gt; reverses the value to all keys matching /secret/i
+    module FilterParameters
+      ENV_MATCH = [/RAW_POST_DATA/, &#34;rack.request.form_vars&#34;] # :nodoc:
+      NULL_PARAM_FILTER = ParameterFilter.new # :nodoc:
+      NULL_ENV_FILTER   = ParameterFilter.new ENV_MATCH # :nodoc:
+
+      def initialize
+        super
+        @filtered_parameters = nil
+        @filtered_env        = nil
+        @filtered_path       = nil
+      end
+
+      # Returns a hash of parameters with all sensitive data replaced.
+      def filtered_parameters
+        @filtered_parameters ||= parameter_filter.filter(parameters)
+      end
+
+      # Returns a hash of request.env with all sensitive data replaced.
+      def filtered_env
+        @filtered_env ||= env_filter.filter(@env)
+      end
+
+    protected
+
+      def parameter_filter
+        parameter_filter_for fetch_header(&#34;action_dispatch.parameter_filter&#34;) {
+          return NULL_PARAM_FILTER
+        }
+      end
+
+      def parameter_filter_for(filters)
+        ParameterFilter.new(filters)
+      end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>那么filtered_parameters会被哪里调用呢？搜索得</div>
+<div><br /></div>
+<pre><code>$ gems git:(master) grep filtered_parameters -rn *
+actionpack-5.0.2/lib/action_controller/metal/instrumentation.rb:21:        :params     =&gt; request.filtered_parameters,
+actionpack-5.0.2/lib/action_controller/metal/params_wrapper.rb:239:        wrapped_filtered_hash = _wrap_parameters request.filtered_parameters.slice(*wrapped_keys)
+actionpack-5.0.2/lib/action_controller/metal/params_wrapper.rb:246:        request.filtered_parameters.merge! wrapped_filtered_hash
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:34:        @filtered_parameters = nil
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:40:      def filtered_parameters
+actionpack-5.0.2/lib/action_dispatch/http/filter_parameters.rb:41:        @filtered_parameters ||= parameter_filter.filter(parameters)
+actionpack-5.0.2/lib/action_dispatch/middleware/templates/rescues/_request_and_response.html.erb:9:<p><b>Parameters</b>:</p> <pre>&lt;%= debug_params(@request.filtered_parameters) %&gt;</pre>
+actionpack-5.0.2/lib/action_dispatch/middleware/templates/rescues/_request_and_response.text.erb:2:  clean_params = @request.filtered_parameters.clone</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>发现了log常用的actionpack-5.0.2/lib/action_controller/metal/instrumentation.rb，它源码如下，被mixin到request上的filtered_parameters，会被赋值到raw_payload这个hash中，而raw_payload又被传给了ActiveSupport::Notifications.instrument，被使用了start_processing.action_controller这个hook</div>
+<div><br /></div>
+<pre><code>module ActionController
+  module Instrumentation
+    extend ActiveSupport::Concern
+
+    include AbstractController::Logger
+
+    attr_internal :view_runtime
+
+    def process_action(*args)
+      raw_payload = {
+        :controller =&gt; self.class.name,
+        :action     =&gt; self.action_name,
+        :params     =&gt; request.filtered_parameters,
+        :headers    =&gt; request.headers,
+        :format     =&gt; request.format.ref,
+        :method     =&gt; request.request_method,
+        :path       =&gt; request.fullpath
+      }
+
+      ActiveSupport::Notifications.instrument(&#34;start_processing.action_controller&#34;, raw_payload.dup)
+
+      ActiveSupport::Notifications.instrument(&#34;process_action.action_controller&#34;, raw_payload) do |payload|
+        begin
+          result = super
+          payload[:status] = response.status
+          result
+        ensure
+          append_info_to_payload(payload)
+        end
+      end
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>于是搜索start_processing.action_controller这个hook在哪里定义，但无果</div>
+<div><br /></div>
+<pre><code>$ gems git:(master) grep &#39;start_processing\.action_controller&#39; -rn *
+actionpack-5.0.1/CHANGELOG.md:289:*   Add request headers in the payload of the `start_processing.action_controller`
+actionpack-5.0.1/lib/action_controller/metal/instrumentation.rb:28:      ActiveSupport::Notifications.instrument(&#34;start_processing.action_controller&#34;, raw_payload.dup)
+actionpack-5.0.2/CHANGELOG.md:296:*   Add request headers in the payload of the `start_processing.action_controller`
+actionpack-5.0.2/lib/action_controller/metal/instrumentation.rb:28:      ActiveSupport::Notifications.instrument(&#34;start_processing.action_controller&#34;, raw_payload.dup)</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>若只搜start_processing，得</div>
+<div><br /></div>
+<pre><code>$ gems git:(master) grep &#39;start_processing&#39; -rn *
+actionpack-5.0.2/CHANGELOG.md:296:*   Add request headers in the payload of the `start_processing.action_controller`
+actionpack-5.0.2/lib/action_controller/log_subscriber.rb:5:    def start_processing(event)
+actionpack-5.0.2/lib/action_controller/metal/instrumentation.rb:28:      ActiveSupport::Notifications.instrument(&#34;start_processing.action_controller&#34;, raw_payload.dup)</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>看名字应该就是actionpack-5.0.2/lib/action_controller/log_subscriber.rb，其源码如下。它会打印Processing by XXX和Parameters XXX，这里就使用了payload[:params]，而它正是刚才:params =&gt; request.filtered_parameters</div>
+<div><br /></div>
+<pre><code>module ActionController
+  class LogSubscriber &lt; ActiveSupport::LogSubscriber
+    INTERNAL_PARAMS = %w(controller action format _method only_path)
+
+    def start_processing(event)
+      return unless logger.info?
+
+      payload = event.payload
+      params  = payload[:params].except(*INTERNAL_PARAMS)
+      format  = payload[:format]
+      format  = format.to_s.upcase if format.is_a?(Symbol)
+
+      info &#34;Processing by #{payload[:controller]}##{payload[:action]} as #{format}&#34;
+      info &#34;  Parameters: #{params.inspect}&#34; unless params.empty?
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>对比下log输出，可见是一致的</div>
+<div><br /></div>
+<pre><code>Started POST &#34;/line_items?product_id=5&#34; for 192.168.0.103 at 2017-06-03 21:33:22 +0800
+Cannot render console from 192.168.0.103! Allowed networks: 127.0.0.1, ::1, 127.0.0.0/127.255.255.255
+Processing by LineItemsController#create as JS
+  Parameters: {&#34;authenticity_token&#34;=&gt;&#34;/Gyn4st3ZX5d7b8GhIPGTxLlWF8iE0DeqbNAm688ElTsahRZTnAqDSKHKXVnC4smf8WzKx5WuE5KXyntX5qP7w==&#34;, &#34;product_id&#34;=&gt;&#34;5&#34;}
+  Cart Load (0.3ms)  SELECT  &#34;carts&#34;.* FROM &#34;carts&#34; WHERE &#34;carts&#34;.&#34;id&#34; = ? LIMIT ?  [[&#34;id&#34;, 27], [&#34;LIMIT&#34;, 1]]</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>再回过头来思考下<span style="color: rgb(0, 0, 0); font-family: Tahoma; font-size: medium; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; orphans: auto; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); display: inline !important; float: none;">ParameterFilter，如果简单设计的话，就是用config中所设的key来去将请求参数parameters的hash的对应key更新为</span>[FILTERED]字样，但若真去看actionpack-5.0.2/lib/action_dispatch/http/parameter_filter.rb的话，会发现它功能还设计得更复杂更强大</div>
+<div><br /></div>
+<div>小结：filter_parameters用于在log中屏蔽关键信息，以防泄露机密信息；log（一般都？）用ActiveSupport::Notifications.instrument钩子来输出</div>
+
+  </div><a class="u-url" href="/2017/06/03/f92e2628b0b275b192fc3f5bcbcd71b5.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

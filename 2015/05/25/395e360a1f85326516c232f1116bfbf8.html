@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>eval、instance_eval、instance_exec、class_eval、module_eval的区别</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="eval、instance_eval、instance_exec、class_eval、module_eval的区别" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="它们各自来源于：Kernel#eval，BasicObject#instance_eval，BasicObject#instance_exec，Module#class_eval（module_eval是其别名）即是，任何东西都可instance_eval/instance_ex…" />
+<meta property="og:description" content="它们各自来源于：Kernel#eval，BasicObject#instance_eval，BasicObject#instance_exec，Module#class_eval（module_eval是其别名）即是，任何东西都可instance_eval/instance_ex…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2015-05-25T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"它们各自来源于：Kernel#eval，BasicObject#instance_eval，BasicObject#instance_exec，Module#class_eval（module_eval是其别名）即是，任何东西都可instance_eval/instance_ex…","@type":"BlogPosting","headline":"eval、instance_eval、instance_exec、class_eval、module_eval的区别","dateModified":"2015-05-25T00:00:00+00:00","url":"/2015/05/25/395e360a1f85326516c232f1116bfbf8.html","datePublished":"2015-05-25T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2015/05/25/395e360a1f85326516c232f1116bfbf8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">eval、instance_eval、instance_exec、class_eval、module_eval的区别</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2015-05-25T00:00:00+00:00" itemprop="datePublished">May 25, 2015
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>它们各自来源于：Kernel#eval，BasicObject#instance_eval，BasicObject#instance_exec，Module#class_eval（module_eval是其别名）</div>
+<div><br /></div>
+<div>即是，任何东西都可instance_eval/instance_exec ，而class_eval只能在Module/Class的new方法所产生的东西上调用，eval只能在Object以下的东西上调用</div>
+<div><br /></div>
+<div>eval的参数如下：eval( string ‹ , binding ‹ , file ‹ , line ››› )，可传一个binding给它，以改变执行环境，而其它_eval只能作用于方法的接收者</div>
+<div><br /></div>
+<div>当用于定义方法时，if you want to point out that &#34;I am dealing with a class&#34; or &#34;I want to add methods on all instances of that class&#34;, use class_eval . otherwise, use instance_eval.</div>
+<div><br /></div>
+<div><img src="/assets/files/395e360a1f85326516c232f1116bfbf8/94d8abd19e91b6e3d1cf78c4245da236.gif" type="image/gif" data-filename="def in class.gif" style="cursor: default; height: auto;" /></div>
+<div>instance_eval与instance_exec区别在于，_eval不接收实参，而_exec可以（甚至可以传别的对象）</div>
+<div><br /></div>
+<div>这使得instance_exec就像是在某对象上调用一个可接受参数的方法一样</div>
+<div><br /></div>
+<div>instance_eval其实会yield自身给block，因proc对参数不敏感而lambda却敏感，所以lambda需写明形参</div>
+<div><br /></div>
+<div>因此，以下都是能正常运行的</div>
+<div><br /></div>
+<div>（若想确定instance_exec 时该传多少/什么参数给block，可检查arity）</div>
+<div><br /></div>
+<pre><code>irb:01:0&gt; require &#39;ostruct&#39;
+irb:02:0&gt; a, b, c = %w{a b c}.map do |name|
+irb:03:1*       OpenStruct.new(name: name)
+irb:04:1&gt;   end
+irb:05:0&gt; a.instance_eval {puts name; puts c.name}
+a
+c
+irb:06:0&gt; a.instance_eval &amp;Proc.new{puts name; puts c.name}
+a
+c
+irb:07:0&gt; a.instance_eval &amp;-&gt; o {puts name; puts o.name; puts c.name}
+a
+a
+c
+irb:08:0&gt; a.instance_exec {puts name; puts c.name}
+a
+c
+irb:09:0&gt; a.instance_exec &amp;Proc.new{puts name; puts c.name}
+a
+c
+irb:10:0&gt; a.instance_exec(b){|c| puts name; puts c.name}
+a
+b
+irb:11:0&gt; a.instance_exec b, &amp;-&gt; o {puts name; puts c.name }
+a
+c
+irb:12:0&gt;</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2015/05/25/395e360a1f85326516c232f1116bfbf8.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

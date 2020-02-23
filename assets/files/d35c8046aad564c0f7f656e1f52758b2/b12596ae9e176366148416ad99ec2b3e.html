@@ -1,0 +1,96 @@
+<!DOCTYPE HTML><html><head><meta charset='utf-8'/><style>body {
+    font-family: 'Dejavu Sans Mono', 'Arial', sans-serif;
+    font-size: 13px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.tree-html ul {
+    margin-left: 15px;
+}
+
+.tree-html li {
+    list-style-type: none;
+    margin: 10px;
+    position: relative;
+}
+
+.tree-html li::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc;
+    width: 15px;
+    height: 15px;
+}
+
+.tree-html li::after {
+    position: absolute;
+    content: "";
+    top: 8px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    width: 15px;
+    height: 100%;
+}
+
+.tree-html li:last-child::after {
+    display: none;
+}
+
+ul.tree-html>li:first-child::before {
+    display: none;
+}
+
+.tree-html li a {
+    padding: 2px 5px;
+}
+
+.tree-html li a:hover, .tree-html li a:hover+ul li a,
+.tree-html li a:focus, .tree-html li a:focus+ul li a {
+    background-color: #d3d3d3;
+}
+
+.tree-html label {
+  margin: .2em 0 0 -.6em;
+  position: absolute;
+  border: 1px solid #ccc;
+  background: white;
+  width: .6em;
+  height: .6em;
+  display: inline-block;
+  line-height: .65;
+}
+
+.tree-html label.placeholder {
+  visibility: hidden;
+}
+
+.tree-html label::before {
+  color: #ccc;
+  font-family: serif;
+  margin-left: 0.02em;
+}
+
+input[type='checkbox'] {
+  margin-left: 5px;
+  display: none
+}
+
+input[type='checkbox']:checked ~ ul {
+  display: none
+}
+
+input[type="checkbox"] + label::before {
+  content: '-';
+}
+
+input[type="checkbox"]:checked + label::before {
+  content: '+';
+}
+.highlight{color: #a50000;}</style></head><body><ul class='tree-html'><li><input type='checkbox' id='70127093536580'><label for='70127093536580'></label><a><span class='highlight'>Student.block in &lt;class:Student&gt;</span> (pry):3</a><ul><li><input type='checkbox' id='70127093503000'><label for='70127093503000'></label><a><span class='highlight'>Student.serialize</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_methods/serialization.rb:48</a><ul><li><input type='checkbox' id='70127093494220'><label for='70127093494220'></label><a><span class='highlight'>Enumerable#all?</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_methods/serialization.rb:54</a><ul><li><input type='checkbox' id='70127093467160'><label for='70127093467160'></label><a><span class='highlight'>Array#each</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_methods/serialization.rb:54</a><ul><li><input type='checkbox' id='70127093423260'><label for='70127093423260'></label><a><span class='highlight'>Student.block in serialize</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_methods/serialization.rb:54</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#respond_to?</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_methods/serialization.rb:54</a></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70127093365980'><label for='70127093365980'></label><a><span class='highlight'>Object#require</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:291</a><ul><li><input type='checkbox' id='70127093359620'><label for='70127093359620'></label><a><span class='highlight'>Object#load_dependency</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:255</a><ul><li><input type='checkbox' id='70127093311260'><label for='70127093311260'></label><a><span class='highlight'>ActiveSupport::Dependencies.load?</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:330</a><ul><li><label class='placeholder'></label><a><span class='highlight'>ActiveSupport::Dependencies.mechanism</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/module/attribute_accessors.rb:60</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>ActiveSupport::Dependencies.constant_watch_stack</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/module/attribute_accessors.rb:60</a></li><li><label class='placeholder'></label><a><span class='highlight'>ActiveSupport::Dependencies::WatchStack#watching?</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:118</a></li><li><input type='checkbox' id='70127093161900'><label for='70127093161900'></label><a><span class='highlight'>Object#block in require</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:293</a><ul><li><input type='checkbox' id='70127093153820'><label for='70127093153820'></label><a><span class='highlight'>Kernel#require</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:293</a><ul><li><label class='placeholder'></label><a><span class='highlight'>IO#set_encoding</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:293</a></li><li><label class='placeholder'></label><a><span class='highlight'>IO#set_encoding</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:293</a></li><li><input type='checkbox' id='70127093044140'><label for='70127093044140'></label><a><span class='highlight'>Object#require</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:291</a><ul><li><input type='checkbox' id='70127093019940'><label for='70127093019940'></label><a><span class='highlight'>Object#load_dependency</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:255</a><ul><li><input type='checkbox' id='70127092987840'><label for='70127092987840'></label><a><span class='highlight'>ActiveSupport::Dependencies.load?</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:330</a><ul><li><label class='placeholder'></label><a><span class='highlight'>ActiveSupport::Dependencies.mechanism</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/module/attribute_accessors.rb:60</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>ActiveSupport::Dependencies.constant_watch_stack</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/module/attribute_accessors.rb:60</a></li><li><label class='placeholder'></label><a><span class='highlight'>ActiveSupport::Dependencies::WatchStack#watching?</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:118</a></li><li><input type='checkbox' id='70127092833720'><label for='70127092833720'></label><a><span class='highlight'>Object#block in require</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:293</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#require</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:293</a></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70127092687400'><label for='70127092687400'></label><a><span class='highlight'>ActiveRecord.&lt;module:ActiveRecord&gt;</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:3</a><ul><li><input type='checkbox' id='70127092629600'><label for='70127092629600'></label><a><span class='highlight'>ActiveRecord::Coders.&lt;module:Coders&gt;</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:4</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Class#inherited</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:5</a></li><li><input type='checkbox' id='70127092592580'><label for='70127092592580'></label><a><span class='highlight'>ActiveRecord::Coders::YAMLColumn.&lt;class:YAMLColumn&gt;</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:5</a><ul><li><input type='checkbox' id='70127092568180'><label for='70127092568180'></label><a><span class='highlight'>Module#attr_accessor</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:7</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Module#method_added</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:7</a></li><li><label class='placeholder'></label><a><span class='highlight'>Module#method_added</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:7</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Module#method_added</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:9</a></li><li><label class='placeholder'></label><a><span class='highlight'>Module#method_added</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:14</a></li><li><label class='placeholder'></label><a><span class='highlight'>Module#method_added</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:21</a></li><li><label class='placeholder'></label><a><span class='highlight'>Module#method_added</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:32</a></li><li><label class='placeholder'></label><a><span class='highlight'>Module#private</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:39</a></li><li><label class='placeholder'></label><a><span class='highlight'>Module#method_added</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:41</a></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70127092265700'><label for='70127092265700'></label><a><span class='highlight'>Class#new</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_methods/serialization.rb:57</a><ul><li><input type='checkbox' id='70127092259440'><label for='70127092259440'></label><a><span class='highlight'>ActiveRecord::Coders::YAMLColumn#initialize</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:9</a><ul><li><input type='checkbox' id='70127092227420'><label for='70127092227420'></label><a><span class='highlight'>ActiveRecord::Coders::YAMLColumn#check_arity_of_constructor</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:41</a><ul><li><input type='checkbox' id='70127092211580'><label for='70127092211580'></label><a><span class='highlight'>ActiveRecord::Coders::YAMLColumn#load</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:21</a><ul><li><label class='placeholder'></label><a><span class='highlight'>NilClass#nil?</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:22</a></li><li><input type='checkbox' id='70127092112520'><label for='70127092112520'></label><a><span class='highlight'>Class#new</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:22</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Array#initialize</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/coders/yaml_column.rb:22</a></li></ul></li></ul></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70127091957920'><label for='70127091957920'></label><a><span class='highlight'>Student.decorate_attribute_type</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_decorators.rb:11</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Symbol#to_s</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_decorators.rb:13</a></li><li><label class='placeholder'></label><a><span class='highlight'>Symbol#to_s</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_decorators.rb:13</a></li><li><input type='checkbox' id='70127091815120'><label for='70127091815120'></label><a><span class='highlight'>Student.decorate_matching_attribute_types</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_decorators.rb:17</a><ul><li><input type='checkbox' id='70127091782960'><label for='70127091782960'></label><a><span class='highlight'>Student.reload_schema_from_cache</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/model_schema.rb:474</a><ul><li><input type='checkbox' id='70127091768820'><label for='70127091768820'></label><a><span class='highlight'>Student.direct_descendants</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/descendants_tracker.rb:52</a><ul><li><input type='checkbox' id='70127091763080'><label for='70127091763080'></label><a><span class='highlight'>ActiveSupport::DescendantsTracker.direct_descendants</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/descendants_tracker.rb:8</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#hash</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/descendants_tracker.rb:9</a></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Array#each</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/model_schema.rb:487</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>String#to_s</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_decorators.rb:19</a></li><li><input type='checkbox' id='70127091480240'><label for='70127091480240'></label><a><span class='highlight'>Student.attribute_type_decorations -&gt; block (4 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/class/attribute.rb:90</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Student.block (4 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/class/attribute.rb:90</a></li></ul></li><li><input type='checkbox' id='70127091404740'><label for='70127091404740'></label><a><span class='highlight'>ActiveRecord::AttributeDecorators::TypeDecorator#merge</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_decorators.rb:43</a><ul><li><input type='checkbox' id='70127091354540'><label for='70127091354540'></label><a><span class='highlight'>Hash#merge</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_decorators.rb:44</a><ul><li><input type='checkbox' id='70127091347860'><label for='70127091347860'></label><a><span class='highlight'>Kernel#initialize_dup</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_decorators.rb:44</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Hash#initialize_copy</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_decorators.rb:44</a></li></ul></li></ul></li><li><input type='checkbox' id='70127091236820'><label for='70127091236820'></label><a><span class='highlight'>Class#new</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_decorators.rb:44</a><ul><li><label class='placeholder'></label><a><span class='highlight'>ActiveRecord::AttributeDecorators::TypeDecorator#initialize</span> $GemPath0/gems/activerecord-5.0.4/lib/active_record/attribute_decorators.rb:39</a></li></ul></li></ul></li><li><input type='checkbox' id='70127091140920'><label for='70127091140920'></label><a><span class='highlight'>Student.attribute_type_decorations= -&gt; block (2 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/class/attribute.rb:87</a><ul><li><input type='checkbox' id='70127091117720'><label for='70127091117720'></label><a><span class='highlight'>Student.block (2 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/class/attribute.rb:87</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#singleton_class</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/class/attribute.rb:88</a></li><li><input type='checkbox' id='70127091030400'><label for='70127091030400'></label><a><span class='highlight'>Module#class_eval</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/class/attribute.rb:88</a><ul><li><input type='checkbox' id='70127090990580'><label for='70127090990580'></label><a><span class='highlight'>#&lt;Class:Student(no: string, name: string, created_at: datetime, updated_at: datetime, gender: integer, grade: integer, alias_names: text)&gt;.block (3 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/class/attribute.rb:88</a><ul><li><input type='checkbox' id='70127090964540'><label for='70127090964540'></label><a><span class='highlight'>#&lt;Class:Student(no: string, name: string, created_at: datetime, updated_at: datetime, gender: integer, grade: integer, alias_names: text)&gt;.remove_possible_method</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/module/remove_method.rb:3</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Module#method_defined?</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/module/remove_method.rb:4</a></li><li><input type='checkbox' id='70127090847740'><label for='70127090847740'></label><a><span class='highlight'>Module#undef_method</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/module/remove_method.rb:5</a><ul><li><label class='placeholder'></label><a><span class='highlight'>BasicObject#singleton_method_undefined</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/module/remove_method.rb:5</a></li></ul></li></ul></li><li><input type='checkbox' id='70127090771800'><label for='70127090771800'></label><a><span class='highlight'>Module#define_method</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/class/attribute.rb:90</a><ul><li><label class='placeholder'></label><a><span class='highlight'>BasicObject#singleton_method_added</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/class/attribute.rb:90</a></li></ul></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Module#singleton_class?</span> $GemPath0/gems/activesupport-5.0.4/lib/active_support/core_ext/class/attribute.rb:93</a></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></body></html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>delete、delete_all、destroy、destroy_all</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="delete、delete_all、destroy、destroy_all" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="简单总结，destroy会在一个transaction中检查关联对象和callback，而delete直接删记录。这对于delete_all和destroy_all同理，而在rails 5中，不推荐xxx_all带查询条件，推荐where().xxx_all…" />
+<meta property="og:description" content="简单总结，destroy会在一个transaction中检查关联对象和callback，而delete直接删记录。这对于delete_all和destroy_all同理，而在rails 5中，不推荐xxx_all带查询条件，推荐where().xxx_all…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-04-27T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"简单总结，destroy会在一个transaction中检查关联对象和callback，而delete直接删记录。这对于delete_all和destroy_all同理，而在rails 5中，不推荐xxx_all带查询条件，推荐where().xxx_all…","@type":"BlogPosting","headline":"delete、delete_all、destroy、destroy_all","dateModified":"2017-04-27T00:00:00+00:00","url":"/2017/04/27/741479f4bdf068aa65b217b5dd003934.html","datePublished":"2017-04-27T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/04/27/741479f4bdf068aa65b217b5dd003934.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">delete、delete_all、destroy、destroy_all</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-04-27T00:00:00+00:00" itemprop="datePublished">Apr 27, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>简单总结，destroy会在一个transaction中检查关联对象和callback，而delete直接删记录。这对于delete_all和destroy_all同理，而在rails 5中，不推荐xxx_all带查询条件，推荐where().xxx_all</div>
+<div><br /></div>
+<div>delete是有分实例方法和类方法的，实例方法会重用类方法</div>
+<div><br /></div>
+<pre><code># activerecord-5.0.2/lib/active_record/persistence.rb
+def delete
+  self.class.delete(id) if persisted?
+  @destroyed = true
+  freeze
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>实例的delete，完整调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/741479f4bdf068aa65b217b5dd003934/46b7935d9f402ca33a797bd954235e60.html"><img src="/assets/files/741479f4bdf068aa65b217b5dd003934/498444395f693f1b1a8379e2edf01a62.png" alt="instance_delete.html" /></a></div>
+<div><br /></div>
+<div>简略来看是这样</div>
+<div><br /></div>
+<div><img src="/assets/files/741479f4bdf068aa65b217b5dd003934/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div>最终的delete_all如下，它只是发起一条delete语句，并不涉及关联对象或自定义callback</div>
+<div><br /></div>
+<pre><code>def delete_all(conditions = nil)
+  invalid_methods = INVALID_METHODS_FOR_DELETE_ALL.select { |method|
+    if MULTI_VALUE_METHODS.include?(method)
+      send(&#34;#{method}_values&#34;).any?
+    elsif SINGLE_VALUE_METHODS.include?(method)
+      send(&#34;#{method}_value&#34;)
+    elsif CLAUSE_METHODS.include?(method)
+      send(&#34;#{method}_clause&#34;).any?
+    end
+  }
+  if invalid_methods.any?
+    raise ActiveRecordError.new(&#34;delete_all doesn&#39;t support #{invalid_methods.join(&#39;, &#39;)}&#34;)
+  end
+
+  if conditions
+    ActiveSupport::Deprecation.warn(&lt;&lt;-MESSAGE.squish)
+      Passing conditions to delete_all is deprecated and will be removed in Rails 5.1.
+      To achieve the same use where(conditions).delete_all.
+    MESSAGE
+    where(conditions).delete_all
+  else
+    stmt = Arel::DeleteManager.new
+    stmt.from(table)
+
+    if joins_values.any?
+      @klass.connection.join_to_delete(stmt, arel, arel_attribute(primary_key))
+    else
+      stmt.wheres = arel.constraints
+    end
+
+    affected = @klass.connection.delete(stmt, &#39;SQL&#39;, bound_attributes)
+
+    reset
+    affected
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而destory则是套在transaction和callback之中</div>
+<div><br /></div>
+<div><img src="/assets/files/741479f4bdf068aa65b217b5dd003934/91eee3f8d75dbb327ede474944726554.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div>准确来说，是include module Persistence之后，还有include Callbacks和Transactions</div>
+<div><br /></div>
+<div>activerecord-5.0.2/lib/active_record/transactions.rb如下</div>
+<div><br /></div>
+<pre><code>def destroy
+  with_transaction_returning_status { super }
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>activerecord-5.0.2/lib/active_record/callbacks.rb如下</div>
+<div><br /></div>
+<pre><code>def destroy
+  @_destroy_callback_already_called ||= false
+  return if @_destroy_callback_already_called
+  @_destroy_callback_already_called = true
+  _run_destroy_callbacks { super }
+rescue RecordNotDestroyed =&gt; e
+  @_association_destroy_exception = e
+  false
+ensure
+  @_destroy_callback_already_called = false
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>activerecord-5.0.2/lib/active_record/persistence.rb如下</div>
+<div><br /></div>
+<pre><code>def destroy
+  raise ReadOnlyRecord, &#34;#{self.class} is marked as readonly&#34; if readonly?
+  destroy_associations
+  self.class.connection.add_transaction_record(self)
+  destroy_row if persisted?
+  @destroyed = true
+  freeze
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>这个include的顺序就在Base中</div>
+<div><br /></div>
+<pre><code>#activerecord-5.0.2/lib/active_record/base.rb
+module ActiveRecord
+  class Base
+    include Persistence
+    include Callbacks
+    include Transactions
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>完整调用栈如下（但实际上这个例子没自定义callback）</div>
+<div><br /></div>
+<div><a href="/assets/files/741479f4bdf068aa65b217b5dd003934/110a04aaeb8747f9c5fa7ea9dfa22d8f.html"><img src="/assets/files/741479f4bdf068aa65b217b5dd003934/38dcc2e06085199d9b2740dab0b265ec.png" alt="instance_destroy.html" /></a></div>
+<div><br /></div>
+<div>因此，在整个transaction中，任何关联或callback报错，都会导致删除失败</div>
+<div><br /></div>
+<div>顺提，类方法destroy_all，它先查出（如果还没预加载），然后再给每个对象调destroy。有趣的是，这个跟delete的“相反”，是类方法调实例方法</div>
+<div><br /></div>
+<pre><code># Destroys the records by instantiating each
+# record and calling its {#destroy}[rdoc-ref:Persistence#destroy] method.
+# Each object&#39;s callbacks are executed (including <tt>:dependent</tt> association options).
+# Returns the collection of objects that were destroyed; each will be frozen, to
+# reflect that no changes should be made (since they can&#39;t be persisted).
+#
+# Note: Instantiation, callback execution, and deletion of each
+# record can be time consuming when you&#39;re removing many records at
+# once. It generates at least one SQL +DELETE+ query per record (or
+# possibly more, to enforce your callbacks). If you want to delete many
+# rows quickly, without concern for their associations or callbacks, use
+# #delete_all instead.
+#
+# ==== Examples
+#
+#   Person.where(age: 0..18).destroy_all
+def destroy_all(conditions = nil)
+  if conditions
+    ActiveSupport::Deprecation.warn(&lt;&lt;-MESSAGE.squish)
+      Passing conditions to destroy_all is deprecated and will be removed in Rails 5.1.
+      To achieve the same use where(conditions).destroy_all.
+    MESSAGE
+    where(conditions).destroy_all
+  else
+    records.each(&amp;:destroy).tap { reset }
+  end
+end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/04/27/741479f4bdf068aa65b217b5dd003934.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

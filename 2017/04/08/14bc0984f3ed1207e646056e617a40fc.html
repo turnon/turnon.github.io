@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Test Fixtures</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="Test Fixtures" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="跟踪一下fixtures是做什么的…" />
+<meta property="og:description" content="跟踪一下fixtures是做什么的…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-04-08T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"跟踪一下fixtures是做什么的…","@type":"BlogPosting","headline":"Test Fixtures","dateModified":"2017-04-08T00:00:00+00:00","url":"/2017/04/08/14bc0984f3ed1207e646056e617a40fc.html","datePublished":"2017-04-08T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/04/08/14bc0984f3ed1207e646056e617a40fc.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Test Fixtures</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-04-08T00:00:00+00:00" itemprop="datePublished">Apr 8, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>跟踪一下fixtures是做什么的</div>
+<div><br /></div>
+<pre><code>class ProductTest &lt; ActiveSupport::TestCase
+  require &#39;trace_tree&#39;
+  binding.trace_tree(html: true, tmp: [&#39;rails&#39;, &#39;fixtures.html&#39;]) do
+    fixtures :products
+  end
+
+  test &#34;product attributes must not be empty&#34; do
+    product = Product.new
+    assert product.invalid?
+    assert product.errors[:title].any?
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>完整调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/14bc0984f3ed1207e646056e617a40fc/9403e5114acb6bb59791a97291be54b5.html"><img src="/assets/files/14bc0984f3ed1207e646056e617a40fc/5d2bed4b80d73e7ea737fed76b73826b.png" alt="fixtures.html" /></a><br /></div>
+<div><br /></div>
+<div>本来以为此方法定义在ActiveSupport::TestCase之中，却发现竟然来自于active_record，猜想应该是active_record本来做测试时也会用到，而ActiveSupport::TestCase 就顺便借用下</div>
+<div><br /></div>
+<div>值得关注的是，下面无端端调用了一堆Class#new、Module#initialize和include，回忆起来，这种pattern在rails中还是挺常用的，用途就是创建匿名module然后动态地mixin，controller中的xx_url、xx_path也是则样得来</div>
+<div><br /></div>
+<div><img src="/assets/files/14bc0984f3ed1207e646056e617a40fc/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div>于是，去看看这个setup_fixture_accessors具体干什么</div>
+<div><br /></div>
+<pre><code>def setup_fixture_accessors(fixture_set_names = nil)
+  fixture_set_names = Array(fixture_set_names || fixture_table_names)
+  methods = Module.new do
+    fixture_set_names.each do |fs_name|
+      fs_name = fs_name.to_s
+      accessor_name = fs_name.tr(&#39;/&#39;, &#39;_&#39;).to_sym
+
+      define_method(accessor_name) do |*fixture_names|
+        force_reload = fixture_names.pop if fixture_names.last == true || fixture_names.last == :reload
+
+        @fixture_cache[fs_name] ||= {}
+
+        instances = fixture_names.map do |f_name|
+          f_name = f_name.to_s if f_name.is_a?(Symbol)
+          @fixture_cache[fs_name].delete(f_name) if force_reload
+
+          if @loaded_fixtures[fs_name][f_name]
+            @fixture_cache[fs_name][f_name] ||= @loaded_fixtures[fs_name][f_name].find
+          else
+            raise StandardError, &#34;No fixture named &#39;#{f_name}&#39; found for fixture set &#39;#{fs_name}&#39;&#34;
+          end
+        end
+
+        instances.size == 1 ? instances.first : instances
+      end
+      private accessor_name
+    end
+  end
+  include methods
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>很长，不想细看。直接加入binding.pry并去掉trace，看看都有哪些地方会调用进来，因为，根据官方介绍，fixture默认是全部加载的</div>
+<div><br /></div>
+<pre><code>From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb @ line 919 ActiveRecord::TestFixtures::ClassMethods#setup_fixture_accessors:
+
+    914:       end
+    915:
+    916:       def setup_fixture_accessors(fixture_set_names = nil)
+    917:         require &#39;binding_of_callers/pry&#39;
+    918:         binding.pry
+ =&gt; 919:         fixture_set_names = Array(fixture_set_names || fixture_table_names)
+    920:         methods = Module.new do
+    921:           fixture_set_names.each do |fs_name|
+    922:             fs_name = fs_name.to_s
+    923:             accessor_name = fs_name.tr(&#39;/&#39;, &#39;_&#39;).to_sym
+    924:
+
+[1] pry(ActiveSupport::TestCase)&gt; _bs_
+=&gt; [#&lt;binding:69919405765140 activesupport::testcase.setup_fixture_accessors="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activerecord-5.0.2="" lib="" active_record="" fixtures.rb:918=""&gt;,
+ #&lt;binding:69919405740360 activesupport::testcase.fixtures="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activerecord-5.0.2="" lib="" active_record="" fixtures.rb:913=""&gt;,
+ #&lt;binding:69919405713340 activesupport::testcase.&lt;class:testcase=""&gt; /home/z/test_rails/depot/test/test_helper.rb:7&gt;,
+ # ......
+[2] pry(ActiveSupport::TestCase)&gt; fixture_set_names
+=&gt; [&#34;products&#34;]&lt;/binding:69919405713340&gt;&lt;/binding:69919405740360&gt;&lt;/binding:69919405765140&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>在这里竟然发现了test/test_helper.rb</div>
+<div><br /></div>
+<pre><code>class ActiveSupport::TestCase
+  # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
+  fixtures :all
+
+  # Add more helper methods to be used by all tests here...
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>那确是符合“默认是全部加载的”的说法</div>
+<div><br /></div>
+<pre><code>def fixtures(*fixture_set_names)
+  if fixture_set_names.first == :all
+    fixture_set_names = Dir[&#34;#{fixture_path}/{**,*}/*.{yml}&#34;]
+    fixture_set_names.map! { |f| f[(fixture_path.to_s.size + 1)..-5] }
+  else
+    fixture_set_names = fixture_set_names.flatten.map(&amp;:to_s)
+  end
+
+  self.fixture_table_names |= fixture_set_names
+  setup_fixture_accessors(fixture_set_names)
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>此外，从ancestors来看，确实有mixin了ActiveRecord::TestFixtures</div>
+<div><br /></div>
+<pre><code>[4] pry(ActiveSupport::TestCase)&gt; ancestors
+=&gt; [ActiveSupport::TestCase,
+ ActiveRecord::TestFixtures,
+ ActiveSupport::Testing::FileFixtures,
+ ActiveSupport::Testing::TimeHelpers,
+ ActiveSupport::Testing::Deprecation,
+ ActiveSupport::Testing::Assertions,
+ ActiveSupport::Callbacks,
+ ActiveSupport::Testing::SetupAndTeardown,
+ ActiveSupport::Testing::TaggedLogging,
+ Minitest::Test,
+ Minitest::Guard,
+ Minitest::Test::LifecycleHooks,
+ Minitest::Assertions,
+ Minitest::Runnable,
+ ActiveSupport::ToJsonWithActiveSupportEncoder,
+ Object,
+ ActiveSupport::Dependencies::Loadable,
+ PP::ObjectMixin,
+ JSON::Ext::Generator::GeneratorMethods::Object,
+ ActiveSupport::Tryable,
+ Kernel,
+ BasicObject]
+[5] pry(ActiveSupport::TestCase)&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>再回头看看setup_fixture_accessors，这里define_method(accessor_name)所做的就是，当你有productions.yml，那么你就能在test case中使用product = Product.new(title: products(:ruby).title)这样的语句来获取yml中:ruby这个fixture</div>
+<div><br /></div>
+<div>至于fixture的数据是如何加载的？</div>
+<div><br /></div>
+<div>可从刚才setup_fixture_accessors所定义的fixture accessors方法看出，它查找的是@loaded_fixtures[fs_name][f_name]，而@loaded_fixtures则是在setup_fixtures里被填充</div>
+<div><br /></div>
+<pre><code>def setup_fixtures(config = ActiveRecord::Base)
+  if pre_loaded_fixtures &amp;&amp; !use_transactional_tests
+    raise RuntimeError, &#39;pre_loaded_fixtures requires use_transactional_tests&#39;
+  end
+
+  @fixture_cache = {}
+  @fixture_connections = []
+  @@already_loaded_fixtures ||= {}
+
+  # Load fixtures once and begin transaction.
+  if run_in_transaction?
+    if @@already_loaded_fixtures[self.class]
+      @loaded_fixtures = @@already_loaded_fixtures[self.class]
+    else
+      @loaded_fixtures = load_fixtures(config)
+      @@already_loaded_fixtures[self.class] = @loaded_fixtures
+    end
+    @fixture_connections = enlist_fixture_connections
+    @fixture_connections.each do |connection|
+      connection.begin_transaction joinable: false
+    end
+  # Load fixtures for every test.
+  else
+    ActiveRecord::FixtureSet.reset_cache
+    @@already_loaded_fixtures[self.class] = nil
+    @loaded_fixtures = load_fixtures(config)
+  end
+
+  # Instantiate fixtures for every test if requested.
+  instantiate_fixtures if use_instantiated_fixtures
+end
+
+def load_fixtures(config)
+  fixtures = ActiveRecord::FixtureSet.create_fixtures(fixture_path, fixture_table_names, fixture_class_names, config)
+  Hash[fixtures.map { |f| [f.name, f] }]
+end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/04/08/14bc0984f3ed1207e646056e617a40fc.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE HTML><html><head><meta charset='utf-8'/><style>body {
+    font-family: 'Dejavu Sans Mono', 'Arial', sans-serif;
+    font-size: 13px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.tree-html ul {
+    margin-left: 15px;
+}
+
+.tree-html li {
+    list-style-type: none;
+    margin: 10px;
+    position: relative;
+}
+
+.tree-html li::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc;
+    width: 15px;
+    height: 15px;
+}
+
+.tree-html li::after {
+    position: absolute;
+    content: "";
+    top: 8px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    width: 15px;
+    height: 100%;
+}
+
+.tree-html li:last-child::after {
+    display: none;
+}
+
+ul.tree-html>li:first-child::before {
+    display: none;
+}
+
+.tree-html li a {
+    padding: 2px 5px;
+}
+
+.tree-html li a:hover, .tree-html li a:hover+ul li a,
+.tree-html li a:focus, .tree-html li a:focus+ul li a {
+    background-color: #d3d3d3;
+}
+
+.tree-html label {
+  margin: .2em 0 0 -.6em;
+  position: absolute;
+  border: 1px solid #ccc;
+  background: white;
+  width: .6em;
+  height: .6em;
+  display: inline-block;
+  line-height: .65;
+}
+
+.tree-html label.placeholder {
+  visibility: hidden;
+}
+
+.tree-html label::before {
+  color: #ccc;
+  font-family: serif;
+  margin-left: 0.02em;
+}
+
+input[type='checkbox'] {
+  margin-left: 5px;
+  display: none
+}
+
+input[type='checkbox']:checked ~ ul {
+  display: none
+}
+
+input[type="checkbox"] + label::before {
+  content: '-';
+}
+
+input[type="checkbox"]:checked + label::before {
+  content: '+';
+}
+.highlight{color: #a50000;}</style></head><body><ul class='tree-html'><li><input type='checkbox' id='70039142449680'><label for='70039142449680'></label><a data-return='[null]'><span class='highlight'>TestReversible#block in change</span> /home/z/test_rails/school/db/migrate/20171114144757_test_reversible.rb:3</a><ul><li><input type='checkbox' id='70039142425640'><label for='70039142425640'></label><a data-return='[null]'><span class='highlight'>TestReversible#reversible</span> $GemPath0/gems/activerecord-5.1.4/lib/active_record/migration.rb:729</a><ul><li><input type='checkbox' id='70039142385100'><label for='70039142385100'></label><a data-return='[false]'><span class='highlight'>TestReversible#reverting?</span> $GemPath0/gems/activerecord-5.1.4/lib/active_record/migration.rb:689</a><ul><li><label class='placeholder'></label><a data-return='["#<ActiveRecord::ConnectionAdapters::SQLite3Adapter:0x007f6684805498>"]'><span class='highlight'>TestReversible#connection</span> $GemPath0/gems/activerecord-5.1.4/lib/active_record/migration.rb:831</a></li><li><label class='placeholder'></label><a data-return='[false]'><span class='highlight'>Kernel#respond_to?</span> $GemPath0/gems/activerecord-5.1.4/lib/active_record/migration.rb:690</a></li></ul></li><li><input type='checkbox' id='70039142272340'><label for='70039142272340'></label><a data-return='["#<struct ActiveRecord::Migration::ReversibleBlockHelper reverting=false>"]'><span class='highlight'>#&lt;Class:ActiveRecord::Migration::ReversibleBlockHelper&gt;#new</span> $GemPath0/gems/activerecord-5.1.4/lib/active_record/migration.rb:730</a><ul><li><label class='placeholder'></label><a data-return='[null]'><span class='highlight'>Struct#initialize</span> $GemPath0/gems/activerecord-5.1.4/lib/active_record/migration.rb:730</a></li></ul></li><li><input type='checkbox' id='70039142196440'><label for='70039142196440'></label><a data-return='[null]'><span class='highlight'>TestReversible#execute_block</span> $GemPath0/gems/activerecord-5.1.4/lib/active_record/migration.rb:928</a><ul><li><label class='placeholder'></label><a data-return='["#<ActiveRecord::ConnectionAdapters::SQLite3Adapter:0x007f6684805498>"]'><span class='highlight'>TestReversible#connection</span> $GemPath0/gems/activerecord-5.1.4/lib/active_record/migration.rb:831</a></li><li><label class='placeholder'></label><a data-return='[false]'><span class='highlight'>Kernel#respond_to?</span> $GemPath0/gems/activerecord-5.1.4/lib/active_record/migration.rb:929</a></li><li><input type='checkbox' id='70039142100200'><label for='70039142100200'></label><a data-return='[null]'><span class='highlight'>TestReversible#block in reversible</span> $GemPath0/gems/activerecord-5.1.4/lib/active_record/migration.rb:731</a><ul><li><input type='checkbox' id='70039142079240'><label for='70039142079240'></label><a data-return='[null]'><span class='highlight'>TestReversible#block (2 levels) in change</span> /home/z/test_rails/school/db/migrate/20171114144757_test_reversible.rb:4</a><ul><li><input type='checkbox' id='70039142072220'><label for='70039142072220'></label><a data-return='[null]'><span class='highlight'>ActiveRecord::Migration::ReversibleBlockHelper#up</span> $GemPath0/gems/activerecord-5.1.4/lib/active_record/migration.rb:694</a><ul><li><label class='placeholder'></label><a data-return='[false]'><span class='highlight'>ActiveRecord::Migration::ReversibleBlockHelper#reverting</span> $GemPath0/gems/activerecord-5.1.4/lib/active_record/migration.rb:695</a></li><li><input type='checkbox' id='70039141992920'><label for='70039141992920'></label><a data-return='[null]'><span class='highlight'>TestReversible#block (3 levels) in change</span> /home/z/test_rails/school/db/migrate/20171114144757_test_reversible.rb:5</a><ul><li><input type='checkbox' id='70039141985220'><label for='70039141985220'></label><a data-return='[null]'><span class='highlight'>Kernel#puts</span> /home/z/test_rails/school/db/migrate/20171114144757_test_reversible.rb:5</a><ul><li><input type='checkbox' id='70039141976460'><label for='70039141976460'></label><a data-return='[null]'><span class='highlight'>IO#puts</span> /home/z/test_rails/school/db/migrate/20171114144757_test_reversible.rb:5</a><ul><li><label class='placeholder'></label><a data-return='[2]'><span class='highlight'>IO#write</span> /home/z/test_rails/school/db/migrate/20171114144757_test_reversible.rb:5</a></li><li><label class='placeholder'></label><a data-return='[1]'><span class='highlight'>IO#write</span> /home/z/test_rails/school/db/migrate/20171114144757_test_reversible.rb:5</a></li></ul></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70039141774240'><label for='70039141774240'></label><a data-return='[null]'><span class='highlight'>ActiveRecord::Migration::ReversibleBlockHelper#down</span> $GemPath0/gems/activerecord-5.1.4/lib/active_record/migration.rb:698</a><ul><li><label class='placeholder'></label><a data-return='[false]'><span class='highlight'>ActiveRecord::Migration::ReversibleBlockHelper#reverting</span> $GemPath0/gems/activerecord-5.1.4/lib/active_record/migration.rb:699</a></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></body></html>

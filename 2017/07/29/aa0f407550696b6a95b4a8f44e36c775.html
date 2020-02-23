@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>unscope vs except vs merge</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="unscope vs except vs merge" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="先来一个简单的unscope…" />
+<meta property="og:description" content="先来一个简单的unscope…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-07-29T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"先来一个简单的unscope…","@type":"BlogPosting","headline":"unscope vs except vs merge","dateModified":"2017-07-29T00:00:00+00:00","url":"/2017/07/29/aa0f407550696b6a95b4a8f44e36c775.html","datePublished":"2017-07-29T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/07/29/aa0f407550696b6a95b4a8f44e36c775.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">unscope vs except vs merge</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-07-29T00:00:00+00:00" itemprop="datePublished">Jul 29, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>先来一个简单的unscope</div>
+<div><br /></div>
+<pre><code>[8] pry(main)&gt; named_c = Student.where(name: &#39;c&#39;)
+  Student Load (0.1ms)  SELECT &#34;students&#34;.* FROM &#34;students&#34; WHERE &#34;students&#34;.&#34;name&#34; = ?  [[&#34;name&#34;, &#34;c&#34;]]
+[9] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/unscope&#39;){ named_c.unscope(where: :name)}
+  Student Load (0.3ms)  SELECT &#34;students&#34;.* FROM &#34;students&#34;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/aa0f407550696b6a95b4a8f44e36c775/a95de9e092accf44a21646287d09bbad.html"><img src="/assets/files/aa0f407550696b6a95b4a8f44e36c775/34766fb64ec6f81baae971026f6d47bd.png" alt="20170729_150930_466_unscope.html" /></a></div>
+<div><br /></div>
+<div>源码如下</div>
+<div><br /></div>
+<pre><code>def unscope(*args)
+  check_if_method_has_arguments!(:unscope, args)
+  spawn.unscope!(*args)
+end
+
+def unscope!(*args) # :nodoc:
+  args.flatten!
+  self.unscope_values += args
+
+  args.each do |scope|
+    case scope
+    when Symbol
+      if !VALID_UNSCOPING_VALUES.include?(scope)
+        raise ArgumentError, &#34;Called unscope() with invalid unscoping argument &#39;:#{scope}&#39;. Valid arguments are :#{VALID_UNSCOPING_VALUES.to_a.join(&#34;, :&#34;)}.&#34;
+      end
+      set_value(scope, nil)
+    when Hash
+      scope.each do |key, target_value|
+        if key != :where
+          raise ArgumentError, &#34;Hash arguments in .unscope(*args) must have :where as the key.&#34;
+        end
+
+        target_values = Array(target_value).map(&amp;:to_s)
+        self.where_clause = where_clause.except(*target_values)
+      end
+    else
+      raise ArgumentError, &#34;Unrecognized scoping: #{args.inspect}. Use .unscope(where: :attribute_name) or .unscope(:order), for example.&#34;
+    end
+  end
+
+  self
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><b>被记忆的unscope_values</b></div>
+<div><br /></div>
+<div>首先，保存unscope_values，主要是为了配合merge使用，因为根据注释所说的</div>
+<div><br /></div>
+<pre><code># This method is similar to #except, but unlike
+# #except, it persists across merges:
+#
+#   User.order(&#39;email&#39;).merge(User.except(:order))
+#       == User.order(&#39;email&#39;)
+#
+#   User.order(&#39;email&#39;).merge(User.unscope(:order))
+#       == User.all
+#
+# This means it can be used in association definitions:
+#
+#   has_many :comments, -&gt; { unscope(where: :trashed) }</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>这可以通过跟踪merge来看看</div>
+<div><br /></div>
+<pre><code>[15] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/merge_unscope&#39;){ named_c.merge(Student.unscope(where: :name))}
+  Student Load (0.1ms)  SELECT &#34;students&#34;.* FROM &#34;students&#34;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/aa0f407550696b6a95b4a8f44e36c775/69582ee34e689d9cb33a67123b046a5f.html"><img src="/assets/files/aa0f407550696b6a95b4a8f44e36c775/0168e37c35ec16b85c8711cfc888ed38.png" alt="20170729_160755_372_merge_unscope.html" /></a></div>
+<div><br /></div>
+<div>源码如下</div>
+<div><br /></div>
+<pre><code>NORMAL_VALUES = Relation::VALUE_METHODS -
+                Relation::CLAUSE_METHODS -
+                [:includes, :preload, :joins, :order, :reverse_order, :lock, :create_with, :reordering]
+
+def normal_values
+  NORMAL_VALUES
+end
+
+def merge
+  normal_values.each do |name|
+    value = values[name]
+    # The unless clause is here mostly for performance reasons (since the `send` call might be moderately
+    # expensive), most of the time the value is going to be `nil` or `.blank?`, the only catch is that
+    # `false.blank?` returns `true`, so there needs to be an extra check so that explicit `false` values
+    # don&#39;t fall through the cracks.
+    unless value.nil? || (value.blank? &amp;&amp; false != value)
+      if name == :select
+        relation._select!(*value)
+      else
+        relation.send(&#34;#{name}!&#34;, *value)
+      end
+    end
+  end
+
+  merge_multi_values
+  merge_single_values
+  merge_clauses
+  merge_preloads
+  merge_joins
+
+  relation
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而normal_values则是</div>
+<div><br /></div>
+<pre><code>[16] pry(main)&gt; ActiveRecord::Relation::Merger::NORMAL_VALUES
+=&gt; [:eager_load, :select, :group, :left_joins, :left_outer_joins, :references, :extending, :unscope, :limit, :offset, :readonly, :distinct]</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>所以merge会在新spawn的relation上再做一次unscope，而except则没这回事</div>
+<div><br /></div>
+<pre><code>[17] pry(main)&gt; named_c.except(:where)
+  Student Load (0.2ms)  SELECT &#34;students&#34;.* FROM &#34;students&#34;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>源码如下，可推导出，因为except并不记录你到底except过啥，而values的hash在删掉了:where后（不像unscope那样set_value scope, nil），merge就无法把except声明复写到新的relation里去了</div>
+<div><br /></div>
+<pre><code>def except(*skips)
+  relation_with values.except(*skips)
+end
+
+private
+
+  def relation_with(values)
+    result = Relation.create(klass, table, predicate_builder, values)
+    result.extend(*extending_values) if extending_values.any?
+    result
+  end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><b>可接受的参数</b></div>
+<div><br /></div>
+<div>记录完unscope_values后，就开始真正的解除scope了。从源码来看，参数可有两种类型，Symbol和Hash。Symbol可接受如下值</div>
+<div><br /></div>
+<pre><code>[10] pry(main)&gt; named_c.unscope(:abc)
+ArgumentError: Called unscope() with invalid unscoping argument &#39;:abc&#39;. Valid arguments are :where, :select, :group, :order, :lock, :limit, :offset, :joins, :includes, :from, :readonly, :having.
+from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.1.2/lib/active_record/relation/query_methods.rb:399:in `block in unscope!&#39;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而Hash则可用来解除具体的where条件的，Hash的值可以是单个字段，也可以是字段的集合</div>
+<div><br /></div>
+<pre><code>[19] pry(main)&gt; named_c.where(gender: &#39;male&#39;).unscope(where: [:name, :gender])
+  Student Load (0.2ms)  SELECT &#34;students&#34;.* FROM &#34;students&#34;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><b>小结</b></div>
+<div><br /></div>
+<div>简单来说，一个relation内部就如同一个Hash：{where: {name: &#39;jack&#39;, gender: 0}, order: {created_at: :desc}}，而unscope(:order, where: :name)所做的就是复制这个Hash，然后将改造为{where: {gender: 0}, order: nil}，这样merge的时候，order会再被设置为nil，而新relation的where则在merge_clauses中整个替换掉。</div>
+<div><br /></div>
+<div>而except因为已经删掉了key，所以merge时无法复写relation</div>
+<div><br /></div>
+<div>感觉注释举例unscope(where: :trashed) 不好，应为unscope(:order)，因为merge_clauses是整个替换where的，而order才会在走normal_values.each时复写为nil</div>
+
+  </div><a class="u-url" href="/2017/07/29/aa0f407550696b6a95b4a8f44e36c775.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

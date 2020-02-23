@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>屏蔽rake testtask的warning</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="屏蔽rake testtask的warning" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="查找rake中warn相关字眼…" />
+<meta property="og:description" content="查找rake中warn相关字眼…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-02-04T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"查找rake中warn相关字眼…","@type":"BlogPosting","headline":"屏蔽rake testtask的warning","dateModified":"2017-02-04T00:00:00+00:00","url":"/2017/02/04/ad803df70820f25ed0f88c145ae581b6.html","datePublished":"2017-02-04T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/02/04/ad803df70820f25ed0f88c145ae581b6.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">屏蔽rake testtask的warning</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-02-04T00:00:00+00:00" itemprop="datePublished">Feb 4, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style="font-family: Consolas;">查找rake中warn相关字眼</span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<pre><code>$rake-12.0.0 git:(master) grep warn  -rn *
+doc/command_line_usage.rdoc:153:[<tt>--no-deprecation-warnings</tt> (-X)]
+doc/command_line_usage.rdoc:154:    Do not display the deprecation warnings.
+doc/rake.1:117:.It Fl X , Fl -no-deprecation-warnings
+doc/rake.1:118:Disable the deprecation warnings.
+History.rdoc:7:* Removed to deprecated warnings for `last\_comment`.
+History.rdoc:99:* Use ruby warnings by default. Pull request #97 by Harold Giménez
+History.rdoc:335:  <tt>RakeApp</tt>). The constant missing hook to warn about using
+History.rdoc:340:  warnings) in Object have been removed. However, the DSL methods are
+History.rdoc:583:  <tt>RakeApp</tt>). The constant missing hook to warn about using
+History.rdoc:588:  warnings) in Object have been removed. However, the DSL methods are
+History.rdoc:956:* Global DSL warnings now honor --no-deprecate
+History.rdoc:990:warning messages.
+History.rdoc:1024:* Rake now warns when the deprecated :needs syntax used (and suggests
+History.rdoc:1025:  the proper syntax in the warning).
+History.rdoc:1055:* Rake no longer emits warnings for Config.  Patch by Santiago Pastorino.
+History.rdoc:1080:* Accepted change by warnickr to not expand test patterns in shell
+History.rdoc:1238:* Removed reference to manage_gem to fix the warning produced by the
+History.rdoc:1912:  <tt>rake</tt> will print a rather annoying warning whenever a
+History.rdoc:2040:* Added warning option for the Test Task (requested by Eric Hodel).
+History.rdoc:2068:* Several fixes for new warnings generated.
+lib/rake/application.rb:587:          [&#34;--no-deprecation-warnings&#34;, &#34;-X&#34;,
+lib/rake/application.rb:588:            &#34;Disable the deprecation warnings.&#34;,
+lib/rake/ext/core.rb:3:  # the method already exists, then a warning is printed and the extension is
+lib/rake/testtask.rb:51:    # Request that the tests be run with the warning flag set.
+lib/rake/testtask.rb:52:    # E.g. warning=true implies &#34;ruby -w&#34; used to run the tests.
+lib/rake/testtask.rb:53:    attr_accessor :warning
+lib/rake/testtask.rb:91:      @warning = true
+lib/rake/testtask.rb:148:      opts.unshift(&#34;-w&#34;) if @warning
+Binary file lib/rake/.testtask.rb.swp matches</code></pre>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">发现就在testtask中，且<span style="color: rgb(0, 0, 0); font-size: medium; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; orphans: auto; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); display: inline !important; float: none;">@warning默认为true，但有</span>accessor可改变它</span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<pre><code>module Rake
+  class TestTask &lt; TaskLib
+
+    #..
+    attr_accessor :warning
+
+    #..
+    def initialize(name=:test)
+      @name = name
+      @libs = [&#34;lib&#34;]
+      @pattern = nil
+      @options = nil
+      @test_files = nil
+      @verbose = false
+      @warning = true
+      @loader = :rake
+      @ruby_opts = []
+      @description = &#34;Run tests&#34; + (@name == :test ? &#34;&#34; : &#34; for #{@name}&#34;)
+      @deps = []
+      if @name.is_a?(Hash)
+        @deps = @name.values.first
+        @name = @name.keys.first
+      end
+      yield self if block_given?
+      @pattern = &#34;test/test*.rb&#34; if @pattern.nil? &amp;&amp; @test_files.nil?
+      define
+    end</code></pre>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">于是可以这样</span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<pre><code>Rake::TestTask.new(:test) do |t|
+  t.warning = false
+  t.libs &lt;&lt; &#34;test&#34;
+  t.libs &lt;&lt; &#34;lib&#34;
+  t.test_files = FileList[&#39;test/**/*_test.rb&#39;]
+end</code></pre>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">或者加入检查ARGV是否带有-W0，然后再设置t.warning为true或false。这是ruby bin可用的选项，不过rake cli不认此项，需自己在rakefile中另行判断</span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<pre><code>t.warning = false if ARGV.index(&#39;-W0&#39;)</code></pre>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">然后cli需带上double dash，否则会被rake当成传给它自己的选项，然后报错说不支持此项</span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<pre><code>rake test -- -W0</code></pre>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">不过，屏蔽warning是不好的做法……</span></div>
+
+  </div><a class="u-url" href="/2017/02/04/ad803df70820f25ed0f88c145ae581b6.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

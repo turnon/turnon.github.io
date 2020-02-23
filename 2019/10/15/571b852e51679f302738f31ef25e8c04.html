@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>ruby-kafka的自动与手动提交偏移量</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="ruby-kafka的自动与手动提交偏移量" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="根据官方文档，如果想手工控制commit时机，需要在轮询时将automatically_mark_as_processed选项传false，然后自行调用mark_message_as_processed和commit_offsets。…" />
+<meta property="og:description" content="根据官方文档，如果想手工控制commit时机，需要在轮询时将automatically_mark_as_processed选项传false，然后自行调用mark_message_as_processed和commit_offsets。…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-10-15T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"根据官方文档，如果想手工控制commit时机，需要在轮询时将automatically_mark_as_processed选项传false，然后自行调用mark_message_as_processed和commit_offsets。…","@type":"BlogPosting","headline":"ruby-kafka的自动与手动提交偏移量","dateModified":"2019-10-15T00:00:00+00:00","url":"/2019/10/15/571b852e51679f302738f31ef25e8c04.html","datePublished":"2019-10-15T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2019/10/15/571b852e51679f302738f31ef25e8c04.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">ruby-kafka的自动与手动提交偏移量</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-10-15T00:00:00+00:00" itemprop="datePublished">Oct 15, 2019
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>根据官方文档，如果想手工控制commit时机，需要在轮询时将automatically_mark_as_processed选项传false，然后自行调用mark_message_as_processed和commit_offsets。</div>
+<div><br /></div>
+<div>看轮询源码如下：</div>
+<div><br /></div>
+<pre><code># ruby-kafka-0.7.10/lib/kafka/consumer.rb
+def each_message(min_bytes: 1, max_bytes: 10485760, max_wait_time: 1, automatically_mark_as_processed: true)
+  # ...
+
+  consumer_loop do
+    batches = fetch_batches
+
+    batches.each do |batch|
+      batch.messages.each do |message|
+        # ...
+
+        begin
+          yield message unless message.is_control_record
+          @current_offsets[message.topic][message.partition] = message.offset
+        rescue =&gt; e
+          location = &#34;#{message.topic}/#{message.partition} at offset #{message.offset}&#34;
+          backtrace = e.backtrace.join(&#34;\n&#34;)
+          @logger.error &#34;Exception raised when processing #{location} -- #{e.class}: #{e}\n#{backtrace}&#34;
+
+          raise ProcessingError.new(message.topic, message.partition, message.offset)
+        end
+
+        mark_message_as_processed(message) if automatically_mark_as_processed
+        @offset_manager.commit_offsets_if_necessary
+
+        # ...
+      end
+    end
+
+    # We may not have received any messages, but it&#39;s still a good idea to
+    # commit offsets if we&#39;ve processed messages in the last set of batches.
+    # This also ensures the offsets are retained if we haven&#39;t read any messages
+    # since the offset retention period has elapsed.
+    @offset_manager.commit_offsets_if_necessary
+  end
+end
+
+def mark_message_as_processed(message)
+  @offset_manager.mark_as_processed(message.topic, message.partition, message.offset)
+end</code></pre>
+<div><br /></div>
+<div>在这里，automatically_mark_as_processed所控制的，其实是“是否将当前消息的offset更新到@offset_manager的缓存里”。offset_manager内部是存有每个topic每个partition的偏移量的：</div>
+<div><br /></div>
+<pre><code># ruby-kafka-0.7.10/lib/kafka/offset_manager.rb
+def mark_as_processed(topic, partition, offset)
+  @uncommitted_offsets += 1
+  @processed_offsets[topic] ||= {}
+
+  # The committed offset should always be the offset of the next message that the
+  # application will read, thus adding one to the last message processed.
+  @processed_offsets[topic][partition] = offset + 1
+  @logger.debug &#34;Marking #{topic}/#{partition}:#{offset} as processed&#34;
+end</code></pre>
+<div><br /></div>
+<div>除了设置automatically_mark_as_processed选项，实际上，生成consumer时还需要设置commit_interval和commit_threshold为零，因为轮询中每取一条消息都会检查是否太长时间未commit或太多消息未commit：</div>
+<div><br /></div>
+<pre><code># ruby-kafka-0.7.10/lib/kafka/offset_manager.rb
+def commit_offsets_if_necessary
+  recommit = recommit_timeout_reached?
+  if recommit || commit_timeout_reached? || commit_threshold_reached?
+    commit_offsets(recommit)
+  end
+end
+
+def commit_timeout_reached?
+  @commit_interval != 0 &amp;&amp; seconds_since_last_commit &gt;= @commit_interval
+end
+
+def commit_threshold_reached?
+  @commit_threshold != 0 &amp;&amp; @uncommitted_offsets &gt;= @commit_threshold
+end</code></pre>
+<div><br /></div>
+<div>而consumer_loop的末尾之所以还有一个commit_offsets_if_necessary，是因为consumer_loop在没有获取到新消息时，也不是完全阻塞的。如下，当fetcher没数据时，它只是睡眠一下然后返回一个空数组</div>
+<div><br /></div>
+<pre><code># ruby-kafka-0.7.10/lib/kafka/consumer.rb
+def fetch_batches
+  # ...
+
+  if !@fetcher.data?
+    @logger.debug &#34;No batches to process&#34;
+    sleep 2
+    []
+  else
+    tag, message = @fetcher.poll
+
+    case tag
+    when :batches
+      # make sure any old batches, fetched prior to the completion of a consumer group sync,
+      # are only processed if the batches are from brokers for which this broker is still responsible.
+      message.select { |batch| @group.assigned_to?(batch.topic, batch.partition) }
+    when :exception
+      raise message
+    end
+  end
+
+  # ...
+end</code></pre>
+<div><br /></div>
+<div>fetcher只是一个ruby Queue，真正的读取数据，是在consumer轮询时，它新建的一个线程，从kafka获取数据去填充这个Queue。另外，从step方法也可见，因为offset的提交时机是不定的，所以fetcher必须自己也缓存一份offset，否则会可能拉取到重复数据</div>
+<div><br /></div>
+<pre><code># ruby-kafka-0.7.10/lib/kafka/fetcher.rb
+def start
+  # ...
+  @thread = Thread.new do
+    while @running
+      loop
+    end
+    @logger.info &#34;#{@group} Fetcher thread exited.&#34;
+  end
+  # ...
+end
+
+def loop
+  # ...
+  step
+  # ..
+end
+
+def step
+  batches = fetch_batches
+
+  batches.each do |batch|
+    # ...
+    @next_offsets[batch.topic][batch.partition] = batch.last_offset + 1 unless batch.unknown_last_offset?
+  end
+
+  @queue &lt;&lt; [:batches, batches, current_reset_counter]
+  # ...
+end
+
+def poll
+  tag, message, reset_counter = @queue.deq
+  # ...
+  return [tag, message]
+end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2019/10/15/571b852e51679f302738f31ef25e8c04.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE HTML><html><head><meta charset='utf-8'/><style>body {
+    font-family: 'Dejavu Sans Mono', 'Arial', sans-serif;
+    font-size: 13px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.tree-html ul {
+    margin-left: 15px;
+}
+
+.tree-html li {
+    list-style-type: none;
+    margin: 10px;
+    position: relative;
+}
+
+.tree-html li::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc;
+    width: 15px;
+    height: 15px;
+}
+
+.tree-html li::after {
+    position: absolute;
+    content: "";
+    top: 8px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    width: 15px;
+    height: 100%;
+}
+
+.tree-html li:last-child::after {
+    display: none;
+}
+
+ul.tree-html>li:first-child::before {
+    display: none;
+}
+
+.tree-html li a {
+    padding: 2px 5px;
+}
+
+.tree-html li a:hover, .tree-html li a:hover+ul li a,
+.tree-html li a:focus, .tree-html li a:focus+ul li a {
+    background-color: #d3d3d3;
+}
+
+.tree-html label {
+  margin: .2em 0 0 -.6em;
+  position: absolute;
+  border: 1px solid #ccc;
+  background: white;
+  width: .6em;
+  height: .6em;
+  display: inline-block;
+  line-height: .65;
+}
+
+.tree-html label.placeholder {
+  visibility: hidden;
+}
+
+.tree-html label::before {
+  color: #ccc;
+  font-family: serif;
+  margin-left: 0.02em;
+}
+
+input[type='checkbox'] {
+  margin-left: 5px;
+  display: none
+}
+
+input[type='checkbox']:checked ~ ul {
+  display: none
+}
+
+input[type="checkbox"] + label::before {
+  content: '-';
+}
+
+input[type="checkbox"]:checked + label::before {
+  content: '+';
+}
+.highlight{color: #a50000;}</style></head><body><ul class='tree-html'><li><input type='checkbox' id='69942042587880'><label for='69942042587880'></label><a><span class='highlight'>Object#block in &lt;top (required)&gt;</span> /home/z/test_rails/rk/Rakefile:3</a><ul><li><input type='checkbox' id='69942042583760'><label for='69942042583760'></label><a><span class='highlight'>Object#task</span> $GemPath0/gems/rake-12.0.0/lib/rake/dsl_definition.rb:58</a><ul><li><input type='checkbox' id='69942042570840'><label for='69942042570840'></label><a><span class='highlight'>Rake::Task.define_task</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:372</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Rake.application</span> $GemPath0/gems/rake-12.0.0/lib/rake/rake_module.rb:7</a></li><li><input type='checkbox' id='69942042516420'><label for='69942042516420'></label><a><span class='highlight'>Rake::Application#define_task</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:22</a><ul><li><input type='checkbox' id='69942042510360'><label for='69942042510360'></label><a><span class='highlight'>Rake::Application#resolve_args</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:68</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Array#last</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:69</a></li><li><label class='placeholder'></label><a><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:69</a></li><li><label class='placeholder'></label><a><span class='highlight'>Array#pop</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:70</a></li><li><input type='checkbox' id='69942042410000'><label for='69942042410000'></label><a><span class='highlight'>Rake::Application#resolve_args_with_dependencies</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:104</a><ul><li><input type='checkbox' id='69942042406120'><label for='69942042406120'></label><a><span class='highlight'>Enumerable#map</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:106</a><ul><li><input type='checkbox' id='69942042383240'><label for='69942042383240'></label><a><span class='highlight'>Hash#each</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:106</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Rake::Application#block in resolve_args_with_dependencies</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:106</a></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Array#first</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:106</a></li><li><label class='placeholder'></label><a><span class='highlight'>Kernel#respond_to?</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:116</a></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Module#===</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:26</a></li><li><input type='checkbox' id='69942042227060'><label for='69942042227060'></label><a><span class='highlight'>Rake::Task.scope_name</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:384</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Rake::Scope::EmptyScope#path_with_task_name</span> $GemPath0/gems/rake-12.0.0/lib/rake/scope.rb:34</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Kernel#respond_to?</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:33</a></li><li><input type='checkbox' id='69942042161680'><label for='69942042161680'></label><a><span class='highlight'>Array#map</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:34</a><ul><li><input type='checkbox' id='69942042137880'><label for='69942042137880'></label><a><span class='highlight'>Rake::Application#block in define_task</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:34</a><ul><li><input type='checkbox' id='69942042121280'><label for='69942042121280'></label><a><span class='highlight'>Rake.from_pathname</span> $GemPath0/gems/rake-12.0.0/lib/rake/file_list.rb:428</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#respond_to?</span> $GemPath0/gems/rake-12.0.0/lib/rake/file_list.rb:429</a></li><li><label class='placeholder'></label><a><span class='highlight'>Kernel#respond_to?</span> $GemPath0/gems/rake-12.0.0/lib/rake/file_list.rb:430</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Symbol#to_s</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:34</a></li></ul></li></ul></li><li><input type='checkbox' id='69942041891700'><label for='69942041891700'></label><a><span class='highlight'>Rake::Application#intern</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:48</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Symbol#to_s</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:49</a></li><li><input type='checkbox' id='69942041847060'><label for='69942041847060'></label><a><span class='highlight'>Class#new</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:49</a><ul><li><input type='checkbox' id='69942041832280'><label for='69942041832280'></label><a><span class='highlight'>Rake::Task#initialize</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:94</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Symbol#to_s</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:95</a></li><li><input type='checkbox' id='69942041765540'><label for='69942041765540'></label><a><span class='highlight'>Class#new</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:100</a><ul><li><input type='checkbox' id='69942041750660'><label for='69942041750660'></label><a><span class='highlight'>Monitor#initialize</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/monitor.rb:234</a><ul><li><label class='placeholder'></label><a><span class='highlight'>BasicObject#initialize</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/monitor.rb:235</a></li><li><input type='checkbox' id='69942041682580'><label for='69942041682580'></label><a><span class='highlight'>Monitor#mon_initialize</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/monitor.rb:241</a><ul><li><input type='checkbox' id='69942041648960'><label for='69942041648960'></label><a><span class='highlight'>Class#new</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/monitor.rb:244</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Thread::Mutex#initialize</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/monitor.rb:244</a></li></ul></li></ul></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Rake::Application#current_scope</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:195</a></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='69942040157840'><label for='69942040157840'></label><a><span class='highlight'>Rake::Task#enhance</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:108</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Array#|</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:109</a></li><li><label class='placeholder'></label><a><span class='highlight'>Kernel#block_given?</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:110</a></li></ul></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='69942039781140'><label for='69942039781140'></label><a><span class='highlight'>Object#task</span> $GemPath0/gems/rake-12.0.0/lib/rake/dsl_definition.rb:58</a><ul><li><input type='checkbox' id='69942039770220'><label for='69942039770220'></label><a><span class='highlight'>Rake::Task.define_task</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:372</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Rake.application</span> $GemPath0/gems/rake-12.0.0/lib/rake/rake_module.rb:7</a></li><li><input type='checkbox' id='69942038320660'><label for='69942038320660'></label><a><span class='highlight'>Rake::Application#define_task</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:22</a><ul><li><input type='checkbox' id='69942037881300'><label for='69942037881300'></label><a><span class='highlight'>Rake::Application#resolve_args</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:68</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Array#last</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:69</a></li><li><label class='placeholder'></label><a><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:69</a></li><li><input type='checkbox' id='69942037576000'><label for='69942037576000'></label><a><span class='highlight'>Rake::Application#resolve_args_without_dependencies</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:85</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Array#shift</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:86</a></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Module#===</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:26</a></li><li><input type='checkbox' id='69942043128320'><label for='69942043128320'></label><a><span class='highlight'>Rake::Task.scope_name</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:384</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Rake::Scope::EmptyScope#path_with_task_name</span> $GemPath0/gems/rake-12.0.0/lib/rake/scope.rb:34</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Kernel#respond_to?</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:33</a></li><li><label class='placeholder'></label><a><span class='highlight'>Array#map</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:34</a></li><li><input type='checkbox' id='69942043021240'><label for='69942043021240'></label><a><span class='highlight'>Rake::Application#intern</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:48</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Symbol#to_s</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:49</a></li><li><input type='checkbox' id='69942042990940'><label for='69942042990940'></label><a><span class='highlight'>Class#new</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:49</a><ul><li><input type='checkbox' id='69942042987300'><label for='69942042987300'></label><a><span class='highlight'>Rake::Task#initialize</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:94</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Symbol#to_s</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:95</a></li><li><input type='checkbox' id='69942042951960'><label for='69942042951960'></label><a><span class='highlight'>Class#new</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:100</a><ul><li><input type='checkbox' id='69942042937560'><label for='69942042937560'></label><a><span class='highlight'>Monitor#initialize</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/monitor.rb:234</a><ul><li><label class='placeholder'></label><a><span class='highlight'>BasicObject#initialize</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/monitor.rb:235</a></li><li><input type='checkbox' id='69942042887000'><label for='69942042887000'></label><a><span class='highlight'>Monitor#mon_initialize</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/monitor.rb:241</a><ul><li><input type='checkbox' id='69942042881860'><label for='69942042881860'></label><a><span class='highlight'>Class#new</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/monitor.rb:244</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Thread::Mutex#initialize</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/monitor.rb:244</a></li></ul></li></ul></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Rake::Application#current_scope</span> $GemPath0/gems/rake-12.0.0/lib/rake/task_manager.rb:195</a></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='69942042708440'><label for='69942042708440'></label><a><span class='highlight'>Rake::Task#enhance</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:108</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Array#|</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:109</a></li><li><label class='placeholder'></label><a><span class='highlight'>Kernel#block_given?</span> $GemPath0/gems/rake-12.0.0/lib/rake/task.rb:110</a></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></body></html>

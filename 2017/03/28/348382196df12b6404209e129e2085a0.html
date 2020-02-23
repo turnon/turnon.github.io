@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>activerecord inlcudes</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="activerecord inlcudes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="直观上来看，includes就是执行两条sql，第二条以第一条的ids作为参数，以使关联记录在第二条sql中一次过查出，避免1+N问题…" />
+<meta property="og:description" content="直观上来看，includes就是执行两条sql，第二条以第一条的ids作为参数，以使关联记录在第二条sql中一次过查出，避免1+N问题…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-03-28T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"直观上来看，includes就是执行两条sql，第二条以第一条的ids作为参数，以使关联记录在第二条sql中一次过查出，避免1+N问题…","@type":"BlogPosting","headline":"activerecord inlcudes","dateModified":"2017-03-28T00:00:00+00:00","url":"/2017/03/28/348382196df12b6404209e129e2085a0.html","datePublished":"2017-03-28T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/03/28/348382196df12b6404209e129e2085a0.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">activerecord inlcudes</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-03-28T00:00:00+00:00" itemprop="datePublished">Mar 28, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>直观上来看，includes就是执行两条sql，第二条以第一条的ids作为参数，以使关联记录在第二条sql中一次过查出，避免1+N问题</div>
+<div><br /></div>
+<div>跟踪看看：</div>
+<div><br /></div>
+<pre><code>irb(main):034:0&gt; binding.trace_tree(html: true, tmp: [&#39;rails&#39;, &#39;includes.html&#39;]){Article.includes(:comments).limit(2).each{}}
+  Article Load (2752.8ms)  SELECT  &#34;articles&#34;.* FROM &#34;articles&#34; LIMIT ?  [[&#34;LIMIT&#34;, 2]]
+  Comment Load (7870.3ms)  SELECT &#34;comments&#34;.* FROM &#34;comments&#34; WHERE &#34;comments&#34;.&#34;article_id&#34; IN (2, 3)
+=&gt; [#</code>&lt;article id:="" 2,="" title:="" "brandy="" of="" the="" damned",="" text:="" "to="" say="" nothing="" of="" the="" dog",="" created_at:="" "2017-03-28="" 06:23:20",="" updated_at:="" "2017-03-28="" 06:23:20",="" user_id:="" 6=""&gt;<code>, #</code>&lt;article id:="" 3,="" title:="" "a="" farewell="" to="" arms",="" text:="" "vile="" bodies",="" created_at:="" "2017-03-28="" 06:23:20",="" updated_at:="" "2017-03-28="" 06:23:20",="" user_id:="" 2=""&gt;<code>]</code>&lt;/article&gt;&lt;/article&gt;</pre>
+<div><br /></div>
+<div><br /></div>
+<div>调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/348382196df12b6404209e129e2085a0/bb2b21ef7774df8687ff02b0284505c6.html"><img src="/assets/files/348382196df12b6404209e129e2085a0/2e72ec51614a19377ff476680649e697.png" alt="includes.html" /></a><br /></div>
+<div><br /></div>
+<div>include就是将要include的association先暂存于includes_values</div>
+<div><br /></div>
+<pre><code>def includes(*args)
+  check_if_method_has_arguments!(:includes, args)
+  spawn.includes!(*args)
+end
+
+def includes!(*args) # :nodoc:
+  args.reject!(&amp;:blank?)
+  args.flatten!
+
+  self.includes_values |= args
+  self
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>当执行each实际查询时，执行路径如下，可见eager_loading?为false</div>
+<div><br /></div>
+<div><img src="/assets/files/348382196df12b6404209e129e2085a0/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div><br /></div>
+<div>从源码来看，eager_loading?是用于决定join不join的</div>
+<div><br /></div>
+<pre><code>def exec_queries(&amp;block)
+  @records = eager_loading? ? find_with_associations.freeze : @klass.find_by_sql(arel, bound_attributes, &amp;block).freeze
+
+  preload = preload_values
+  preload +=  includes_values unless eager_loading?
+  preloader = build_preloader
+  preload.each do |associations|
+    preloader.preload @records, associations
+  end
+
+  @records.each(&amp;:readonly!) if readonly_value
+
+  @loaded = true
+  @records
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>那么eager_loading?具体是什么呢，步进看看，发现由四组values（一堆表名）是否有值来决定</div>
+<div><br /></div>
+<pre><code>From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/relation.rb @ line 640 ActiveRecord::Relation#eager_loading?:
+
+    637: def eager_loading?
+    638:   @should_eager_load ||=
+    639:     eager_load_values.any? ||
+ =&gt; 640:     includes_values.any? &amp;&amp; (joined_includes_values.any? || references_eager_loaded_tables?)
+    641: end
+
+[1] pry(#<article::activerecord_relation>)&gt; eager_load_values
+=&gt; []
+[2] pry(#<article::activerecord_relation>)&gt; includes_values
+=&gt; [:comments]
+[3] pry(#<article::activerecord_relation>)&gt; joined_includes_values
+=&gt; []
+[4] pry(#<article::activerecord_relation>)&gt; references_eager_loaded_tables?
+=&gt; false</article::activerecord_relation></article::activerecord_relation></article::activerecord_relation></article::activerecord_relation></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>搜索整个activerecord，得知eager_load_values是这样设置的（暂时未明为什么不直接写left_outer_join）</div>
+<div><br /></div>
+<pre><code># Forces eager loading by performing a LEFT OUTER JOIN on +args+:
+#
+#   User.eager_load(:posts)
+#   # SELECT &#34;users&#34;.&#34;id&#34; AS t0_r0, &#34;users&#34;.&#34;name&#34; AS t0_r1, ...
+#   # FROM &#34;users&#34; LEFT OUTER JOIN &#34;posts&#34; ON &#34;posts&#34;.&#34;user_id&#34; =
+#   # &#34;users&#34;.&#34;id&#34;
+def eager_load(*args)
+  check_if_method_has_arguments!(:eager_load, args)
+  spawn.eager_load!(*args)
+end
+
+def eager_load!(*args) # :nodoc:
+  self.eager_load_values += args
+  self
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而joined_includes_values是这样的，就是若发现includes中含有joins的表，也进行eager load（即导致exec_queries走find_with_associations ）</div>
+<div><br /></div>
+<pre><code># Joins that are also marked for preloading. In which case we should just eager load them.
+# Note that this is a naive implementation because we could have strings and symbols which
+# represent the same association, but that aren&#39;t matched by this. Also, we could have
+# nested hashes which partially match, e.g. { a: :b } &amp; { a: [:b, :c] }
+def joined_includes_values
+  includes_values &amp; joins_values
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>references_eager_loaded_tables?骤看涉及到arel比较复杂，只看最后一行的话，只关注references_values和joined_tables</div>
+<div><br /></div>
+<pre><code>From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/relation.rb @ line 736 ActiveRecord::Relation#references_eager_loaded_tables?:
+
+    722: def references_eager_loaded_tables?
+    723:   joined_tables = arel.join_sources.map do |join|
+    724:     if join.is_a?(Arel::Nodes::StringJoin)
+    725:       tables_in_string(join.left)
+    726:     else
+    727:       [join.left.table_name, join.left.table_alias]
+    728:     end
+    729:   end
+    730:
+    731:   joined_tables += [table.name, table.table_alias]
+    732:
+    733:   # always convert table names to downcase as in Oracle quoted table names are in uppercase
+    734:   joined_tables = joined_tables.flatten.compact.map(&amp;:downcase).uniq
+    735:
+ =&gt; 736:   (references_values - joined_tables).any?
+    737: end
+
+[9] pry(#<article::activerecord_relation>)&gt; joined_tables
+=&gt; [&#34;articles&#34;]
+[10] pry(#<article::activerecord_relation>)&gt; references_values
+=&gt; []</article::activerecord_relation></article::activerecord_relation></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>references_values的设置如下</div>
+<div><br /></div>
+<pre><code># Use to indicate that the given +table_names+ are referenced by an SQL string,
+# and should therefore be JOINed in any query rather than loaded separately.
+# This method only works in conjunction with #includes.
+# See #includes for more details.
+#
+#   User.includes(:posts).where(&#34;posts.name = &#39;foo&#39;&#34;)
+#   # Doesn&#39;t JOIN the posts table, resulting in an error.
+#
+#   User.includes(:posts).where(&#34;posts.name = &#39;foo&#39;&#34;).references(:posts)
+#   # Query now knows the string references posts, so adds a JOIN
+def references(*table_names)
+  check_if_method_has_arguments!(:references, table_names)
+  spawn.references!(*table_names)
+end
+
+def references!(*table_names) # :nodoc:
+  table_names.flatten!
+  table_names.map!(&amp;:to_s)
+
+  self.references_values |= table_names
+  self
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>结合rails guide来看，references是用来指定sql片段中的表名的，效果等同includes...where加hash参数，总之，会造成join，也需要eager load返回true来导致exec_queries走find_with_associations（rails guide建议includes...where写成joins会更直观）</div>
+<div><br /></div>
+<div>而单单includes的话，想要的效果就是执行两条sql，第二条以第一条的ids作为参数，并把返回的记录归类到第一条的model上，但保持第一条sql的记录数而不inner join</div>
+<div><br /></div>
+<div>粗略地看，在调用栈中没看到有调ids方法，不过有owner_keys</div>
+<div><br /></div>
+<pre><code>From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/associations/preloader/association.rb @ line 75 ActiveRecord::Associations::Preloader::Association#associated_records_by_owner:
+
+    64: def associated_records_by_owner(preloader)
+    65:   records = load_records do |record|
+    66:     owner = owners_by_key[convert_key(record[association_key_name])]
+    67:     association = owner.association(reflection.name)
+    68:     association.set_inverse_instance(record)
+    69:   end
+    70:
+    71:   owners.each_with_object({}) do |owner, result|
+    72:     result[owner] = records[convert_key(owner[owner_key_name])] || []
+    73:   end
+    74:   binding.pry
+ =&gt; 75: end
+
+[2] pry(#<activerecord::associations::preloader::hasmany>)&gt; owners
+=&gt; [#&lt;article:0x007fb7c31efe60 id:="" 81,="" title:="" "the="" daffodil="" sky",="" text:="" "beyond="" the="" mexique="" bay",="" created_at:="" mon,="" 27="" mar="" 2017="" 15:57:57="" utc="" +00:00,="" updated_at:="" mon,="" 27="" mar="" 2017="" 15:57:57="" utc="" +00:00,="" user_id:="" 38=""&gt;,
+ #&lt;article:0x007fb7c31dfdf8 id:="" 82,="" title:="" "this="" side="" of="" paradise",="" text:="" "edna="" o'brien",="" created_at:="" mon,="" 27="" mar="" 2017="" 15:57:57="" utc="" +00:00,="" updated_at:="" mon,="" 27="" mar="" 2017="" 15:57:57="" utc="" +00:00,="" user_id:="" 39=""&gt;]
+[3] pry(#<activerecord::associations::preloader::hasmany>)&gt; owner_keys
+=&gt; [81, 82]</activerecord::associations::preloader::hasmany>&lt;/article:0x007fb7c31dfdf8&gt;&lt;/article:0x007fb7c31efe60&gt;</activerecord::associations::preloader::hasmany></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>preloader执行第二条sql的过程大概如下</div>
+<div><br /></div>
+<div><img src="/assets/files/348382196df12b6404209e129e2085a0/91eee3f8d75dbb327ede474944726554.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+
+  </div><a class="u-url" href="/2017/03/28/348382196df12b6404209e129e2085a0.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

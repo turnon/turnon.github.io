@@ -1,0 +1,96 @@
+<!DOCTYPE HTML><html><head><meta charset='utf-8'/><style>body {
+    font-family: 'Dejavu Sans Mono', 'Arial', sans-serif;
+    font-size: 13px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.tree-html ul {
+    margin-left: 15px;
+}
+
+.tree-html li {
+    list-style-type: none;
+    margin: 10px;
+    position: relative;
+}
+
+.tree-html li::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc;
+    width: 15px;
+    height: 15px;
+}
+
+.tree-html li::after {
+    position: absolute;
+    content: "";
+    top: 8px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    width: 15px;
+    height: 100%;
+}
+
+.tree-html li:last-child::after {
+    display: none;
+}
+
+ul.tree-html>li:first-child::before {
+    display: none;
+}
+
+.tree-html li a {
+    padding: 2px 5px;
+}
+
+.tree-html li a:hover, .tree-html li a:hover+ul li a,
+.tree-html li a:focus, .tree-html li a:focus+ul li a {
+    background-color: #d3d3d3;
+}
+
+.tree-html label {
+  margin: .2em 0 0 -.6em;
+  position: absolute;
+  border: 1px solid #ccc;
+  background: white;
+  width: .6em;
+  height: .6em;
+  display: inline-block;
+  line-height: .65;
+}
+
+.tree-html label.placeholder {
+  visibility: hidden;
+}
+
+.tree-html label::before {
+  color: #ccc;
+  font-family: serif;
+  margin-left: 0.02em;
+}
+
+input[type='checkbox'] {
+  margin-left: 5px;
+  display: none
+}
+
+input[type='checkbox']:checked ~ ul {
+  display: none
+}
+
+input[type="checkbox"] + label::before {
+  content: '-';
+}
+
+input[type="checkbox"]:checked + label::before {
+  content: '+';
+}
+.highlight{color: #a50000;}</style></head><body><ul class='tree-html'><li><input type='checkbox' id='69886650483600'><label for='69886650483600'></label><a><span class='highlight'>Object#block in &lt;main&gt;</span> (pry):40</a><ul><li><input type='checkbox' id='69886650478220'><label for='69886650478220'></label><a><span class='highlight'>Student#__temp__e616d656=</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_methods/write.rb:18</a><ul><li><input type='checkbox' id='69886650464580'><label for='69886650464580'></label><a><span class='highlight'>Student#write_attribute</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_methods/write.rb:31</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#class</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_methods/write.rb:32</a></li><li><input type='checkbox' id='69886644541700'><label for='69886644541700'></label><a><span class='highlight'>Student.attribute_alias?</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/attribute_methods.rb:218</a><ul><li><input type='checkbox' id='69886644536160'><label for='69886644536160'></label><a><span class='highlight'>Student.attribute_aliases -&gt; block (4 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.1.2/lib/active_support/core_ext/class/attribute.rb:90</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Student.block (4 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.1.2/lib/active_support/core_ext/class/attribute.rb:90</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>String#to_s</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/attribute_methods.rb:219</a></li><li><label class='placeholder'></label><a><span class='highlight'>Hash#key?</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/attribute_methods.rb:219</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>String#to_s</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_methods/write.rb:35</a></li><li><input type='checkbox' id='69886650339680'><label for='69886650339680'></label><a><span class='highlight'>ActiveRecord::AttributeSet#write_from_user</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_set.rb:53</a><ul><li><input type='checkbox' id='69886650325900'><label for='69886650325900'></label><a><span class='highlight'>ActiveRecord::AttributeSet#[]</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_set.rb:12</a><ul><li><label class='placeholder'></label><a><span class='highlight'>ActiveRecord::LazyAttributeHash#[]</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_set/builder.rb:41</a></li></ul></li><li><input type='checkbox' id='69886650286760'><label for='69886650286760'></label><a><span class='highlight'>ActiveRecord::Attribute::FromUser#with_value_from_user</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute.rb:66</a><ul><li><label class='placeholder'></label><a><span class='highlight'>ActiveModel::Type::String#assert_valid_value</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/type/value.rb:103</a></li><li><label class='placeholder'></label><a><span class='highlight'>Kernel#class</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute.rb:68</a></li><li><input type='checkbox' id='69886650217360'><label for='69886650217360'></label><a><span class='highlight'>ActiveRecord::Attribute::FromUser.from_user</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute.rb:8</a><ul><li><input type='checkbox' id='69886650203440'><label for='69886650203440'></label><a><span class='highlight'>Class#new</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute.rb:9</a><ul><li><label class='placeholder'></label><a><span class='highlight'>ActiveRecord::Attribute::FromUser#initialize</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute.rb:29</a></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='69886650136120'><label for='69886650136120'></label><a><span class='highlight'>ActiveRecord::LazyAttributeHash#[]=</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_set/builder.rb:45</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#frozen?</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_set/builder.rb:46</a></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></body></html>

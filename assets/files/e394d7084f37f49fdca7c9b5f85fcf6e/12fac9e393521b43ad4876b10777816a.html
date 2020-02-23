@@ -1,0 +1,96 @@
+<!DOCTYPE HTML><html><head><meta charset='utf-8'/><style>body {
+    font-family: 'Dejavu Sans Mono', 'Arial', sans-serif;
+    font-size: 13px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.tree-html ul {
+    margin-left: 15px;
+}
+
+.tree-html li {
+    list-style-type: none;
+    margin: 10px;
+    position: relative;
+}
+
+.tree-html li::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc;
+    width: 15px;
+    height: 15px;
+}
+
+.tree-html li::after {
+    position: absolute;
+    content: "";
+    top: 8px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    width: 15px;
+    height: 100%;
+}
+
+.tree-html li:last-child::after {
+    display: none;
+}
+
+ul.tree-html>li:first-child::before {
+    display: none;
+}
+
+.tree-html li a {
+    padding: 2px 5px;
+}
+
+.tree-html li a:hover, .tree-html li a:hover+ul li a,
+.tree-html li a:focus, .tree-html li a:focus+ul li a {
+    background-color: #d3d3d3;
+}
+
+.tree-html label {
+  margin: .2em 0 0 -.6em;
+  position: absolute;
+  border: 1px solid #ccc;
+  background: white;
+  width: .6em;
+  height: .6em;
+  display: inline-block;
+  line-height: .65;
+}
+
+.tree-html label.placeholder {
+  visibility: hidden;
+}
+
+.tree-html label::before {
+  color: #ccc;
+  font-family: serif;
+  margin-left: 0.02em;
+}
+
+input[type='checkbox'] {
+  margin-left: 5px;
+  display: none
+}
+
+input[type='checkbox']:checked ~ ul {
+  display: none
+}
+
+input[type="checkbox"] + label::before {
+  content: '-';
+}
+
+input[type="checkbox"]:checked + label::before {
+  content: '+';
+}
+.highlight{color: #a50000;}</style></head><body><ul class='tree-html'><li><input type='checkbox' id='-617707188'><label for='-617707188'></label><a><span class='highlight'>Sinatra::Application#block in render</span> $GemPath0/gems/sinatra-1.4.7/lib/sinatra/base.rb:824</a><ul><li><input type='checkbox' id='-618931938'><label for='-618931938'></label><a><span class='highlight'>Tilt::ErubisTemplate#render</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:98</a><ul><li><input type='checkbox' id='-620136138'><label for='-620136138'></label><a><span class='highlight'>Tilt::ErubisTemplate#evaluate</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:159</a><ul><li><input type='checkbox' id='-620177088'><label for='-620177088'></label><a><span class='highlight'>Tilt::ErubisTemplate#compiled_method</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:231</a><ul><li><input type='checkbox' id='-617660828'><label for='-617660828'></label><a><span class='highlight'>Tilt::ErubisTemplate#block in compiled_method</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:232</a><ul><li><input type='checkbox' id='-618612918'><label for='-618612918'></label><a><span class='highlight'>Tilt::ErubisTemplate#compile_template_method</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:247</a><ul><li><input type='checkbox' id='-615134298'><label for='-615134298'></label><a><span class='highlight'>Tilt::ErubisTemplate#precompiled</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/erubis.rb:37</a><ul><li><input type='checkbox' id='-619017178'><label for='-619017178'></label><a><span class='highlight'>Tilt::ErubisTemplate#precompiled</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/erb.rb:50</a><ul><li><input type='checkbox' id='-617705448'><label for='-617705448'></label><a><span class='highlight'>Tilt::ErubisTemplate#precompiled</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:179</a><ul><li><input type='checkbox' id='-616709808'><label for='-616709808'></label><a><span class='highlight'>Tilt::ErubisTemplate#precompiled_preamble</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/erubis.rb:26</a><ul><li><input type='checkbox' id='10835180'><label for='10835180'></label><a><span class='highlight'>Tilt::ErubisTemplate#precompiled_preamble</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/erb.rb:30</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Tilt::ErubisTemplate#precompiled_preamble</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:209</a></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Tilt::ErubisTemplate#precompiled_template</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/erb.rb:25</a></li><li><input type='checkbox' id='-617308918'><label for='-617308918'></label><a><span class='highlight'>Tilt::ErubisTemplate#precompiled_postamble</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/erubis.rb:30</a><ul><li><input type='checkbox' id='10157800'><label for='10157800'></label><a><span class='highlight'>Tilt::ErubisTemplate#precompiled_postamble</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/erb.rb:38</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Tilt::ErubisTemplate#precompiled_postamble</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:213</a></li></ul></li></ul></li><li><input type='checkbox' id='-618180318'><label for='-618180318'></label><a><span class='highlight'>Tilt::ErubisTemplate#extract_encoding</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:281</a><ul><li><input type='checkbox' id='-616261298'><label for='-616261298'></label><a><span class='highlight'>Tilt::ErubisTemplate#extract_magic_comment</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:285</a><ul><li><input type='checkbox' id='-620009688'><label for='-620009688'></label><a><span class='highlight'>Tilt::ErubisTemplate#binary</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:291</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Tilt::ErubisTemplate#block in extract_magic_comment</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:286</a></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='-616597308'><label for='-616597308'></label><a><span class='highlight'>Tilt::ErubisTemplate#local_extraction</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:237</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Tilt::ErubisTemplate#block in local_extraction</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:238</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Tilt::ErubisTemplate#eval_file</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:118</a></li><li><input type='checkbox' id='-616595798'><label for='-616595798'></label><a><span class='highlight'>Tilt::ErubisTemplate#unbind_compiled_method</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:275</a><ul><li><label class='placeholder'></label><a><span class='highlight'>BasicObject.block in unbind_compiled_method</span> $GemPath0/gems/tilt-2.0.5/lib/tilt/template.rb:277</a></li></ul></li></ul></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Sinatra::Application#__tilt_12082330</span> /home/z/test_sinatra/views/index.erb:65526</a></li></ul></li></ul></li></ul></li></ul></body></html>

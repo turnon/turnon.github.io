@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>rack的Builder和URLMap分析</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="rack的Builder和URLMap分析" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="来自rack-2.0.1…" />
+<meta property="og:description" content="来自rack-2.0.1…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2016-10-11T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"来自rack-2.0.1…","@type":"BlogPosting","headline":"rack的Builder和URLMap分析","dateModified":"2016-10-11T00:00:00+00:00","url":"/2016/10/11/3125ee4b61634d6e83ffac974867d562.html","datePublished":"2016-10-11T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2016/10/11/3125ee4b61634d6e83ffac974867d562.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">rack的Builder和URLMap分析</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2016-10-11T00:00:00+00:00" itemprop="datePublished">Oct 11, 2016
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>来自rack-2.0.1</div>
+<div><br /></div>
+<div>Builder</div>
+<div><br /></div>
+<pre><code>module Rack
+
+  class Builder
+    def self.parse_file(config, opts = Server::Options.new)
+      options = {}
+      if config =~ /\.ru$/
+        cfgfile = ::File.read(config)
+        if cfgfile[/^#\\(.*)/] &amp;&amp; opts
+          options = opts.parse! $1.split(/\s+/)
+        end
+        cfgfile.sub!(/^__END__\n.*\Z/m, &#39;&#39;)
+        app = new_from_string cfgfile, config
+      else
+        require config
+        app = Object.const_get(::File.basename(config, &#39;.rb&#39;).split(&#39;_&#39;).map(&amp;:capitalize).join(&#39;&#39;))
+      end
+      return app, options
+    end
+
+    def self.new_from_string(builder_script, file=&#34;(rackup)&#34;)
+      eval &#34;Rack::Builder.new {\n&#34; + builder_script + &#34;\n}.to_app&#34;,
+        TOPLEVEL_BINDING, file, 0
+    end
+
+    # default_app = nil主要是为了generate_map中
+    # 可方便地直接写self.class.new(default_app, &amp;b)
+    #
+    # 同时，这也使“对特定路径添加middleware，
+    # 但不切换另一app来处理请求”的需求得以实现：
+    #
+    # use MW_ALL
+    #
+    # map &#39;/location_b&#39; do
+    #   use MW_B
+    # end
+    #
+    # run app
+    #
+    # 但这时app中不应有对/location_b的特殊处理
+    # 因为URLMap会将/location_b截掉
+    # app将无法通过path_info探知请求是否来自/location_b
+    # 对该路径的特殊处理都该用MW_B来做
+    #
+    # 当然，你可以在该block中用run来切换另一app
+
+    def initialize(default_app = nil, &amp;block)
+      @use, @map, @run, @warmup = [], nil, default_app, nil
+      instance_eval(&amp;block) if block_given?
+    end
+
+    # new方法和app方法的区别在于
+    # app就是返回一个层层middleware包裹的rack应用（通过调一次to_app）
+    # 而new返回的仍是一个builder，它能响应call（每次都调to_app，每次生一堆middleware对象），
+    # 也仍可在运行时方便地继续调use、map、run来改变其表现（这用途似乎很复杂）
+    # 另外，rack.multithread默认是true的，若需middleware使用实例变量来作context variable，则应new
+    # 不过核心的@run是始终只有一个的
+
+    def self.app(default_app = nil, &amp;block)
+      self.new(default_app, &amp;block).to_app
+    end
+
+    # 当此次use之前有map时，先将那些map用generate_map包装成middleware
+    # @map其实只是一个context variable
+    #
+    # 因为to_app中会作@use.reverse.inject(app) { |a,e| e[a] }
+    # 所以@use收藏proc { |app| ...
+
+    def use(middleware, *args, &amp;block)
+      if @map
+        mapping, @map = @map, nil
+        @use &lt;&lt; proc { |app| generate_map app, mapping }
+      end
+      @use &lt;&lt; proc { |app| middleware.new(app, *args, &amp;block) }
+    end
+
+    def run(app)
+      @run = app
+    end
+
+    # Takes a lambda or block that is used to warm-up the application.
+    #
+    #   warmup do |app|
+    #     client = Rack::MockRequest.new(app)
+    #     client.get(&#39;/&#39;)
+    #   end
+    #
+    #   use SomeMiddleware
+    #   run MyApp
+    def warmup(prc=nil, &amp;block)
+      @warmup = prc || block
+    end
+
+    def map(path, &amp;block)
+      @map ||= {}
+      @map[path] = block
+    end
+
+    # 如果有map，且最后一堆map之后没有use
+    # 则将该堆map包装成middleware
+    # 再将剩余的use一层层地包裹
+
+    def to_app
+      app = @map ? generate_map(@run, @map) : @run
+      fail &#34;missing run or map statement&#34; unless app
+      app = @use.reverse.inject(app) { |a,e| e[a] }
+      @warmup.call(app) if @warmup
+      app
+    end
+
+    def call(env)
+      to_app.call(env)
+    end
+
+    private
+
+    # 对于每一个mapping规则，都将block转换成builder
+    # 因为是builder，所以在block中可定义run和use，甚至嵌套map
+    # 然后用URLMap包装这一堆location=&gt;builder
+    # URLMap也相当于一个符合rack标准，能被call的app
+
+    def generate_map(default_app, mapping)
+      mapped = default_app ? {&#39;/&#39; =&gt; default_app} : {}
+      mapping.each { |r,b| mapped[r] = self.class.new(default_app, &amp;b).to_app }
+      URLMap.new(mapped)
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>URLMap</div>
+<div><br /></div>
+<pre><code>module Rack
+
+  class URLMap
+    NEGATIVE_INFINITY = -1.0 / 0.0
+    INFINITY = 1.0 / 0.0
+
+    def initialize(map = {})
+      remap(map)
+    end
+
+    # 路径越长的越靠前
+    def remap(map)
+      @mapping = map.map { |location, app|
+        if location =~ %r{\Ahttps?://(.*?)(/.*)}
+          host, location = $1, $2
+        else
+          host = nil
+        end
+
+        unless location[0] == ?/
+          raise ArgumentError, &#34;paths need to start with /&#34;
+        end
+
+        location = location.chomp(&#39;/&#39;)
+        match = Regexp.new(&#34;^#{Regexp.quote(location).gsub(&#39;/&#39;, &#39;/+&#39;)}(.*)&#34;, nil, &#39;n&#39;)
+
+        [host, location, match, app]
+      }.sort_by do |(host, location, _, _)|
+        [host ? -host.size : INFINITY, -location.size]
+      end
+    end
+
+    def call(env)
+      path        = env[PATH_INFO]
+      script_name = env[SCRIPT_NAME]
+      http_host   = env[HTTP_HOST]
+      server_name = env[SERVER_NAME]
+      server_port = env[SERVER_PORT]
+
+      is_same_server = casecmp?(http_host, server_name) ||
+                       casecmp?(http_host, &#34;#{server_name}:#{server_port}&#34;)
+
+      @mapping.each do |host, location, match, app|
+        unless casecmp?(http_host, host) \
+            || casecmp?(server_name, host) \
+            || (!host &amp;&amp; is_same_server)
+          next
+        end
+
+        next unless m = match.match(path.to_s)
+
+        # 截取剩余的相对路径，传给app，短一点方便一点
+        rest = m[1]
+        next unless !rest || rest.empty? || rest[0] == ?/
+
+        env[SCRIPT_NAME] = (script_name + location)
+        env[PATH_INFO] = rest
+
+        return app.call(env)
+      end
+
+      [404, {CONTENT_TYPE =&gt; &#34;text/plain&#34;, &#34;X-Cascade&#34; =&gt; &#34;pass&#34;}, [&#34;Not Found: #{path}&#34;]]
+
+    ensure
+      env[PATH_INFO]   = path
+      env[SCRIPT_NAME] = script_name
+    end
+
+    private
+    def casecmp?(v1, v2)
+      # if both nil, or they&#39;re the same string
+      return true if v1 == v2
+
+      # if either are nil... (but they&#39;re not the same)
+      return false if v1.nil?
+      return false if v2.nil?
+
+      # otherwise check they&#39;re not case-insensitive the same
+      v1.casecmp(v2).zero?
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2016/10/11/3125ee4b61634d6e83ffac974867d562.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

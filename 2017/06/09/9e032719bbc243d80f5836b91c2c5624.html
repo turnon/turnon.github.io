@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>AR的各种update方法</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="AR的各种update方法" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="update之类的方法，分布如下…" />
+<meta property="og:description" content="update之类的方法，分布如下…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-06-09T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"update之类的方法，分布如下…","@type":"BlogPosting","headline":"AR的各种update方法","dateModified":"2017-06-09T00:00:00+00:00","url":"/2017/06/09/9e032719bbc243d80f5836b91c2c5624.html","datePublished":"2017-06-09T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/06/09/9e032719bbc243d80f5836b91c2c5624.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">AR的各种update方法</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-06-09T00:00:00+00:00" itemprop="datePublished">Jun 9, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>update之类的方法，分布如下</div>
+<div><br /></div>
+<pre><code>irb(main):014:0&gt; Product.methods.grep(/^update/)
+=&gt; [:update_counters, :update_all, :update]
+irb(main):015:0&gt; Product.all.methods.grep /^update/
+=&gt; [:update, :update_all]
+irb(main):033:0&gt; Product.first.methods.grep(/^update/).reject{|m| m =~ /updated/ }
+=&gt; [:update, :update!, :update_attribute, :update_attributes, :update_attributes!, :update_column, :update_columns]
+irb(main):050:0&gt; Product.first.line_items.methods.grep /^update/
+=&gt; [:update_all, :update]</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>那些类方法，是这样定义的</div>
+<div><br /></div>
+<pre><code>module ActiveRecord
+  module Querying
+    delegate :destroy, :destroy_all, :delete, :delete_all, :update, :update_all, to: :all
+
+module ActiveRecord
+  class Base
+    extend Querying</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>可以查得</div>
+<div><br /></div>
+<pre><code>irb(main):011:0&gt; puts Product.singleton_class.ancestors.select{|a| a.to_s =~ /Q/}
+ActiveRecord::Querying
+ActiveRecord::QueryCache::ClassMethods</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><span style="font-weight: bold;">update_all</span></div>
+<div><br /></div>
+<div>关于update_all，API的描述如下</div>
+<div><br /></div>
+<div>Updates all records in the current relation with details given. This method constructs a single SQL UPDATE statement and sends it straight to the database. It does not instantiate the involved models and it does not trigger Active Record callbacks or validations. However, values passed to update_all will still go through Active Record&#39;s normal type casting and serialization</div>
+<div><br /></div>
+<div>试验一下</div>
+<div><br /></div>
+<pre><code>irb(main):012:0&gt; ps = Product.where(id: [1, 2])
+  Product Load (0.2ms)  SELECT &#34;products&#34;.* FROM &#34;products&#34; WHERE &#34;products&#34;.&#34;id&#34; IN (1, 2)
+=&gt; #&lt;activerecord::relation [#&lt;product="" id:="" 1,="" title:="" "seven="" mobile="" apps="" in="" seven="" weeks",="" description:="" "wtf",="" image_url:="" "7apps.jpg",="" price:="" 0.2e3,="" created_at:="" "2017-04-08="" 14:40:32",="" updated_at:="" "2017-06-11="" 03:21:59"=""&gt;, #&lt;product id:="" 2,="" title:="" "ffdgfnhnghjjmjh",="" description:="" "hyjyju",="" image_url:="" "7apps.jpg",="" price:="" 0.6e1,="" created_at:="" "2017-04-08="" 14:40:32",="" updated_at:="" "2017-04-08="" 14:40:32"=""&gt;]&gt;
+irb(main):014:0&gt; ps.map{|p| p.price.to_f}
+=&gt; [200.0, 6.0]
+irb(main):015:0&gt; binding.trace_tree(html: true, tmp: &#39;rails/update.html&#39;){ ps.update price: 100 }
+   (19.8ms)  begin transaction
+  Product Exists (24.9ms)  SELECT  1 AS one FROM &#34;products&#34; WHERE &#34;products&#34;.&#34;title&#34; = ? AND (&#34;products&#34;.&#34;id&#34; != ?) LIMIT ?  [[&#34;title&#34;, &#34;Seven Mobile Apps in Seven Weeks&#34;], [&#34;id&#34;, 1], [&#34;LIMIT&#34;, 1]]
+  SQL (26.1ms)  UPDATE &#34;products&#34; SET &#34;price&#34; = ?, &#34;updated_at&#34; = ? WHERE &#34;products&#34;.&#34;id&#34; = ?  [[&#34;price&#34;, 0.1e3], [&#34;updated_at&#34;, 2017-06-11 03:26:36 UTC], [&#34;id&#34;, 1]]
+   (15.8ms)  commit transaction
+   (14.3ms)  begin transaction
+  Product Exists (30.4ms)  SELECT  1 AS one FROM &#34;products&#34; WHERE &#34;products&#34;.&#34;title&#34; = ? AND (&#34;products&#34;.&#34;id&#34; != ?) LIMIT ?  [[&#34;title&#34;, &#34;ffdgfnhnghjjmjh&#34;], [&#34;id&#34;, 2], [&#34;LIMIT&#34;, 1]]
+  SQL (30.8ms)  UPDATE &#34;products&#34; SET &#34;price&#34; = ?, &#34;updated_at&#34; = ? WHERE &#34;products&#34;.&#34;id&#34; = ?  [[&#34;price&#34;, 0.1e3], [&#34;updated_at&#34;, 2017-06-11 03:26:38 UTC], [&#34;id&#34;, 2]]
+   (14.7ms)  commit transaction
+=&gt; [#&lt;product id:="" 1,="" title:="" "seven="" mobile="" apps="" in="" seven="" weeks",="" description:="" "wtf",="" image_url:="" "7apps.jpg",="" price:="" 0.1e3,="" created_at:="" "2017-04-08="" 14:40:32",="" updated_at:="" "2017-06-11="" 03:26:36"=""&gt;, #&lt;product id:="" 2,="" title:="" "ffdgfnhnghjjmjh",="" description:="" "hyjyju",="" image_url:="" "7apps.jpg",="" price:="" 0.1e3,="" created_at:="" "2017-04-08="" 14:40:32",="" updated_at:="" "2017-06-11="" 03:26:38"=""&gt;]
+irb(main):016:0&gt; ps.map{|p| p.price.to_f}
+=&gt; [100.0, 100.0]
+irb(main):017:0&gt; binding.trace_tree(html: true, tmp: &#39;rails/update_all.html&#39;){ ps.update_all price: 200 }
+  SQL (63.5ms)  UPDATE &#34;products&#34; SET &#34;price&#34; = 200 WHERE &#34;products&#34;.&#34;id&#34; IN (1, 2)
+=&gt; 2
+irb(main):018:0&gt; ps.map{|p| p.price.to_f}
+=&gt; [100.0, 100.0]
+irb(main):021:0&gt; ps.reload.map{|p| p.price.to_f}
+  Product Load (0.3ms)  SELECT &#34;products&#34;.* FROM &#34;products&#34; WHERE &#34;products&#34;.&#34;id&#34; IN (1, 2)
+=&gt; [200.0, 200.0]&lt;/product&gt;&lt;/product&gt;&lt;/product&gt;&lt;/activerecord::relation&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>各自完整调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/9e032719bbc243d80f5836b91c2c5624/4967c339c18c3bdb331115e3fbfd7ff7.html"><img src="/assets/files/9e032719bbc243d80f5836b91c2c5624/1c27f3493abe6fea24c23f00dc5056e3.png" alt="20170611_112635_619_update.html" /></a></div>
+<div><br /></div>
+<div><a href="/assets/files/9e032719bbc243d80f5836b91c2c5624/9a5464e347ff9560d884a770b7af8b8a.html"><img src="/assets/files/9e032719bbc243d80f5836b91c2c5624/5502ad0f54fdbf4d4a32bbe6f8a5f50f.png" alt="20170611_112712_195_update_all.html" /></a></div>
+<div><br /></div>
+<div>直观来看，update_all首先符合了does not instantiate the involved models的说法，有执行sql，但ActiveRecord::Relation中的对象的属性没有改变</div>
+<div><br /></div>
+<div>其源码如下，一上来就是拼接sql，然后直接执行，因此，对已加载的model对象的属性没有任何影响，也没触发model的callbacks和validations</div>
+<div><br /></div>
+<pre><code># activerecord-5.0.2/lib/active_record/relation.rb
+def update_all(updates)
+  raise ArgumentError, &#34;Empty list of attributes to change&#34; if updates.blank?
+
+  stmt = Arel::UpdateManager.new
+
+  stmt.set Arel.sql(@klass.send(:sanitize_sql_for_assignment, updates))
+  stmt.table(table)
+
+  if joins_values.any?
+    @klass.connection.join_to_update(stmt, arel, arel_attribute(primary_key))
+  else
+    stmt.key = arel_attribute(primary_key)
+    stmt.take(arel.limit)
+    stmt.order(*arel.orders)
+    stmt.wheres = arel.constraints
+  end
+
+  @klass.connection.update stmt, &#39;SQL&#39;, bound_attributes
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><span style="font-weight: bold;">update</span></div>
+<div><br /></div>
+<div>relation的update是逐个取出relation中的对象，然后在每个对象上调update，它会assign_attributes并save，所以，model的属性是更新了，而且save中也会跑callbacks和validations</div>
+<div><br /></div>
+<div><img src="/assets/files/9e032719bbc243d80f5836b91c2c5624/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div>关键代码如下</div>
+<div><br /></div>
+<div>activerecord-5.0.2/lib/active_record/relation.rb</div>
+<div><br /></div>
+<pre><code>def update(id = :all, attributes)
+  if id.is_a?(Array)
+    id.map.with_index { |one_id, idx| update(one_id, attributes[idx]) }
+  elsif id == :all
+    records.each { |record| record.update(attributes) }
+  else
+    if ActiveRecord::Base === id
+      id = id.id
+      ActiveSupport::Deprecation.warn(&lt;&lt;-MSG.squish)
+        You are passing an instance of ActiveRecord::Base to `update`.
+        Please pass the id of the object by calling `.id`.
+      MSG
+    end
+    object = find(id)
+    object.update(attributes)
+    object
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>activerecord-5.0.2/lib/active_record/persistence.rb</div>
+<div><br /></div>
+<pre><code>def update(attributes)
+  # The following transaction covers any possible database side-effects of the
+  # attributes assignment. For example, setting the IDs of a child collection.
+  with_transaction_returning_status do
+    assign_attributes(attributes)
+    save
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><span style="font-weight: bold;">update_attribute</span></div>
+<div><br /></div>
+<div>如下，注释很明确，虽然走的是save，但validate: false</div>
+<div><br /></div>
+<pre><code># activerecord-5.0.2/lib/active_record/persistence.rb
+#
+# Updates a single attribute and saves the record.
+# This is especially useful for boolean flags on existing records. Also note that
+#
+# * Validation is skipped.
+# * \Callbacks are invoked.
+# * updated_at/updated_on column is updated if that column is available.
+# * Updates all the attributes that are dirty in this object.
+#
+# This method raises an ActiveRecord::ActiveRecordError  if the
+# attribute is marked as readonly.
+#
+# Also see #update_column.
+def update_attribute(name, value)
+  name = name.to_s
+  verify_readonly_attribute(name)
+  public_send(&#34;#{name}=&#34;, value)
+
+  changed? ? save(validate: false) : true
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><span style="font-weight: bold;">update_attributes</span></div>
+<div><br /></div>
+<div>也就是update</div>
+<div><br /></div>
+<pre><code>alias update_attributes update</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><span style="font-weight: bold;">update_column与update_columns</span></div>
+<div><br /></div>
+<div>两者其实干的是一回事：调用relation的update_all（无callbacks和validations），但会更新model的属性</div>
+<div><br /></div>
+<pre><code># activerecord-5.0.2/lib/active_record/persistence.rb
+def update_column(name, value)
+  update_columns(name =&gt; value)
+end
+
+# Updates the attributes directly in the database issuing an UPDATE SQL
+# statement and sets them in the receiver:
+#
+#   user.update_columns(last_request_at: Time.current)
+#
+# This is the fastest way to update attributes because it goes straight to
+# the database, but take into account that in consequence the regular update
+# procedures are totally bypassed. In particular:
+#
+# * \Validations are skipped.
+# * \Callbacks are skipped.
+# * +updated_at+/+updated_on+ are not updated.
+# * However, attributes are serialized with the same rules as ActiveRecord::Relation#update_all
+#
+# This method raises an ActiveRecord::ActiveRecordError when called on new
+# objects, or when at least one of the attributes is marked as readonly.
+def update_columns(attributes)
+  raise ActiveRecordError, &#34;cannot update a new record&#34; if new_record?
+  raise ActiveRecordError, &#34;cannot update a destroyed record&#34; if destroyed?
+
+  attributes.each_key do |key|
+    verify_readonly_attribute(key.to_s)
+  end
+
+  updated_count = self.class.unscoped.where(self.class.primary_key =&gt; id).update_all(attributes)
+
+  attributes.each do |k, v|
+    raw_write_attribute(k, v)
+  end
+
+  updated_count == 1
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>稍微试验一下</div>
+<div><br /></div>
+<pre><code>irb(main):042:0&gt; p1 = Product.first
+  Product Load (0.1ms)  SELECT  &#34;products&#34;.* FROM &#34;products&#34; ORDER BY &#34;products&#34;.&#34;id&#34; ASC LIMIT ?  [[&#34;LIMIT&#34;, 1]]
+=&gt; #&lt;product id:="" 1,="" title:="" "seven="" mobile="" apps="" in="" seven="" weeks",="" description:="" "wtf",="" image_url:="" "7apps.jpg",="" price:="" 0.2e3,="" created_at:="" "2017-04-08="" 14:40:32",="" updated_at:="" "2017-06-11="" 03:26:36"=""&gt;
+irb(main):044:0&gt; p1.price.to_f
+=&gt; 200.0
+irb(main):045:0&gt; p1.update_columns price: 300
+  SQL (2.3ms)  UPDATE &#34;products&#34; SET &#34;price&#34; = 300 WHERE &#34;products&#34;.&#34;id&#34; = ?  [[&#34;id&#34;, 1]]
+=&gt; true
+irb(main):046:0&gt; p1.price.to_f
+=&gt; 300.0&lt;/product&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>一个简单总结如下</div>
+<div><br /></div>
+<div><img src="/assets/files/9e032719bbc243d80f5836b91c2c5624/91eee3f8d75dbb327ede474944726554.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/06/09/9e032719bbc243d80f5836b91c2c5624.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

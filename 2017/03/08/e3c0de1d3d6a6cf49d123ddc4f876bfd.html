@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>ActiveSupport::PerThreadRegistry vs thread_mattr_accessor</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="ActiveSupport::PerThreadRegistry vs thread_mattr_accessor" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="在看ActiveRecord.current_scope时，发现ActiveSupport::PerThreadRegistry这种东西…" />
+<meta property="og:description" content="在看ActiveRecord.current_scope时，发现ActiveSupport::PerThreadRegistry这种东西…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-03-08T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"在看ActiveRecord.current_scope时，发现ActiveSupport::PerThreadRegistry这种东西…","@type":"BlogPosting","headline":"ActiveSupport::PerThreadRegistry vs thread_mattr_accessor","dateModified":"2017-03-08T00:00:00+00:00","url":"/2017/03/08/e3c0de1d3d6a6cf49d123ddc4f876bfd.html","datePublished":"2017-03-08T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/03/08/e3c0de1d3d6a6cf49d123ddc4f876bfd.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">ActiveSupport::PerThreadRegistry vs thread_mattr_accessor</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-03-08T00:00:00+00:00" itemprop="datePublished">Mar 8, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>在看ActiveRecord.current_scope时，发现ActiveSupport::PerThreadRegistry这种东西</div>
+<div><b><br /></b></div>
+<div><b>PerThreadRegistry用例</b></div>
+<div><br /></div>
+<div>源码已提及它是不建议使用的</div>
+<div><br /></div>
+<pre><code># NOTE: This approach has been deprecated for end-user code in favor of thread_mattr_accessor and friends.
+# Please use that approach instead.</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>不过5.0.2还在用</div>
+<div><br /></div>
+<pre><code>module ActiveRecord
+  module Scoping
+    class ScopeRegistry # :nodoc:
+      extend ActiveSupport::PerThreadRegistry
+
+      VALID_SCOPE_TYPES = [:current_scope, :ignore_default_scope]
+
+      def initialize
+        @registry = Hash.new { |hash, key| hash[key] = {} }
+      end
+
+      # Obtains the value for a given +scope_type+ and +model+.
+      def value_for(scope_type, model)
+        raise_invalid_scope_type!(scope_type)
+        klass = model
+        base = model.base_class
+        while klass &lt;= base
+          value = @registry[scope_type][klass.name]
+          return value if value
+          klass = klass.superclass
+        end
+      end
+
+      # Sets the +value+ for a given +scope_type+ and +model+.
+      def set_value_for(scope_type, model, value)
+        raise_invalid_scope_type!(scope_type)
+        @registry[scope_type][model.name] = value
+      end
+
+      private
+
+      def raise_invalid_scope_type!(scope_type)
+        if !VALID_SCOPE_TYPES.include?(scope_type)
+          raise ArgumentError, &#34;Invalid scope type &#39;#{scope_type}&#39; sent to the registry. Scope types must be included in VALID_SCOPE_TYPES&#34;
+        end
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><b>PerThreadRegistry源码</b></div>
+<div><br /></div>
+<pre><code>require &#39;active_support/core_ext/module/delegation&#39;
+
+module ActiveSupport
+  module PerThreadRegistry
+
+    # extend此module的class A会被设置一个
+    # 名为@per_thread_registry_key， 值为A的类实例变量
+
+    def self.extended(object)
+      object.instance_variable_set &#39;@per_thread_registry_key&#39;, object.name.freeze
+    end
+
+    # 每次以类方法的形式调用instance，都会在ThredLocal获取相同的实例
+
+    def instance
+      Thread.current[@per_thread_registry_key] ||= new
+    end
+
+    # 但其实一般不会直接使用instance，而是以类方法的形式调用实例方法
+    # 当然一开始是不存在的，需要委托到ThredLocal上（动态定义，以便下次直接调用）
+    # 用例如上所示
+
+    protected
+      def method_missing(name, *args, &amp;block) # :nodoc:
+        # Caches the method definition as a singleton method of the receiver.
+        #
+        # By letting #delegate handle it, we avoid an enclosure that&#39;ll capture args.
+        singleton_class.delegate name, to: :instance
+
+        send(name, *args, &amp;block)
+      end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><b>thread_mattr_accessor源码</b></div>
+<div><br /></div>
+<div>既然说到thread_mattr_accessor，那也看看它</div>
+<div><br /></div>
+<div>可以发现，其实它跟ActiveSupport::PerThreadRegistry的用途是不太一样的。</div>
+<div><br /></div>
+<div>extend ActiveSupport::PerThreadRegistry的类，它的实例本身应具备功能</div>
+<div><br /></div>
+<div>而thread_mattr_reader仅仅使module/class变成一个有名字的ThreadLocal接口，它本身具不具备功能是无关紧要的</div>
+<div><br /></div>
+<pre><code>class module
+  def thread_mattr_reader(*syms) # :nodoc:
+    options = syms.extract_options!
+
+    syms.each do |sym|
+      raise NameError.new(&#34;invalid attribute name: #{sym}&#34;) unless sym =~ /^[_A-Za-z]\w*$/
+      class_eval(&lt;&lt;-EOS, __FILE__, __LINE__ + 1)
+        def self.#{sym}
+          Thread.current[&#34;attr_&#34;+ name + &#34;_#{sym}&#34;]
+        end
+      EOS
+
+      unless options[:instance_reader] == false || options[:instance_accessor] == false
+        class_eval(&lt;&lt;-EOS, __FILE__, __LINE__ + 1)
+          def #{sym}
+            Thread.current[&#34;attr_&#34;+ self.class.name + &#34;_#{sym}&#34;]
+          end
+        EOS
+      end
+    end
+  end
+
+  def thread_mattr_writer(*syms) # :nodoc:
+    options = syms.extract_options!
+    syms.each do |sym|
+      raise NameError.new(&#34;invalid attribute name: #{sym}&#34;) unless sym =~ /^[_A-Za-z]\w*$/
+      class_eval(&lt;&lt;-EOS, __FILE__, __LINE__ + 1)
+        def self.#{sym}=(obj)
+          Thread.current[&#34;attr_&#34;+ name + &#34;_#{sym}&#34;] = obj
+        end
+      EOS
+
+      unless options[:instance_writer] == false || options[:instance_accessor] == false
+        class_eval(&lt;&lt;-EOS, __FILE__, __LINE__ + 1)
+          def #{sym}=(obj)
+            Thread.current[&#34;attr_&#34;+ self.class.name + &#34;_#{sym}&#34;] = obj
+          end
+        EOS
+      end
+    end
+  end
+
+  def thread_mattr_accessor(*syms, &amp;blk)
+    thread_mattr_reader(*syms, &amp;blk)
+    thread_mattr_writer(*syms, &amp;blk)
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><b>thread_mattr_reader用例</b></div>
+<div><br /></div>
+<div>当然，这个Worker是具备自身功能的，但它的连接功能是来自参数connection</div>
+<div><br /></div>
+<pre><code>module ActionCable
+  module Server
+    class Worker
+      include ActiveSupport::Callbacks
+
+      thread_mattr_accessor :connection
+
+      def work(connection)
+        self.connection = connection
+
+        run_callbacks :work do
+          yield
+        end
+      ensure
+        self.connection = nil
+      end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/03/08/e3c0de1d3d6a6cf49d123ddc4f876bfd.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

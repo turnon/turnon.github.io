@@ -1,0 +1,96 @@
+<!DOCTYPE HTML><html><head><meta charset='utf-8'/><style>body {
+    font-family: 'Dejavu Sans Mono', 'Arial', sans-serif;
+    font-size: 13px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.tree-html ul {
+    margin-left: 15px;
+}
+
+.tree-html li {
+    list-style-type: none;
+    margin: 10px;
+    position: relative;
+}
+
+.tree-html li::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc;
+    width: 15px;
+    height: 15px;
+}
+
+.tree-html li::after {
+    position: absolute;
+    content: "";
+    top: 8px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    width: 15px;
+    height: 100%;
+}
+
+.tree-html li:last-child::after {
+    display: none;
+}
+
+ul.tree-html>li:first-child::before {
+    display: none;
+}
+
+.tree-html li a {
+    padding: 2px 5px;
+}
+
+.tree-html li a:hover, .tree-html li a:hover+ul li a,
+.tree-html li a:focus, .tree-html li a:focus+ul li a {
+    background-color: #d3d3d3;
+}
+
+.tree-html label {
+  margin: .2em 0 0 -.6em;
+  position: absolute;
+  border: 1px solid #ccc;
+  background: white;
+  width: .6em;
+  height: .6em;
+  display: inline-block;
+  line-height: .65;
+}
+
+.tree-html label.placeholder {
+  visibility: hidden;
+}
+
+.tree-html label::before {
+  color: #ccc;
+  font-family: serif;
+  margin-left: 0.02em;
+}
+
+input[type='checkbox'] {
+  margin-left: 5px;
+  display: none
+}
+
+input[type='checkbox']:checked ~ ul {
+  display: none
+}
+
+input[type="checkbox"] + label::before {
+  content: '-';
+}
+
+input[type="checkbox"]:checked + label::before {
+  content: '+';
+}
+.highlight{color: #a50000;}</style></head><body><ul class='tree-html'><li><input type='checkbox' id='69886646393340'><label for='69886646393340'></label><a><span class='highlight'>Object#block in &lt;main&gt;</span> (pry):21</a><ul><li><input type='checkbox' id='69886646387600'><label for='69886646387600'></label><a><span class='highlight'>Student#__temp__7656e6465627</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_methods/read.rb:34</a><ul><li><input type='checkbox' id='69886646382200'><label for='69886646382200'></label><a><span class='highlight'>Student#_read_attribute</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_methods/read.rb:70</a><ul><li><label class='placeholder'></label><a><span class='highlight'>String#to_s</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_methods/read.rb:71</a></li><li><input type='checkbox' id='69886646356340'><label for='69886646356340'></label><a><span class='highlight'>ActiveRecord::AttributeSet#fetch_value</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_set.rb:44</a><ul><li><input type='checkbox' id='69886646276660'><label for='69886646276660'></label><a><span class='highlight'>ActiveRecord::AttributeSet#[]</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_set.rb:12</a><ul><li><label class='placeholder'></label><a><span class='highlight'>ActiveRecord::LazyAttributeHash#[]</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_set/builder.rb:41</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>ActiveRecord::Attribute::FromDatabase#value</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute.rb:36</a></li></ul></li></ul></li></ul></li></ul></li></ul></body></html>

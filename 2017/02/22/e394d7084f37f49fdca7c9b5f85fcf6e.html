@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>跟踪sinatra如何利用tilt进行render</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="跟踪sinatra如何利用tilt进行render" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="完整trace在末尾…" />
+<meta property="og:description" content="完整trace在末尾…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-02-22T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"完整trace在末尾…","@type":"BlogPosting","headline":"跟踪sinatra如何利用tilt进行render","dateModified":"2017-02-22T00:00:00+00:00","url":"/2017/02/22/e394d7084f37f49fdca7c9b5f85fcf6e.html","datePublished":"2017-02-22T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/02/22/e394d7084f37f49fdca7c9b5f85fcf6e.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">跟踪sinatra如何利用tilt进行render</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-02-22T00:00:00+00:00" itemprop="datePublished">Feb 22, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>完整trace在末尾</div>
+<div><br /></div>
+<div>假设有sinatra script如下，有实例变量@a和局部变量b</div>
+<div><br /></div>
+<pre><code>get &#39;/&#39; do
+  @a = &#34;Hello, world&#34;
+  erb(:index, {}, {b: 123})
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>模板index.erb为</div>
+<div><br /></div>
+<pre><code>instance a: &lt;%= @a %&gt;
+local b: &lt;%= b %&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>现跟踪该erb如何运作</div>
+<div><br /></div>
+<div>sinatra中各种erb、erubis、haml、sass、scss，调用的都是render，render再用tilt来加载相应模板引擎来进行实际的render。于是用trace_tree来跟踪title的render方法</div>
+<div><br /></div>
+<pre><code>def erb(template, options = {}, locals = {}, &amp;block)
+  render(:erb, template, options, locals, &amp;block)
+end
+
+def render(engine, data, options = {}, locals = {}, &amp;block)
+  locals          = options.delete(:locals) || locals         || {}
+  scope           = options.delete(:scope)          || self
+  # ...
+  begin
+    #...
+    require &#39;trace_tree&#39;
+    output = binding.trace_tree(html: true, tmp: [&#39;sinatra&#39;, &#39;render.html&#39;]) do
+      template.render(scope, locals, &amp;block)
+    end
+  ensure
+    @default_layout = layout_was
+  end
+  # ...
+  output
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>粗略地看，render干的就是两件事：动态定义一个方法，然后执行它，这就返回了填充好的模板了</div>
+<div><br /></div>
+<pre><code>def evaluate(scope, locals, &amp;block)
+  locals_keys = locals.keys
+  if SYMBOL_ARRAY_SORTABLE
+    locals_keys.sort!
+  else
+    locals_keys.sort!{|x, y| x.to_s &lt;=&gt; y.to_s}
+  end
+  method = compiled_method(locals_keys)
+  method.bind(scope).call(locals, &amp;block)
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>调用栈如下</div>
+<div><br /></div>
+<div><img src="/assets/files/e394d7084f37f49fdca7c9b5f85fcf6e/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div><br /></div>
+<div>compiled_method如下：动态定义方法，方法名含线程id以免重复，方法体是用字符串拼接（用lambda也可以，但这样就不像字符串那样好检查了），然后class_eval生成这个方法，再remove_method，以免污染，最后缓存在@compiled_method</div>
+<div><br /></div>
+<pre><code>TOPOBJECT = Object.superclass || Object
+
+def compiled_method(locals_keys)
+  LOCK.synchronize do
+    @compiled_method[locals_keys] ||= compile_template_method(locals_keys)
+  end
+end
+
+def compile_template_method(local_keys)
+  source, offset = precompiled(local_keys)
+  local_code = local_extraction(local_keys)
+
+  method_name = &#34;__tilt_#{Thread.current.object_id.abs}&#34;
+  method_source = String.new
+
+  if method_source.respond_to?(:force_encoding)
+    method_source.force_encoding(source.encoding)
+  end
+
+  method_source &lt;&lt; &lt;&lt;-RUBY
+    TOPOBJECT.class_eval do
+      def #{method_name}(locals)
+        Thread.current[:tilt_vars] = [self, locals]
+        class &lt;&lt; self
+          this, locals = Thread.current[:tilt_vars]
+          this.instance_eval do
+            #{local_code}
+  RUBY
+  offset += method_source.count(&#34;\n&#34;)
+  method_source &lt;&lt; source
+  method_source &lt;&lt; &#34;\nend;end;end;end&#34;
+  Object.class_eval(method_source, eval_file, line - offset)
+  unbind_compiled_method(method_name)
+end
+
+def unbind_compiled_method(method_name)
+  method = TOPOBJECT.instance_method(method_name)
+  TOPOBJECT.class_eval { remove_method(method_name) }
+  method
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>加入puts来检查method_source，可见模板如下（去掉头尾的TOPOBJECT.class_eval和end才是真正的方法定义）</div>
+<div><br /></div>
+<pre><code>        TOPOBJECT.class_eval do
+          def __tilt_12082330(locals)
+            Thread.current[:tilt_vars] = [self, locals]
+            class &lt;&lt; self
+              this, locals = Thread.current[:tilt_vars]
+              this.instance_eval do
+                b = locals[:b]
+        begin
+          __original_outvar = @_out_buf if defined?(@_out_buf)
+
+@_out_buf = _buf = String.new
+ @_out_buf &lt;&lt; &#39;instance a: &#39;; @_out_buf &lt;&lt; ( @a ).to_s; @_out_buf &lt;&lt; &#39;
+&#39;; @_out_buf &lt;&lt; &#39;local b: &#39;; @_out_buf &lt;&lt; ( b ).to_s; @_out_buf &lt;&lt; &#39;
+&#39;;
+@_out_buf
+
+        ensure
+          @_out_buf = __original_outvar
+        end
+
+end;end;end;end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>中间的@_out_buf那段来自于precompiled</div>
+<div><br /></div>
+<div><img src="/assets/files/e394d7084f37f49fdca7c9b5f85fcf6e/91eee3f8d75dbb327ede474944726554.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div><br /></div>
+<div>precompiled的实现是一种template pattern，所有XXXTemplate都继承自Template，并重写precompiled（其实也有些是直接重写evaluate的，例如AsciidoctorTemplate，反正Template#render调用的是Template#evaluate，只要接口统一为evaluate就可以，也算是种adapter pattern吧）</div>
+<div><br /></div>
+<pre><code>module Tilt
+  class ERBTemplate &lt; Template
+    #...
+    if RUBY_VERSION &gt;= &#39;1.9.0&#39;
+      def precompiled(locals)
+        source, offset = super
+        [source, offset + 1]
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>Template的precompiled会将重写过的precompiled_preamble，precompiled_template，precompiled_postamble拼在一起</div>
+<div><br /></div>
+<pre><code>def precompiled(local_keys)
+  preamble = precompiled_preamble(local_keys)
+  template = precompiled_template(local_keys)
+  postamble = precompiled_postamble(local_keys)
+  source = String.new
+  #...
+  source &lt;&lt; preamble &lt;&lt; &#34;\n&#34; &lt;&lt; template &lt;&lt; &#34;\n&#34; &lt;&lt; postamble
+  [source, preamble.count(&#34;\n&#34;)+1]
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>其中precompiled_template就是模板的生成。例如，ERBTemplate就是这样重写precompiled_template的</div>
+<div><br /></div>
+<pre><code>module Tilt
+  class ERBTemplate &lt; Template
+    #...
+
+    def prepare
+      #...
+      @engine = ::ERB.new(data, options[:safe], options[:trim], @outvar)
+    end
+
+    def precompiled_template(locals)
+      source = @engine.src
+      source
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>演示一下平常地使用erb（不过tilt默认用erubis所以刚刚才生成的@_out_buf......不同）</div>
+<div><br /></div>
+<pre><code>irb(main):010:0&gt; puts ERB.new(&#39;a: &lt;%= @a %&gt;&#39;).src
+#coding:UTF-8
+_erbout = &#39;&#39;; _erbout.concat &#34;a: &#34;; _erbout.concat(( @a ).to_s); _erbout.force_encoding(__ENCODING__)
+=&gt; nil</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>串联起来，为了能获取实例变量，模板函数要绑定在传入的scope（原Sinatra::Base用dup复制出的self）上执行</div>
+<div><br /></div>
+<pre><code>method.bind(scope).call(locals, &amp;block)</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而局部变量，如上所示，作为方法参数传入，而方法体早已用local_extraction写死，得出诸如b = locals[:b]的语句</div>
+<div><br /></div>
+<pre><code>def local_extraction(local_keys)
+  local_keys.map do |k|
+    if k.to_s =~ /\A[a-z_][a-zA-Z_0-9]*\z/
+      &#34;#{k} = locals[#{k.inspect}]&#34;
+    else
+      raise &#34;invalid locals key: #{k.inspect} (keys must be variable names)&#34;
+    end
+  end.join(&#34;\n&#34;)
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>至此，模板填充完毕。</div>
+<div><br /></div>
+<div>完整trace如下</div>
+<div><br /></div>
+<div><a href="/assets/files/e394d7084f37f49fdca7c9b5f85fcf6e/12fac9e393521b43ad4876b10777816a.html"><img src="/assets/files/e394d7084f37f49fdca7c9b5f85fcf6e/649bc0dc826b160d46d5be469533f5ff.png" alt="20170222_render.html" /></a><br /></div>
+
+  </div><a class="u-url" href="/2017/02/22/e394d7084f37f49fdca7c9b5f85fcf6e.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE HTML><html><head><meta charset='utf-8'/><style>body {
+    font-family: 'Dejavu Sans Mono', 'Arial', sans-serif;
+    font-size: 13px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.tree-html ul {
+    margin-left: 15px;
+}
+
+.tree-html li {
+    list-style-type: none;
+    margin: 10px;
+    position: relative;
+}
+
+.tree-html li::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc;
+    width: 15px;
+    height: 15px;
+}
+
+.tree-html li::after {
+    position: absolute;
+    content: "";
+    top: 8px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    width: 15px;
+    height: 100%;
+}
+
+.tree-html li:last-child::after {
+    display: none;
+}
+
+ul.tree-html>li:first-child::before {
+    display: none;
+}
+
+.tree-html li a {
+    padding: 2px 5px;
+}
+
+.tree-html li a:hover, .tree-html li a:hover+ul li a,
+.tree-html li a:focus, .tree-html li a:focus+ul li a {
+    background-color: #d3d3d3;
+}
+
+.tree-html label {
+  margin: .2em 0 0 -.6em;
+  position: absolute;
+  border: 1px solid #ccc;
+  background: white;
+  width: .6em;
+  height: .6em;
+  display: inline-block;
+  line-height: .65;
+}
+
+.tree-html label.placeholder {
+  visibility: hidden;
+}
+
+.tree-html label::before {
+  color: #ccc;
+  font-family: serif;
+  margin-left: 0.02em;
+}
+
+input[type='checkbox'] {
+  margin-left: 5px;
+  display: none
+}
+
+input[type='checkbox']:checked ~ ul {
+  display: none
+}
+
+input[type="checkbox"] + label::before {
+  content: '-';
+}
+
+input[type="checkbox"]:checked + label::before {
+  content: '+';
+}
+.highlight{color: #a50000;}</style></head><body><ul class='tree-html'><li><input type='checkbox' id='70244933760060'><label for='70244933760060'></label><a><span class='highlight'>CartsController.block in &lt;class:CartsController&gt;</span> /home/z/test_rails/depot/app/controllers/carts_controller.rb:3</a><ul><li><input type='checkbox' id='70244933708820'><label for='70244933708820'></label><a><span class='highlight'>CartsController.rescue_from</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/rescuable.rb:50</a><ul><li><input type='checkbox' id='70244933657940'><label for='70244933657940'></label><a><span class='highlight'>Array#each</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/rescuable.rb:59</a><ul><li><input type='checkbox' id='70244933614700'><label for='70244933614700'></label><a><span class='highlight'>CartsController.block in rescue_from</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/rescuable.rb:59</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/rescuable.rb:60</a></li><li><label class='placeholder'></label><a><span class='highlight'>Kernel#respond_to?</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/rescuable.rb:60</a></li><li><label class='placeholder'></label><a><span class='highlight'>Module#name</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/rescuable.rb:61</a></li><li><input type='checkbox' id='70244933209380'><label for='70244933209380'></label><a><span class='highlight'>CartsController.block (4 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:90</a><ul><li><label class='placeholder'></label><a><span class='highlight'>CartsController.block (4 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:90</a></li></ul></li><li><input type='checkbox' id='70244930495560'><label for='70244930495560'></label><a><span class='highlight'>CartsController.block (2 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:87</a><ul><li><input type='checkbox' id='70244930427960'><label for='70244930427960'></label><a><span class='highlight'>CartsController.block (2 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:87</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#singleton_class</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:88</a></li><li><input type='checkbox' id='70244932509360'><label for='70244932509360'></label><a><span class='highlight'>Module#class_eval</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:88</a><ul><li><input type='checkbox' id='70244932457380'><label for='70244932457380'></label><a><span class='highlight'>#&lt;Class:CartsController&gt;.block (3 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:88</a><ul><li><input type='checkbox' id='70244932405880'><label for='70244932405880'></label><a><span class='highlight'>#&lt;Class:CartsController&gt;.remove_possible_method</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/module/remove_method.rb:3</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Module#method_defined?</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/module/remove_method.rb:4</a></li><li><input type='checkbox' id='70244932226400'><label for='70244932226400'></label><a><span class='highlight'>Module#undef_method</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/module/remove_method.rb:5</a><ul><li><label class='placeholder'></label><a><span class='highlight'>BasicObject#singleton_method_undefined</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/module/remove_method.rb:5</a></li></ul></li></ul></li><li><input type='checkbox' id='70244931925300'><label for='70244931925300'></label><a><span class='highlight'>Module#define_method</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:90</a><ul><li><label class='placeholder'></label><a><span class='highlight'>BasicObject#singleton_method_added</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:90</a></li></ul></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Module#singleton_class?</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:93</a></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></body></html>

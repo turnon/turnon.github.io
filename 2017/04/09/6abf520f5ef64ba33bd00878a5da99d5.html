@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Functional Testing of Controllers</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="Functional Testing of Controllers" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="对于controller的功能性测试，可以这样写（摘自IntegrationTest里的注释）…" />
+<meta property="og:description" content="对于controller的功能性测试，可以这样写（摘自IntegrationTest里的注释）…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-04-09T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"对于controller的功能性测试，可以这样写（摘自IntegrationTest里的注释）…","@type":"BlogPosting","headline":"Functional Testing of Controllers","dateModified":"2017-04-09T00:00:00+00:00","url":"/2017/04/09/6abf520f5ef64ba33bd00878a5da99d5.html","datePublished":"2017-04-09T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/04/09/6abf520f5ef64ba33bd00878a5da99d5.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Functional Testing of Controllers</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-04-09T00:00:00+00:00" itemprop="datePublished">Apr 9, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>对于controller的功能性测试，可以这样写（摘自IntegrationTest里的注释）</div>
+<div><br /></div>
+<pre><code>class UserFlowsTest &lt; ActionDispatch::IntegrationTest
+  test &#34;login and browse site&#34; do
+    # login via https
+    https!
+    get &#34;/login&#34;
+    assert_response :success
+
+    post &#34;/login&#34;, params: { username: users(:david).username, password: users(:david).password }
+    follow_redirect!
+    assert_equal &#39;/welcome&#39;, path
+    assert_equal &#39;Welcome david!&#39;, flash[:notice]
+
+    https!(false)
+    get &#34;/articles/all&#34;
+    assert_response :success
+    assert_select &#39;h1&#39;, &#39;Articles&#39;
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>这里的assert_response是这样定义的，它只是简单地将assertion转发给@response</div>
+<div><br /></div>
+<pre><code>module ActionDispatch
+  module Assertions
+    # A small suite of assertions that test responses from \Rails applications.
+    module ResponseAssertions
+      RESPONSE_PREDICATES = { # :nodoc:
+        success:  :successful?,
+        missing:  :not_found?,
+        redirect: :redirection?,
+        error:    :server_error?,
+      }
+
+      # Asserts that the response is one of the following types:
+      #
+      # * <tt>:success</tt>   - Status code was in the 200-299 range
+      # * <tt>:redirect</tt>  - Status code was in the 300-399 range
+      # * <tt>:missing</tt>   - Status code was 404
+      # * <tt>:error</tt>     - Status code was in the 500-599 range
+      #
+      # You can also pass an explicit status number like <tt>assert_response(501)</tt>
+      # or its symbolic equivalent <tt>assert_response(:not_implemented)</tt>.
+      # See Rack::Utils::SYMBOL_TO_STATUS_CODE for a full list.
+      #
+      #   # Asserts that the response was a redirection
+      #   assert_response :redirect
+      #
+      #   # Asserts that the response code was status code 401 (unauthorized)
+      #   assert_response 401
+      def assert_response(type, message = nil)
+        message ||= generate_response_message(type)
+
+        if RESPONSE_PREDICATES.keys.include?(type)
+          assert @response.send(RESPONSE_PREDICATES[type]), message
+        else
+          assert_equal AssertionResponse.new(type).code, @response.response_code, message
+        end
+      end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>之所以能对response做assert，是因为ActionDispatch::IntegrationTest完成一轮请求响应后，有保存@response</div>
+<div><br /></div>
+<pre><code>def process(method, path, params: nil, headers: nil, env: nil, xhr: false, as: nil)
+
+  # ......
+
+  session = Rack::Test::Session.new(_mock_session)
+
+  session.request(build_full_uri(path, request_env), request_env)
+
+  @request_count += 1
+  @request = ActionDispatch::Request.new(session.last_request.env)
+  response = _mock_session.last_response
+  @response = ActionDispatch::TestResponse.from_response(response)
+  @response.request = @request
+  @html_document = nil
+  @url_options = nil
+
+  @controller = @request.controller_instance
+
+  response.status
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>这里包装response的ActionDispatch::TestResponse其实只是简单包装，与RESPONSE_PREDICATES无关</div>
+<div><br /></div>
+<pre><code>module ActionDispatch
+
+  class TestResponse &lt; Response
+    def self.from_response(response)
+      new response.status, response.headers, response.body
+    end
+
+    def initialize(*) # :nodoc:
+      super
+      @response_parser = RequestEncoder.parser(content_type)
+    end
+
+    # Was the response successful?
+    alias_method :success?, :successful?
+
+    # Was the URL not found?
+    alias_method :missing?, :not_found?
+
+    # Was there a server-side error?
+    alias_method :error?, :server_error?
+
+    def parsed_body
+      @parsed_body ||= @response_parser.call(body)
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>RESPONSE_PREDICATES所用的方法是Rack本来就提供的</div>
+<div><br /></div>
+<pre><code>module Rack
+  class Response
+    module Helpers
+      def invalid?;             status &lt; 100 || status &gt;= 600;        end
+
+      def informational?;       status &gt;= 100 &amp;&amp; status &lt; 200;        end
+      def successful?;          status &gt;= 200 &amp;&amp; status &lt; 300;        end
+      def redirection?;         status &gt;= 300 &amp;&amp; status &lt; 400;        end
+      def client_error?;        status &gt;= 400 &amp;&amp; status &lt; 500;        end
+      def server_error?;        status &gt;= 500 &amp;&amp; status &lt; 600;        end
+
+      def ok?;                  status == 200;                        end
+      def created?;             status == 201;                        end
+      def accepted?;            status == 202;                        end
+      def no_content?;          status == 204;                        end
+      def moved_permanently?;   status == 301;                        end
+      def bad_request?;         status == 400;                        end
+      def unauthorized?;        status == 401;                        end
+      def forbidden?;           status == 403;                        end
+      def not_found?;           status == 404;                        end
+      def method_not_allowed?;  status == 405;                        end
+      def precondition_failed?; status == 412;                        end
+      def unprocessable?;       status == 422;                        end
+
+      def redirect?;            [301, 302, 303, 307, 308].include? status; end
+    end
+
+  include Helpers
+
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>至于assert_select，使用的是nokogiri来抽取dom来检验</div>
+<div><br /></div>
+<div>如果进行trace的话</div>
+<div><br /></div>
+<pre><code>binding.trace_tree(html: true, tmp: [&#39;rails&#39;, &#39;assert_select.html&#39;]) do
+  assert_select &#39;.price&#39;, /\$[,\d]+\.\d\d/
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>可得调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/6abf520f5ef64ba33bd00878a5da99d5/2decd1e651242e07bc22f3ed766e4397.html"><img src="/assets/files/6abf520f5ef64ba33bd00878a5da99d5/d8806943c330da3e4d47978fe1e68737.png" alt="assert_select.html" /></a></div>
+<div><br /></div>
+<div>大概流程如下</div>
+<div><br /></div>
+<div><img src="/assets/files/6abf520f5ef64ba33bd00878a5da99d5/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div>assert_select会根据所传参数来建立一个HTMLSelector，这个HTMLSelector所要select的页面是document_root_element</div>
+<div><br /></div>
+<pre><code>def assert_select(*args, &amp;block)
+  @selected ||= nil
+
+  selector = HTMLSelector.new(args, @selected) { nodeset document_root_element }
+
+  if selector.selecting_no_body?
+    assert true
+    return
+  end
+
+  selector.select.tap do |matches|
+    assert_size_match!(matches.size, selector.tests,
+      selector.css_selector, selector.message)
+
+    nest_selection(matches, &amp;block) if block_given? &amp;&amp; !matches.empty?
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>这个document_root_element实际上也是从response的body取出html，并用nokogiri包装（解析）出的root元素</div>
+<div><br /></div>
+<pre><code>#actionpack-5.0.2/lib/action_dispatch/testing/integration.rb
+def document_root_element
+  html_document.root
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>html_document如下</div>
+<div><br /></div>
+<pre><code>module ActionDispatch
+  module Assertions
+    autoload :ResponseAssertions, &#39;action_dispatch/testing/assertions/response&#39;
+    autoload :RoutingAssertions, &#39;action_dispatch/testing/assertions/routing&#39;
+
+    extend ActiveSupport::Concern
+
+    include ResponseAssertions
+    include RoutingAssertions
+    include Rails::Dom::Testing::Assertions
+
+    def html_document
+      @html_document ||= if @response.content_type.to_s =~ /xml\z/
+        Nokogiri::XML::Document.parse(@response.body)
+      else
+        Nokogiri::HTML::Document.parse(@response.body)
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/04/09/6abf520f5ef64ba33bd00878a5da99d5.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

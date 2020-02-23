@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>AttributeSet、LazyAttributeHash、Attribute的关系</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="AttributeSet、LazyAttributeHash、Attribute的关系" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="LazyAttributeHash这东西，是在研究dirty.rb的时候发现的…" />
+<meta property="og:description" content="LazyAttributeHash这东西，是在研究dirty.rb的时候发现的…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-07-17T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"LazyAttributeHash这东西，是在研究dirty.rb的时候发现的…","@type":"BlogPosting","headline":"AttributeSet、LazyAttributeHash、Attribute的关系","dateModified":"2017-07-17T00:00:00+00:00","url":"/2017/07/17/d88ece1acf0d88102f7477eb1f6a8964.html","datePublished":"2017-07-17T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/07/17/d88ece1acf0d88102f7477eb1f6a8964.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">AttributeSet、LazyAttributeHash、Attribute的关系</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-07-17T00:00:00+00:00" itemprop="datePublished">Jul 17, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>LazyAttributeHash这东西，是在研究dirty.rb的时候发现的</div>
+<div><br /></div>
+<div><a href="/assets/files/d88ece1acf0d88102f7477eb1f6a8964/fbf9bd4bbd95ee62d9b9068cf4159706.html"><img src="/assets/files/d88ece1acf0d88102f7477eb1f6a8964/0d9f1453b8dd2619d728c4f7862e2a29.png" alt="20170717_224156_650_attr_changed_question.html" /></a></div>
+<div><br /></div>
+<div>可以看到，ActiveRecord::AttributeSet#[]方法还委托到了ActiveRecord::LazyAttributeHash#[]。从名字来推测，可能是延迟转型。搜索源码，看哪里会用到它</div>
+<div><br /></div>
+<pre><code>$ gems git:(master) ag LazyAttributeHash
+activerecord-5.1.2/lib/active_record/attribute_set/builder.rb
+19:        attributes = LazyAttributeHash.new(types, values, additional_types, &amp;default)
+25:  class LazyAttributeHash # :nodoc:
+74:      if other.is_a?(LazyAttributeHash)</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>范围很小，仅仅就在ActiveRecord::AttributeSet::Builder，而且从方法名build_from_database来看，应该是在新建model时产生的，然后塞到AttributeSet中</div>
+<div><br /></div>
+<pre><code>module ActiveRecord
+  class AttributeSet
+    class Builder
+      attr_reader :types, :always_initialized, :default
+
+      def initialize(types, always_initialized = nil, &amp;default)
+        @types = types
+        @always_initialized = always_initialized
+        @default = default
+      end
+
+      def build_from_database(values = {}, additional_types = {})
+        if always_initialized &amp;&amp; !values.key?(always_initialized)
+          values[always_initialized] = nil
+        end
+
+        attributes = LazyAttributeHash.new(types, values, additional_types, &amp;default)
+        AttributeSet.new(attributes)
+      end
+    end
+  end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>于是可从数据库读取model，并跟踪看看怎样到达build_from_database这里</div>
+<div><br /></div>
+<pre><code>[43] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/new_model_from_database&#39;){Student.first}
+  Student Load (30.1ms)  SELECT  &#34;students&#34;.* FROM &#34;students&#34; ORDER BY &#34;students&#34;.&#34;no&#34; ASC LIMIT ?  [[&#34;LIMIT&#34;, 1]]
+=&gt; #&lt;student:0x007f243bf57808 no:="" "1",="" name:="" "b",="" created_at:="" sun,="" 02="" jul="" 2017="" 04:10:00="" utc="" +00:00,="" updated_at:="" tue,="" 11="" jul="" 2017="" 14:11:44="" utc="" +00:00,="" gender:="" "male",="" grade:="" 2,="" alias_names:="" ["jay",="" "jj"]=""&gt;&lt;/student:0x007f243bf57808&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>完整调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/d88ece1acf0d88102f7477eb1f6a8964/0fae39cd892e3ccd422e29caea1bc4b3.html"><img src="/assets/files/d88ece1acf0d88102f7477eb1f6a8964/1e5be9cf04ea600c214865f675395c2b.png" alt="20170717_221712_352_new_model_from_database.html" /></a></div>
+<div><br /></div>
+<div>关键如下</div>
+<div><br /></div>
+<div><img src="/assets/files/d88ece1acf0d88102f7477eb1f6a8964/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div>而对于不是从数据库读出的新造model，理论上应该是不需要LazyAttributeHash的，验证一下：</div>
+<div><br /></div>
+<pre><code>[41] pry(main)&gt; s.instance_variable_get(:@attributes).instance_variable_get(:@attributes).class
+=&gt; Hash
+[42] pry(main)&gt; s1.instance_variable_get(:@attributes).instance_variable_get(:@attributes).class
+=&gt; ActiveRecord::LazyAttributeHash</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>显而易见，不是从数据库读出的新造model，构造AttributeSet时直接就是用Hash</div>
+<div><br /></div>
+<div>那么LazyAttributeHash是如何做转型的呢？再跟踪一下</div>
+<div><br /></div>
+<pre><code>[57] pry(main)&gt; s2 = Student.first;binding.trace_tree(htmp: &#39;rails/read_attr&#39;){s2.alias_names}
+  Student Load (0.1ms)  SELECT  &#34;students&#34;.* FROM &#34;students&#34; ORDER BY &#34;students&#34;.&#34;no&#34; ASC LIMIT ?  [[&#34;LIMIT&#34;, 1]]
+=&gt; [&#34;jay&#34;, &#34;jj&#34;]</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>完整如下</div>
+<div><br /></div>
+<div><a href="/assets/files/d88ece1acf0d88102f7477eb1f6a8964/6c60603c7316b5804e584ba56400dcb4.html"><img src="/assets/files/d88ece1acf0d88102f7477eb1f6a8964/731f701da42bd7809c49dc4da079e8ca.png" alt="20170717_231826_419_read_attr.html" /></a></div>
+<div><br /></div>
+<div>从调用栈可发现，转型还不是在LazyAttributeHash中直接处理，而是由它来生成一个Attribute的子类FromDatabase的对象。而Attribute的子类除了FromDatabase还有FromUser、Null，它们都有自己一套type_cast方法</div>
+<div><br /></div>
+<div><img src="/assets/files/d88ece1acf0d88102f7477eb1f6a8964/91eee3f8d75dbb327ede474944726554.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+
+  </div><a class="u-url" href="/2017/07/17/d88ece1acf0d88102f7477eb1f6a8964.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>一个简单的rake的执行步骤</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="一个简单的rake的执行步骤" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="跟踪一个简单的rake，如下…" />
+<meta property="og:description" content="跟踪一个简单的rake，如下…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-08-05T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"跟踪一个简单的rake，如下…","@type":"BlogPosting","headline":"一个简单的rake的执行步骤","dateModified":"2017-08-05T00:00:00+00:00","url":"/2017/08/05/61187fc1ee47391c6e1d65e3e904f83b.html","datePublished":"2017-08-05T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/08/05/61187fc1ee47391c6e1d65e3e904f83b.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">一个简单的rake的执行步骤</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-08-05T00:00:00+00:00" itemprop="datePublished">Aug 5, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>跟踪一个简单的rake，如下</div>
+<div><br /></div>
+<pre><code>require &#39;trace_tree&#39;
+
+binding.trace_tree(htmp: &#39;rake/simple&#39;) do
+  task default: [:print]
+
+  task :print do
+    puts &#39;hello&#39;
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/61187fc1ee47391c6e1d65e3e904f83b/b52339b9b5c65ed3cc30459e1d435c00.html"><img src="/assets/files/61187fc1ee47391c6e1d65e3e904f83b/88c2871c33ee7ebf2d0346f1608d593b.png" alt="20170805_212932_055_simple.html" /></a><br /></div>
+<div><br /></div>
+<div>首先是生成一个rake application，穿过dsl那一层后到达的define_task，所做的主要是resolve_args（分离出任务名、参数名、依赖名）、intern（生成task，并暂存起来到本application中）、enhance（给task增加依赖、方法体）</div>
+<div><br /></div>
+<div>define_task源码如下</div>
+<div><br /></div>
+<pre><code># rake-12.0.0/lib/rake/task_manager.rb
+module Rake
+  module TaskManager
+
+    def define_task(task_class, *args, &amp;block)
+      task_name, arg_names, deps = resolve_args(args)
+
+      original_scope = @scope
+      if String === task_name and
+         not task_class.ancestors.include? Rake::FileTask
+        task_name, *definition_scope = *(task_name.split(&#34;:&#34;).reverse)
+        @scope = Scope.make(*(definition_scope + @scope.to_a))
+      end
+
+      task_name = task_class.scope_name(@scope, task_name)
+      deps = [deps] unless deps.respond_to?(:to_ary)
+      deps = deps.map { |d| Rake.from_pathname(d).to_s }
+      task = intern(task_class, task_name)
+      task.set_arg_names(arg_names) unless arg_names.empty?
+      if Rake::TaskManager.record_task_metadata
+        add_location(task)
+        task.add_description(get_description(task))
+      end
+      task.enhance(deps, &amp;block)
+    ensure
+      @scope = original_scope
+    end
+
+    def resolve_args(args)
+      if args.last.is_a?(Hash)
+        deps = args.pop
+        resolve_args_with_dependencies(args, deps)
+      else
+        resolve_args_without_dependencies(args)
+      end
+    end
+
+    def intern(task_class, task_name)
+      @tasks[task_name.to_s] ||= task_class.new(task_name, self)
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>enhance如下</div>
+<div><br /></div>
+<pre><code># rake-12.0.0/lib/rake/task.rb
+module Rake
+  class Task
+
+    def enhance(deps=nil, &amp;block)
+      @prerequisites |= deps if deps
+      @actions &lt;&lt; block if block_given?
+      self
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>然后在rakefile顶部加入puts caller，再rake一次，看rakefile是在哪一点被读取，以及读取完rakefile之后又会怎样编排task来</div>
+<div><br /></div>
+<pre><code>$ rk rake
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/rake_module.rb:28:in `load&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/rake_module.rb:28:in `load_rakefile&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:687:in `raw_load_rakefile&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:96:in `block in load_rakefile&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:178:in `standard_exception_handling&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:95:in `load_rakefile&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:79:in `block in run&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:178:in `standard_exception_handling&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:77:in `run&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/exe/rake:27:in `&lt;top (required)=""&gt;&#39;
+/home/z/.rbenv/versions/2.4.0/bin/rake:22:in `load&#39;
+/home/z/.rbenv/versions/2.4.0/bin/rake:22:in `&lt;/top&gt;</code><main><code>&#39;
+hello</code></main></pre>
+<div><br /></div>
+<div><br /></div>
+<div>可见是在application#run里的top_level，于是跟踪一下它</div>
+<div><br /></div>
+<pre><code># Run the Rake application.  The run method performs the following
+# three steps:
+#
+# * Initialize the command line options (+init+).
+# * Define the tasks (+load_rakefile+).
+# * Run the top level tasks (+top_level+).
+def run
+  standard_exception_handling do
+    init
+    load_rakefile
+    top_level
+  end
+end
+
+def top_level
+  run_with_threads do
+    if options.show_tasks
+      display_tasks_and_comments
+    elsif options.show_prereqs
+      display_prerequisites
+    else
+      require &#39;trace_tree&#39;
+      binding.trace_tree(htmp: &#39;rake/invoke&#39;) do
+      top_level_tasks.each { |task_name| invoke_task(task_name) }
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/61187fc1ee47391c6e1d65e3e904f83b/c79f9b552d3df6d74e7363bc42e699f4.html"><img src="/assets/files/61187fc1ee47391c6e1d65e3e904f83b/e31bf0905a9aa5b819e29551c9ef3cbd.png" alt="20170806_105540_373_invoke.html" /></a></div>
+<div><br /></div>
+<div>源码如下</div>
+<div><br /></div>
+<div>依赖的检查是在运行时才查找</div>
+<div><br /></div>
+<pre><code># rake-12.0.0/lib/rake/task.rb
+def invoke_prerequisites(task_args, invocation_chain) # :nodoc:
+  if application.options.always_multitask
+    invoke_prerequisites_concurrently(task_args, invocation_chain)
+  else
+    prerequisite_tasks.each { |p|
+      prereq_args = task_args.new_scope(p.arg_names)
+      p.invoke_with_call_chain(prereq_args, invocation_chain)
+    }
+  end
+end
+
+def prerequisite_tasks
+  prerequisites.map { |pre| lookup_prerequisite(pre) }
+end
+
+def lookup_prerequisite(prerequisite_name) # :nodoc:
+  scoped_prerequisite_task = application[prerequisite_name, @scope]
+  if scoped_prerequisite_task == self
+    unscoped_prerequisite_task = application[prerequisite_name]
+  end
+  unscoped_prerequisite_task || scoped_prerequisite_task
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而“依赖是否在更早时执行过”，以及环形调用的检查，则分别通过@already_invoked和InvocationChain来做</div>
+<div><br /></div>
+<pre><code># rake-12.0.0/lib/rake/task.rb
+def invoke(*args)
+  task_args = TaskArguments.new(arg_names, args)
+  invoke_with_call_chain(task_args, InvocationChain::EMPTY)
+end
+
+# Same as invoke, but explicitly pass a call chain to detect
+# circular dependencies.
+def invoke_with_call_chain(task_args, invocation_chain) # :nodoc:
+  new_chain = InvocationChain.append(self, invocation_chain)
+  @lock.synchronize do
+    if application.options.trace
+      application.trace &#34;** Invoke #{name} #{format_trace_flags}&#34;
+    end
+    return if @already_invoked
+    @already_invoked = true
+    invoke_prerequisites(task_args, new_chain)
+    execute(task_args) if needed?
+  end
+rescue Exception =&gt; ex
+  add_chain_to(ex, new_chain)
+  raise ex
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>于是，这个简单的rake任务执行的部分，粗略来看，基本上是这样</div>
+<div><br /></div>
+<div><img src="/assets/files/61187fc1ee47391c6e1d65e3e904f83b/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /></div>
+
+  </div><a class="u-url" href="/2017/08/05/61187fc1ee47391c6e1d65e3e904f83b.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

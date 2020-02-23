@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>layout机制（顺便复习模板机制）</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="layout机制（顺便复习模板机制）" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="在application.html.erb中加入binding.pry…" />
+<meta property="og:description" content="在application.html.erb中加入binding.pry…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-05-14T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"在application.html.erb中加入binding.pry…","@type":"BlogPosting","headline":"layout机制（顺便复习模板机制）","dateModified":"2017-05-14T00:00:00+00:00","url":"/2017/05/14/4a6d57ff42215e260bacf553ce03508b.html","datePublished":"2017-05-14T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/05/14/4a6d57ff42215e260bacf553ce03508b.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">layout机制（顺便复习模板机制）</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-05-14T00:00:00+00:00" itemprop="datePublished">May 14, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>在application.html.erb中加入binding.pry</div>
+<div><br /></div>
+<pre><code>
+
+  
+    <title>Pragprog Books Online Store</title>
+    &lt;%= csrf_meta_tags %&gt;
+
+    &lt;%= stylesheet_link_tag    &#39;application&#39;, media: &#39;all&#39;, &#39;data-turbolinks-track&#39;: &#39;reload&#39; %&gt;
+    &lt;%= javascript_include_tag &#39;application&#39;, &#39;data-turbolinks-track&#39;: &#39;reload&#39; %&gt;
+  
+  
+
+      &lt;% binding.pry %&gt;
+      <div id="main">
+        &lt;%= yield %&gt;
+      </div>
+    
+
+  
+</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>得调用栈如下</div>
+<div><br /></div>
+<pre><code>[1] pry(#&lt;#<class:0x007f69cf29f9d8>&gt;)&gt; _bsi_
+=&gt; {0=&gt;#&lt;binding:70045758642500 #&lt;class:0x007f69cf29f9d8=""&gt;#_app_views_layouts_application_html_erb___3541629653556534568_70046211675620 /home/z/test_rails/depot/app/views/layouts/application.html.erb:39&gt;,
+ 1=&gt;#&lt;binding:70045759069160 actionview::template#block="" in="" render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" template.rb:159=""&gt;,
+ 2=&gt;#&lt;binding:70045759503020 activesupport::notifications.instrument="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" notifications.rb:166=""&gt;,
+ 3=&gt;#&lt;binding:70045759928860 actionview::template#instrument="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" template.rb:354=""&gt;,
+ 4=&gt;#&lt;binding:70045760340680 actionview::template#render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" template.rb:157=""&gt;,
+ 5=&gt;#&lt;binding:70045760696120 actionview::templaterenderer#render_with_layout="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" template_renderer.rb:66=""&gt;,
+ 6=&gt;#&lt;binding:70045761106380 actionview::templaterenderer#render_template="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" template_renderer.rb:52=""&gt;,
+ 7=&gt;#&lt;binding:70045761507620 actionview::templaterenderer#render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" template_renderer.rb:14=""&gt;,
+ 8=&gt;#&lt;binding:70045761924980 actionview::renderer#render_template="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" renderer.rb:42=""&gt;,
+ 9=&gt;#&lt;binding:70045762326140 actionview::renderer#render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" renderer.rb:23=""&gt;,
+ 10=&gt;#&lt;binding:70045762736120 storecontroller#_render_template="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" rendering.rb:104=""&gt;,
+ 11=&gt;#&lt;binding:70045763147920 storecontroller#_render_template="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" streaming.rb:217=""&gt;,
+ 12=&gt;#&lt;binding:70045763278200 storecontroller#render_to_body="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" rendering.rb:83=""&gt;,
+ 13=&gt;#&lt;binding:70045763450580 storecontroller#render_to_body="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" rendering.rb:52=""&gt;,
+ 14=&gt;#&lt;binding:70045763843520 storecontroller#render_to_body="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" renderers.rb:142=""&gt;,
+ 15=&gt;#&lt;binding:70045764050280 storecontroller#render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" rendering.rb:26=""&gt;,
+ 16=&gt;#&lt;binding:70045764197340 storecontroller#render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" rendering.rb:36=""&gt;,
+ 17=&gt;#&lt;binding:70045764518340 storecontroller#block="" (2="" levels)="" in="" render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" instrumentation.rb:44=""&gt;,
+ 18=&gt;#&lt;binding:70045765647320 benchmark.block="" in="" ms="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" core_ext="" benchmark.rb:12=""&gt;,
+ 19=&gt;#&lt;binding:70045765803580 benchmark.realtime="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" 2.4.0="" benchmark.rb:308=""&gt;,
+ 20=&gt;#&lt;binding:70045765911640 benchmark.ms="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" core_ext="" benchmark.rb:12=""&gt;,
+ 21=&gt;#&lt;binding:70045765993640 storecontroller#block="" in="" render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" instrumentation.rb:44=""&gt;,
+ 22=&gt;#&lt;binding:70045766068960 storecontroller#cleanup_view_runtime="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" instrumentation.rb:87=""&gt;,
+ 23=&gt;#&lt;binding:70045767595920 storecontroller#cleanup_view_runtime="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activerecord-5.0.2="" lib="" active_record="" railties="" controller_runtime.rb:25=""&gt;,
+ 24=&gt;#&lt;binding:70045767620700 storecontroller#render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" instrumentation.rb:43=""&gt;,
+ 25=&gt;#&lt;binding:70045767654740 storecontroller#default_render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" implicit_render.rb:36=""&gt;,
+ 26=&gt;#&lt;binding:70045765986380 storecontroller#block="" in="" send_action="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" basic_implicit_render.rb:4=""&gt;,
+ 27=&gt;#&lt;binding:70045765964560 storecontroller#send_action="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" basic_implicit_render.rb:4=""&gt;,
+ 28=&gt;#&lt;binding:70045765950940 storecontroller#process_action="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" base.rb:188=""&gt;,
+ 29=&gt;#&lt;binding:70045767747820 storecontroller#process_action="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" rendering.rb:30=""&gt;,
+ 30=&gt;#&lt;binding:70045767783320 storecontroller#block="" in="" process_action="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" callbacks.rb:20=""&gt;,&lt;/binding:70045767783320&gt;&lt;/binding:70045767747820&gt;&lt;/binding:70045765950940&gt;&lt;/binding:70045765964560&gt;&lt;/binding:70045765986380&gt;&lt;/binding:70045767654740&gt;&lt;/binding:70045767620700&gt;&lt;/binding:70045767595920&gt;&lt;/binding:70045766068960&gt;&lt;/binding:70045765993640&gt;&lt;/binding:70045765911640&gt;&lt;/binding:70045765803580&gt;&lt;/binding:70045765647320&gt;&lt;/binding:70045764518340&gt;&lt;/binding:70045764197340&gt;&lt;/binding:70045764050280&gt;&lt;/binding:70045763843520&gt;&lt;/binding:70045763450580&gt;&lt;/binding:70045763278200&gt;&lt;/binding:70045763147920&gt;&lt;/binding:70045762736120&gt;&lt;/binding:70045762326140&gt;&lt;/binding:70045761924980&gt;&lt;/binding:70045761507620&gt;&lt;/binding:70045761106380&gt;&lt;/binding:70045760696120&gt;&lt;/binding:70045760340680&gt;&lt;/binding:70045759928860&gt;&lt;/binding:70045759503020&gt;&lt;/binding:70045759069160&gt;&lt;/binding:70045758642500&gt;</class:0x007f69cf29f9d8></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>其上一层，也就是ActionView::Template#block in render，是这样的</div>
+<div><br /></div>
+<pre><code>def render(view, locals, buffer=nil, &amp;block)
+  instrument(&#34;!render_template&#34;.freeze) do
+    compile!(view)
+    view.send(method_name, locals, buffer, &amp;block)
+  end
+rescue =&gt; e
+  handle_render_error(view, e)
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>如无意外，就跟之前研究过的“sinatra如何利用tilt来render”一样，基本上就是，用erb（如果模板是erb）来将模板转换成一个method，method所绑定的对象（即view），带有controller的实例变量，并且该method可接收额外的局部变量</div>
+<div><br /></div>
+<div>于是稍微验证一下</div>
+<div><br /></div>
+<div>首先，compile!所做的就是给view加上method</div>
+<div><br /></div>
+<pre><code># actionview-5.0.2/lib/action_view/template.rb
+def compile(mod)
+  encode!
+  method_name = self.method_name
+  code = @handler.call(self)
+
+  # Make sure that the resulting String to be eval&#39;d is in the
+  # encoding of the code
+  source = &lt;&lt;-end_src
+    def #{method_name}(local_assigns, output_buffer)
+      _old_virtual_path, @virtual_path = @virtual_path, #{@virtual_path.inspect};_old_output_buffer = @output_buffer;#{locals_code};#{code}
+    ensure
+      @virtual_path, @output_buffer = _old_virtual_path, _old_output_buffer
+    end
+  end_src
+
+  # Make sure the source is in the encoding of the returned code
+  source.force_encoding(code.encoding)
+
+  # In case we get back a String from a handler that is not in
+  # BINARY or the default_internal, encode it to the default_internal
+  source.encode!
+
+  # Now, validate that the source we got back from the template
+  # handler is valid in the default_internal. This is for handlers
+  # that handle encoding but screw up
+  unless source.valid_encoding?
+    raise WrongEncodingError.new(@source, Encoding.default_internal)
+  end
+
+  mod.module_eval(source, identifier, 0)
+  ObjectSpace.define_finalizer(self, Finalizer[method_name, mod])
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而这个method中，生成最终html（如果你是返回html）的code，来自@handler.call(self)。于是检查下handler是啥</div>
+<div><br /></div>
+<pre><code>[10] pry(#&lt;#<class:0x007f69cf29f9d8>&gt;)&gt; _bsi_[1].eval(&#34;handler.class&#34;)
+=&gt; ActionView::Template::Handlers::ERB</class:0x007f69cf29f9d8></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>其源码如下</div>
+<div><br /></div>
+<pre><code># actionview-5.0.2/lib/action_view/template/handlers/erb.rb
+def call(template)
+  # First, convert to BINARY, so in case the encoding is
+  # wrong, we can still find an encoding tag
+  # (&lt;%# encoding %&gt;) inside the String using a regular
+  # expression
+  template_source = template.source.dup.force_encoding(Encoding::ASCII_8BIT)
+
+  erb = template_source.gsub(ENCODING_TAG, &#39;&#39;)
+  encoding = $2
+
+  erb.force_encoding valid_encoding(template.source.dup, encoding)
+
+  # Always make sure we return a String in the default_internal
+  erb.encode!
+
+  self.class.erb_implementation.new(
+    erb,
+    :escape =&gt; (self.class.escape_whitelist.include? template.type),
+    :trim =&gt; (self.class.erb_trim_mode == &#34;-&#34;)
+  ).src
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而handler则是，初始化view的时候就赋予的（其实这不重要）</div>
+<div><br /></div>
+<pre><code># actionview-5.0.2/lib/action_view/template.rb
+attr_reader :source, :identifier, :handler, :original_encoding, :updated_at
+
+def initialize(source, identifier, handler, details)
+  format = details[:format] || (handler.default_format if handler.respond_to?(:default_format))
+
+  @source            = source
+  @identifier        = identifier
+  @handler           = handler
+  @compiled          = false
+  @original_encoding = nil
+  @locals            = details[:locals] || []
+  @virtual_path      = details[:virtual_path]
+  @updated_at        = details[:updated_at] || Time.now
+  @formats           = Array(format).map { |f| f.respond_to?(:ref) ? f.ref : f  }
+  @variants          = [details[:variant]]
+  @compile_mutex     = Mutex.new
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>那么，回到如何找layout的问题上，从调用栈可见，这个过程应是如下</div>
+<div><br /></div>
+<pre><code> 5=&gt;#&lt;binding:70045760696120 actionview::templaterenderer#render_with_layout="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" template_renderer.rb:66=""&gt;,
+ 6=&gt;#&lt;binding:70045761106380 actionview::templaterenderer#render_template="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" template_renderer.rb:52=""&gt;,
+ 7=&gt;#&lt;binding:70045761507620 actionview::templaterenderer#render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" template_renderer.rb:14=""&gt;,
+ 8=&gt;#&lt;binding:70045761924980 actionview::renderer#render_template="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" renderer.rb:42=""&gt;,
+ 9=&gt;#&lt;binding:70045762326140 actionview::renderer#render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" renderer.rb:23=""&gt;,&lt;/binding:70045762326140&gt;&lt;/binding:70045761924980&gt;&lt;/binding:70045761507620&gt;&lt;/binding:70045761106380&gt;&lt;/binding:70045760696120&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>都在TemplateRenderer中</div>
+<div><br /></div>
+<pre><code>module ActionView
+  class TemplateRenderer &lt; AbstractRenderer
+    def render(context, options)
+      @view    = context
+      @details = extract_details(options)
+      template = determine_template(options)
+
+      prepend_formats(template.formats)
+
+      @lookup_context.rendered_format ||= (template.formats.first || formats.first)
+
+      render_template(template, options[:layout], options[:locals])
+    end
+
+    def render_template(template, layout_name = nil, locals = nil)
+      view, locals = @view, locals || {}
+
+      render_with_layout(layout_name, locals) do |layout|
+        instrument(:template, :identifier =&gt; template.identifier, :layout =&gt; layout.try(:virtual_path)) do
+          template.render(view, locals) { |*name| view._layout_for(*name) }
+        end
+      end
+    end
+
+    def render_with_layout(path, locals)
+      layout  = path &amp;&amp; find_layout(path, locals.keys, [formats.first])
+      content = yield(layout)
+
+      if layout
+        view = @view
+        view.view_flow.set(:layout, content)
+        layout.render(view, locals){ |*name| view._layout_for(*name) }
+      else
+        content
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>那么这里的options[:layout]是什么呢</div>
+<div><br /></div>
+<pre><code>[13] pry(#&lt;#<class:0x007f69cf29f9d8>&gt;)&gt; _bsi_[7].lv(:options)
+=&gt; {:prefixes=&gt;[&#34;store&#34;, &#34;application&#34;], :template=&gt;&#34;index&#34;, :layout=&gt;#&lt;proc:0x007f69cf29fd70@ home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" layouts.rb:386=""&gt;}&lt;/proc:0x007f69cf29fd70@&gt;</class:0x007f69cf29f9d8></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>这里好像有点不对劲了，才发现现在断点就是在application.html.erb这个layout上，那就不好分析了，还是断在内容上吧，于是</div>
+<div><br /></div>
+<pre><code><!-- depot/app/views/store/index.html.erb -->
+<p id="notice">&lt;%= notice %&gt;</p>
+
+<h1>Your Pragmatic Catalog</h1>
+
+&lt;% @products.each do |product| %&gt;
+  <div class="entry">
+  &lt;%= image_tag(product.image_url) %&gt;
+  <h3>&lt;%= product.title %&gt;</h3>
+  &lt;%= sanitize(product.description) %&gt;
+  <div class="price_line">
+    <span class="price">&lt;%=  number_to_currency product.price %&gt;</span>
+    &lt;%= button_to &#39;Add to Cart&#39;, line_items_path(product_id: product), remote: true %&gt;
+  </div>
+  </div>
+&lt;% end %&gt;
+
+&lt;% binding.pry %&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>得调用栈如下</div>
+<div><br /></div>
+<pre><code>[1] pry(#&lt;#<class:0x007f69cf29f9d8>&gt;)&gt; _bsi_
+=&gt; {0=&gt;#&lt;binding:70045772081600 #&lt;class:0x007f69cf29f9d8=""&gt;#_app_views_store_index_html_erb__2763356708539799932_70045772484440 /home/z/test_rails/depot/app/views/store/index.html.erb:17&gt;,
+ 1=&gt;#&lt;binding:70045772032120 actionview::template#block="" in="" render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" template.rb:159=""&gt;,
+ 2=&gt;#&lt;binding:70045771966320 activesupport::notifications.instrument="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" notifications.rb:166=""&gt;,
+ 3=&gt;#&lt;binding:70045771908740 actionview::template#instrument="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" template.rb:354=""&gt;,
+ 4=&gt;#&lt;binding:70045771842300 actionview::template#render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" template.rb:157=""&gt;,
+ 5=&gt;#&lt;binding:70045771792900 actionview::templaterenderer#block="" (2="" levels)="" in="" render_template="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" template_renderer.rb:54=""&gt;,
+ 6=&gt;#&lt;binding:70045771759860 actionview::templaterenderer#block="" in="" instrument="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" abstract_renderer.rb:42=""&gt;,
+ 7=&gt;#&lt;binding:70045771686380 activesupport::notifications.block="" in="" instrument="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" notifications.rb:164=""&gt;,
+ 8=&gt;#&lt;binding:70045771621060 activesupport::notifications::instrumenter#instrument="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" notifications="" instrumenter.rb:21=""&gt;,
+ 9=&gt;#&lt;binding:70045771555580 activesupport::notifications.instrument="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" notifications.rb:164=""&gt;,
+ 10=&gt;#&lt;binding:70045771490240 actionview::templaterenderer#instrument="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" abstract_renderer.rb:41=""&gt;,
+ 11=&gt;#&lt;binding:70045771416660 actionview::templaterenderer#block="" in="" render_template="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" template_renderer.rb:53=""&gt;,
+ 12=&gt;#&lt;binding:70045771351340 actionview::templaterenderer#render_with_layout="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" template_renderer.rb:61=""&gt;,
+ 13=&gt;#&lt;binding:70045771285860 actionview::templaterenderer#render_template="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" template_renderer.rb:52=""&gt;,
+ 14=&gt;#&lt;binding:70045771219460 actionview::templaterenderer#render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" template_renderer.rb:14=""&gt;,
+ 15=&gt;#&lt;binding:70045771143900 actionview::renderer#render_template="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" renderer.rb:42=""&gt;,
+ 16=&gt;#&lt;binding:70045771069940 actionview::renderer#render="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" renderer="" renderer.rb:23=""&gt;,&lt;/binding:70045771069940&gt;&lt;/binding:70045771143900&gt;&lt;/binding:70045771219460&gt;&lt;/binding:70045771285860&gt;&lt;/binding:70045771351340&gt;&lt;/binding:70045771416660&gt;&lt;/binding:70045771490240&gt;&lt;/binding:70045771555580&gt;&lt;/binding:70045771621060&gt;&lt;/binding:70045771686380&gt;&lt;/binding:70045771759860&gt;&lt;/binding:70045771792900&gt;&lt;/binding:70045771842300&gt;&lt;/binding:70045771908740&gt;&lt;/binding:70045771966320&gt;&lt;/binding:70045772032120&gt;&lt;/binding:70045772081600&gt;</class:0x007f69cf29f9d8></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>但发现options[:layout]仍然是如此一个Proc</div>
+<div><br /></div>
+<pre><code>[2] pry(#&lt;#<class:0x007f69cf29f9d8>&gt;)&gt; _bsi_[14].lv(:options)
+=&gt; {:prefixes=&gt;[&#34;store&#34;, &#34;application&#34;], :template=&gt;&#34;index&#34;, :layout=&gt;#&lt;proc:0x007f699ac616b8@ home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" layouts.rb:386=""&gt;}
+[3] pry(#&lt;#<class:0x007f69cf29f9d8>&gt;)&gt; _bsi_[13].lv(:layout_name)
+=&gt; #&lt;proc:0x007f699ac616b8@ home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" layouts.rb:386=""&gt;&lt;/proc:0x007f699ac616b8@&gt;</class:0x007f69cf29f9d8>&lt;/proc:0x007f699ac616b8@&gt;</class:0x007f69cf29f9d8></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>但回过头来看，render_template和render_with_layout分别有以下两句</div>
+<div><br /></div>
+<pre><code>template.render(view, locals) { |*name| view._layout_for(*name) }
+layout.render(view, locals){ |*name| view._layout_for(*name) }</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>于是，大概可以这样猜测：当前的view在render时，会找出layout对象（它也是一个view），然后调用layout的render，并带上一个block，在block中调用当前view的render；当layout所转换成的method中调用yield时，即调用了当前view的render，于是layout便嵌套了当前view。</div>
+<div><br /></div>
+<div>理论上这是可行的，但真要去验证actionview的具体做法的话……好像太麻烦了，先不干了……</div>
+
+  </div><a class="u-url" href="/2017/05/14/4a6d57ff42215e260bacf553ce03508b.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

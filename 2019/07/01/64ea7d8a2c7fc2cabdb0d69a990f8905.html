@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>rails/spring的运作分析</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="rails/spring的运作分析" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="rails新建项目时，已经进行过binstub。这时输入rails c，即调用了spring，会打印出“Running via Spring preloader in process”的字样。可凭这些日志信息，到源码中查找它的调用过程。发现日志由以下方法输出，于是加入pp cal…" />
+<meta property="og:description" content="rails新建项目时，已经进行过binstub。这时输入rails c，即调用了spring，会打印出“Running via Spring preloader in process”的字样。可凭这些日志信息，到源码中查找它的调用过程。发现日志由以下方法输出，于是加入pp cal…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-07-01T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"rails新建项目时，已经进行过binstub。这时输入rails c，即调用了spring，会打印出“Running via Spring preloader in process”的字样。可凭这些日志信息，到源码中查找它的调用过程。发现日志由以下方法输出，于是加入pp cal…","@type":"BlogPosting","headline":"rails/spring的运作分析","dateModified":"2019-07-01T00:00:00+00:00","url":"/2019/07/01/64ea7d8a2c7fc2cabdb0d69a990f8905.html","datePublished":"2019-07-01T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2019/07/01/64ea7d8a2c7fc2cabdb0d69a990f8905.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">rails/spring的运作分析</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-07-01T00:00:00+00:00" itemprop="datePublished">Jul 1, 2019
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>rails新建项目时，已经进行过binstub。这时输入rails c，即调用了spring，会打印出“Running via Spring preloader in process”的字样。可凭这些日志信息，到源码中查找它的调用过程。发现日志由以下方法输出，于是加入pp caller，打印出它是怎样被调用的</div>
+<div><br /></div>
+<pre><code># spring-2.0.2/lib/spring/application.rb
+def serve(client)
+  # ...
+
+  pid = fork {
+    pp caller
+    STDERR.puts &#34;Running via Spring preloader in process #{Process.pid}&#34; unless Spring.quiet
+
+    # ...
+  }
+
+  disconnect_database
+
+  log &#34;forked #{pid}&#34;
+  manager.puts pid
+
+  wait pid, streams, client
+end</code></pre>
+<div><br /></div>
+<div>再次输入spring stop; rails c，得调用栈如下</div>
+<div><br /></div>
+<pre><code>➜  rays git:(master) ✗ rails c
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/pry-rails-0.3.6/lib/pry-rails/prompt.rb:36: warning: constant Pry::Prompt::MAP is deprecated
+[&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/railties-5.2.1/lib/rails/railtie.rb:127:in `config&#39;&#34;,
+&#34;/home/z/test_ruby/rays/config/application.rb:12:in `<class:application>&#39;&#34;,
+&#34;/home/z/test_ruby/rays/config/application.rb:10:in `<module:rays>&#39;&#34;,
+&#34;/home/z/test_ruby/rays/config/application.rb:9:in `&lt;top (required)=""&gt;&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/application.rb:92:in `require&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/application.rb:92:in `preload&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/application.rb:153:in `serve&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/application.rb:141:in `block in run&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/application.rb:135:in `loop&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/application.rb:135:in `run&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/application/boot.rb:19:in `&lt;top (required)=""&gt;&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/2.5.0/rubygems/core_ext/kernel_require.rb:59:in `require&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/2.5.0/rubygems/core_ext/kernel_require.rb:59:in `require&#39;&#34;,
+&#34;-e:1:in `&lt;/top&gt;&lt;/top&gt;</module:rays></class:application></code><main><code>&#39;&#34;]
+Running via Spring preloader in process 4152
+Loading development environment (Rails 5.2.1)
+[1] pry(main)&gt;</code></main></pre>
+<div><br /></div>
+<div>其调用可追溯至以下文件</div>
+<div><br /></div>
+<pre><code># spring-2.0.2/lib/spring/application/boot.rb
+Process.setsid
+
+require &#34;spring/application&#34;
+
+app = Spring::Application.new(
+  UNIXSocket.for_fd(3),
+  Spring::JSON.load(ENV.delete(&#34;SPRING_ORIGINAL_ENV&#34;).dup),
+  Spring::Env.new(log_file: IO.for_fd(4))
+)
+
+Signal.trap(&#34;TERM&#34;) { app.terminate }
+
+Spring::ProcessTitleUpdater.run { |distance|
+  &#34;spring app    | #{app.app_name} | started #{distance} ago | #{app.app_env} mode&#34;
+}
+
+app.eager_preload if ENV.delete(&#34;SPRING_PRELOAD&#34;) == &#34;1&#34;
+app.run</code></pre>
+<div><br /></div>
+<div>然后app.run会等待manager和@interrupt，即上面的UNIXSocket.for_fd(3)，以及IO.pipe的读端，一旦可读，则检查状态，执行exit或serve</div>
+<div><br /></div>
+<pre><code># spring-2.0.2/lib/spring/application.rb
+def run
+  state :running
+  manager.puts
+
+  loop do
+    IO.select [manager, @interrupt.first]
+
+    if terminating? || watcher_stale? || preload_failed?
+      exit
+    else
+      serve manager.recv_io(UNIXSocket)
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div>那么UNIXSocket.for_fd(3)除了loop之前写了一下，平时是如何写入，以作进程间通信的呢？在源码里搜索数字3，得：</div>
+<div><br /></div>
+<pre><code># spring-2.0.2/lib/spring/application_manager.rb
+module Spring
+  class ApplicationManager
+
+    def start
+      start_child
+    end
+
+    private
+
+    def start_child(preload = false)
+      @child, child_socket = UNIXSocket.pair
+
+      Bundler.with_clean_env do
+        @pid = Process.spawn(
+          {
+            &#34;RAILS_ENV&#34;           =&gt; app_env,
+            &#34;RACK_ENV&#34;            =&gt; app_env,
+            &#34;SPRING_ORIGINAL_ENV&#34; =&gt; JSON.dump(Spring::ORIGINAL_ENV),
+            &#34;SPRING_PRELOAD&#34;      =&gt; preload ? &#34;1&#34; : &#34;0&#34;
+          },
+          &#34;ruby&#34;,
+          &#34;-I&#34;, File.expand_path(&#34;../..&#34;, $LOADED_FEATURES.grep(/bundler\/setup\.rb$/).first),
+          &#34;-I&#34;, File.expand_path(&#34;../..&#34;, __FILE__),
+          &#34;-e&#34;, &#34;require &#39;spring/application/boot&#39;&#34;,
+          3 =&gt; child_socket,
+          4 =&gt; spring_env.log_file,
+        )
+      end
+
+      start_wait_thread(pid, child) if child.gets
+      child_socket.close
+    end
+
+    # ....
+
+  end
+end</code></pre>
+<div><br /></div>
+<div>这里Spring::ApplicationManager在start之后，会启动一个子进程，让子进程的文件描述符3指向自己建立的一对UNIXSocket的其中一端，并且之后在自己这个父进程中关闭该端，只保留从@child发信到子进程manager的功能</div>
+<div><br /></div>
+<div>那么start_child又是从何调用的呢？</div>
+<div><br /></div>
+<div>于是加入pp caller，再rails c。但无任何输出，考虑到这里这里代码所处的进程可能不是最终rails c所看到的进程，又或是其文件描述符被重定向过，只好将调用栈输出到文件</div>
+<div><br /></div>
+<pre><code># spring-2.0.2/lib/spring/application_manager.rb
+def start_child(preload = false)
+  File.open(&#39;/tmp/spring_manager_start_child&#39;, &#39;w+&#39;) do |f|
+    f.puts caller
+    f.puts &#39;------------&#39;
+  end
+
+  @child, child_socket = UNIXSocket.pair
+  # ...
+end</code></pre>
+<div><br /></div>
+<div>重新spring stop; rails c，在检查日志文件，可见调用栈如下：</div>
+<div><br /></div>
+<pre><code>➜  ~ cat /tmp/spring_manager_start_child
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/application_manager.rb:93:in `open&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/application_manager.rb:93:in `start_child&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/application_manager.rb:26:in `start&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/application_manager.rb:52:in `block in with_child&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/application_manager.rb:20:in `synchronize&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/application_manager.rb:39:in `with_child&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/application_manager.rb:60:in `run&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/server.rb:65:in `serve&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/server.rb:49:in `block in start_server&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/server.rb:49:in `loop&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/server.rb:49:in `start_server&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/server.rb:43:in `boot&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/server.rb:14:in `boot&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/client/server.rb:10:in `call&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/client/command.rb:7:in `call&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/client.rb:30:in `run&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/bin/spring:49:in `</code><main><code>&#39;</code></main></pre>
+<div><br /></div>
+<div>再看回执行rails c的步骤：</div>
+<div><br /></div>
+<div>因文件bin/rails被binstub过，所以会在执行rails命令前，先加载bin/spring</div>
+<div><br /></div>
+<pre><code>#!/usr/bin/env ruby
+begin
+  load File.expand_path(&#39;../spring&#39;, __FILE__)
+rescue LoadError =&gt; e
+  raise unless e.message.include?(&#39;spring&#39;)
+end
+APP_PATH = File.expand_path(&#39;../config/application&#39;, __dir__)
+require_relative &#39;../config/boot&#39;
+require &#39;rails/commands&#39;</code></pre>
+<div><br /></div>
+<div>而bin/spring会运行spring这个gem的spring/binstub</div>
+<div><br /></div>
+<pre><code>#!/usr/bin/env ruby
+unless defined?(Spring)
+  require &#39;rubygems&#39;
+  require &#39;bundler&#39;
+
+  lockfile = Bundler::LockfileParser.new(Bundler.default_lockfile.read)
+  spring = lockfile.specs.detect { |spec| spec.name == &#34;spring&#34; }
+  if spring
+    Gem.use_paths Gem.dir, Bundler.bundle_path.to_s, *Gem.path
+    gem &#39;spring&#39;, spring.version
+    require &#39;spring/binstub&#39;
+  end
+end</code></pre>
+<div><br /></div>
+<div>来到spring/binstub，它会执行spring这个gem的bin/spring文件。而如果是rails命令，还会先将rails压到ARGV的前端</div>
+<div><br /></div>
+<pre><code># lib/spring/binstub.rb
+command  = File.basename($0)
+bin_path = File.expand_path(&#34;../../../bin/spring&#34;, __FILE__)
+
+# ...
+
+if command == &#34;spring&#34;
+  load bin_path
+else
+  disable = ENV[&#34;DISABLE_SPRING&#34;]
+
+  if Process.respond_to?(:fork) &amp;&amp; (disable.nil? || disable.empty? || disable == &#34;0&#34;)
+    ARGV.unshift(command)
+    load bin_path
+  end
+end</code></pre>
+<div><br /></div>
+<div>而bin/spring是这样的，将ARGV传给Spring::Client.run</div>
+<div><br /></div>
+<pre><code>lib = File.expand_path(&#34;../../lib&#34;, __FILE__)
+$LOAD_PATH.unshift lib unless $LOAD_PATH.include?(lib) # enable local development
+require &#39;spring/client&#39;
+Spring::Client.run(ARGV)</code></pre>
+<div><br /></div>
+<div>于是便接上了上面ApplicationManager#run -&gt; ApplicationManager#start_child的调用栈。调用栈中涉及的server代码如下</div>
+<div><br /></div>
+<pre><code># spring-2.0.2/lib/spring/server.rb
+module Spring
+  class Server
+    def self.boot(options = {})
+      new(options).boot
+    end
+
+    attr_reader :env
+
+    def initialize(options = {})
+      @foreground   = options.fetch(:foreground, false)
+      @env          = options[:env] || default_env
+      @applications = Hash.new { |h, k| h[k] = ApplicationManager.new(k, env) }
+      @pidfile      = env.pidfile_path.open(&#39;a&#39;)
+      @mutex        = Mutex.new
+    end
+
+    def boot
+      Spring.verify_environment
+
+      write_pidfile
+      set_pgid unless foreground?
+      ignore_signals unless foreground?
+      set_exit_hook
+      set_process_title
+      start_server
+    end
+
+    def start_server
+      server = UNIXServer.open(env.socket_name)
+      log &#34;started on #{env.socket_name}&#34;
+      loop { serve server.accept }
+    rescue Interrupt
+    end
+
+    def serve(client)
+      log &#34;accepted client&#34;
+      client.puts env.version
+
+      app_client = client.recv_io
+      command    = JSON.load(client.read(client.gets.to_i))
+
+      args, default_rails_env = command.values_at(&#39;args&#39;, &#39;default_rails_env&#39;)
+
+      if Spring.command?(args.first)
+        log &#34;running command #{args.first}&#34;
+        client.puts
+        client.puts @applications[rails_env_for(args, default_rails_env)].run(app_client)
+      else
+        log &#34;command not found #{args.first}&#34;
+        client.close
+      end
+    rescue SocketError =&gt; e
+      raise e unless client.eof?
+    ensure
+      redirect_output
+    end</code></pre>
+<div><br /></div>
+<div>这里可以看到，server其实是UNIXServer.open(env.socket_name)，于是搜下socket_name，看还有哪里会用它来建立管道，得：</div>
+<div><br /></div>
+<pre><code>module Spring
+  module Client
+    class Run &lt; Command
+      attr_reader :server
+
+      def connect
+        File.open(&#39;/tmp/spring_client_run_connect&#39;, &#39;w+&#39;) do |f|
+          f.puts caller
+          f.puts &#39;-----------------&#39;
+        end
+        @server = UNIXSocket.open(env.socket_name)
+      end
+
+      def call
+        begin
+          connect
+        rescue Errno::ENOENT, Errno::ECONNRESET, Errno::ECONNREFUSED
+          cold_run
+        else
+          warm_run
+        end
+      ensure
+        server.close if server
+      end</code></pre>
+<div><br /></div>
+<div>在上面代码加入调用栈打印后，再运行spring stop;rails c，得：</div>
+<div><br /></div>
+<pre><code>➜  ~ cat /tmp/spring_client_run_connect
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/client/run.rb:26:in `open&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/client/run.rb:26:in `connect&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/client/run.rb:61:in `cold_run&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/client/run.rb:37:in `rescue in call&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/client/run.rb:34:in `call&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/client/command.rb:7:in `call&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/client/rails.rb:24:in `call&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/client/command.rb:7:in `call&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/client.rb:30:in `run&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/bin/spring:49:in `&lt;top (required)=""&gt;&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/binstub.rb:31:in `load&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/spring-2.0.2/lib/spring/binstub.rb:31:in `&lt;top (required)=""&gt;&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/2.5.0/rubygems/core_ext/kernel_require.rb:70:in `require&#39;
+/home/z/.rbenv/versions/2.5.1/lib/ruby/2.5.0/rubygems/core_ext/kernel_require.rb:70:in `require&#39;
+/home/z/test_ruby/rays/bin/spring:15:in `&lt;top (required)=""&gt;&#39;
+bin/rails:3:in `load&#39;
+bin/rails:3:in `&lt;/top&gt;&lt;/top&gt;&lt;/top&gt;</code><main><code>&#39;</code></main></pre>
+<div><br /></div>
+<div>但因为刚才有spring stop，所以这次进入了cold_run。那么它如何分辨cold_run还是warm_run呢？其实就是作为server的UNIXSocket.open(env.socket_name)文件并未建立。于是，如下面源码所述，它会进入boot_server方法，里面会另起一个进程，执行shell命令spring server（env.server_command）</div>
+<div><br /></div>
+<pre><code># spring-2.0.2/lib/spring/client/run.rb
+def connect
+  @server = UNIXSocket.open(env.socket_name)
+end
+
+def call
+  begin
+    connect
+  rescue Errno::ENOENT, Errno::ECONNRESET, Errno::ECONNREFUSED
+    cold_run
+  else
+    warm_run
+  end
+ensure
+  server.close if server
+end
+
+def cold_run
+  boot_server
+  connect
+  run
+end
+
+def boot_server
+  env.socket_path.unlink if env.socket_path.exist?
+
+  pid     = Process.spawn(gem_env, env.server_command, out: File::NULL)
+  timeout = Time.now + BOOT_TIMEOUT
+
+  @server_booted = true
+
+  until env.socket_path.exist?
+    _, status = Process.waitpid2(pid, Process::WNOHANG)
+
+    if status
+      exit status.exitstatus
+    elsif Time.now &gt; timeout
+      $stderr.puts &#34;Starting Spring server with `#{env.server_command}` &#34; \
+                   &#34;timed out after #{BOOT_TIMEOUT} seconds&#34;
+      exit 1
+    end
+
+    sleep 0.1
+  end
+end</code></pre>
+<div><br /></div>
+<div>而根据lib/spring/client.rb里的命令匹配，<span style="font-size: medium; letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; color: rgb(0, 0, 0); font-family: 微软雅黑; font-variant-caps: normal; font-variant-ligatures: normal;">shell命令spring server对应的就是Spring::</span>Client::Server，其执行的就是Spring::Server.boot，于是这就又接回了上面ApplicationManager#run -&gt; ApplicationManager#start_child的调用栈。</div>
+<div><br /></div>
+<div>至此，所有进程间通讯都可串联起来了，图形如下：</div>
+<div><br /></div>
+<div><img src="/assets/files/64ea7d8a2c7fc2cabdb0d69a990f8905/2a2d595e6ed9a0b24f027f2b63b134d6.gif" type="image/gif" data-filename="spring.gif" /></div>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2019/07/01/64ea7d8a2c7fc2cabdb0d69a990f8905.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>view与controller的调用关系</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="view与controller的调用关系" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="根据Agile Web Development with Rails 5所说：…" />
+<meta property="og:description" content="根据Agile Web Development with Rails 5所说：…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-05-02T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"根据Agile Web Development with Rails 5所说：…","@type":"BlogPosting","headline":"view与controller的调用关系","dateModified":"2017-05-02T00:00:00+00:00","url":"/2017/05/02/30f7c1069f3bd2289821c6efb7098be9.html","datePublished":"2017-05-02T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/05/02/30f7c1069f3bd2289821c6efb7098be9.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">view与controller的调用关系</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-05-02T00:00:00+00:00" itemprop="datePublished">May 2, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>根据Agile Web Development with Rails 5所说：</div>
+<div><br /></div>
+<div>All instance variables of the controller are also available in the template.</div>
+<div><br /></div>
+<div>The controller object&#39;s  flash ,  headers ,  logger ,  params ,  request ,  response , and  session  are available as accessor methods in the view</div>
+<div><br /></div>
+<div>下面具体看看它们是怎么来的</div>
+<div><br /></div>
+<div><span style="font-weight: bold;">view中的flash、session等方法是怎么来的</span></div>
+<div><br /></div>
+<div>首先在view中加入&lt;% binding.pry %&gt;断点，可看到flash、params等方法都是被委托到controller上的</div>
+<div><br /></div>
+<pre><code>[2] pry(#&lt;#<class:0x007feb62d4aa30>&gt;)&gt; method(:flash).source_location
+=&gt; [&#34;/home/z/.rbenv/versions/2.3.3/lib/ruby/gems/2.3.0/gems/actionview-5.0.2/lib/action_view/helpers/controller_helper.rb&#34;, 10]</class:0x007feb62d4aa30></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>源码如下</div>
+<div><br /></div>
+<pre><code>module ActionView
+  module Helpers
+    # This module keeps all methods and behavior in ActionView
+    # that simply delegates to the controller.
+    module ControllerHelper #:nodoc:
+      attr_internal :controller, :request
+
+      delegate :request_forgery_protection_token, :params, :session, :cookies, :response, :headers,
+               :flash, :action_name, :controller_name, :controller_path, :to =&gt; :controller
+
+      def assign_controller(controller)
+        if @_controller = controller
+          @_request = controller.request if controller.respond_to?(:request)
+          @_config  = controller.config.inheritable_copy if controller.respond_to?(:config)
+          @_default_form_builder = controller.default_form_builder if controller.respond_to?(:default_form_builder)
+        end
+      end
+
+      def logger
+        controller.logger if controller.respond_to?(:logger)
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><span style="font-weight: bold;">view是如何获取controller的</span></div>
+<div><br /></div>
+<div>从上面源码可看到assign_controller似乎就类似于一种setter，它是何时会被调用呢？于是，在assign_controller加入断点，然后访问/products</div>
+<div><br /></div>
+<pre><code>From: /home/z/.rbenv/versions/2.3.3/lib/ruby/gems/2.3.0/gems/actionview-5.0.2/lib/action_view/helpers/controller_helper.rb @ line 15 ActionView::Helpers::ControllerHelper#assign_controller:
+
+    13: def assign_controller(controller)
+    14:   binding.pry
+ =&gt; 15:   if @_controller = controller
+    16:     @_request = controller.request if controller.respond_to?(:request)
+    17:     @_config  = controller.config.inheritable_copy if controller.respond_to?(:config)
+    18:     @_default_form_builder = controller.default_form_builder if controller.respond_to?(:default_form_builder)
+    19:   end
+    20: end
+
+[1] pry(#&lt;#<class:0x007fc8f1f069e8>&gt;)&gt; _bsi_
+=&gt; {0=&gt;#&lt;binding:70250515797060 #&lt;class:0x007fc8f1f069e8=""&gt;#assign_controller /home/z/.rbenv/versions/2.3.3/lib/ruby/gems/2.3.0/gems/actionview-5.0.2/lib/action_view/helpers/controller_helper.rb:14&gt;,
+ 1=&gt;#&lt;binding:70250516430520 #&lt;class:0x007fc8f1f069e8=""&gt;#initialize /home/z/.rbenv/versions/2.3.3/lib/ruby/gems/2.3.0/gems/actionview-5.0.2/lib/action_view/base.rb:211&gt;,
+ 2=&gt;#&lt;binding:70250513919800 #&lt;class:0x007fc8f1f069e8=""&gt;#initialize /home/z/.rbenv/versions/2.3.3/lib/ruby/gems/2.3.0/gems/actionpack-5.0.2/lib/action_dispatch/routing/url_for.rb:106&gt;,
+ 3=&gt;#&lt;binding:70250523128860 productscontroller#view_context="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionview-5.0.2="" lib="" action_view="" rendering.rb:72=""&gt;,
+ 4=&gt;#&lt;binding:70250523311660 productscontroller#_render_template="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionview-5.0.2="" lib="" action_view="" rendering.rb:98=""&gt;,
+ 5=&gt;#&lt;binding:70250523597300 productscontroller#_render_template="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" streaming.rb:217=""&gt;,
+ 6=&gt;#&lt;binding:70250523872240 productscontroller#render_to_body="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionview-5.0.2="" lib="" action_view="" rendering.rb:83=""&gt;,
+ 7=&gt;#&lt;binding:70250524267320 productscontroller#render_to_body="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" rendering.rb:52=""&gt;,
+ 8=&gt;#&lt;binding:70250524386040 productscontroller#render_to_body="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" renderers.rb:142=""&gt;,
+ 9=&gt;#&lt;binding:70250524727040 productscontroller#render="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" rendering.rb:26=""&gt;,
+ 10=&gt;#&lt;binding:70250525162960 productscontroller#render="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" rendering.rb:36=""&gt;,
+ 11=&gt;#&lt;binding:70250525316880 productscontroller#block="" (2="" levels)="" in="" render="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" instrumentation.rb:44=""&gt;,
+ 12=&gt;#&lt;binding:70250525733820 benchmark.block="" in="" ms="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" activesupport-5.0.2="" lib="" active_support="" core_ext="" benchmark.rb:12=""&gt;,
+ 13=&gt;#&lt;binding:70250526005360 benchmark.realtime="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" 2.3.0="" benchmark.rb:308=""&gt;,
+ 14=&gt;#&lt;binding:70250526293340 benchmark.ms="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" activesupport-5.0.2="" lib="" active_support="" core_ext="" benchmark.rb:12=""&gt;,
+ 15=&gt;#&lt;binding:70250526546800 productscontroller#block="" in="" render="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" instrumentation.rb:44=""&gt;,
+ 16=&gt;#&lt;binding:70250526978760 productscontroller#cleanup_view_runtime="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" instrumentation.rb:87=""&gt;,
+ 17=&gt;#&lt;binding:70250527139140 productscontroller#cleanup_view_runtime="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" activerecord-5.0.2="" lib="" active_record="" railties="" controller_runtime.rb:25=""&gt;,
+ 18=&gt;#&lt;binding:70250527443460 productscontroller#render="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" instrumentation.rb:43=""&gt;,
+ 19=&gt;#&lt;binding:70250527818180 productscontroller#default_render="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" implicit_render.rb:36=""&gt;,
+ 20=&gt;#&lt;binding:70250528143220 productscontroller#block="" in="" send_action="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" basic_implicit_render.rb:4=""&gt;,
+ 21=&gt;#&lt;binding:70250528465280 productscontroller#send_action="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" basic_implicit_render.rb:4=""&gt;,
+ 22=&gt;#&lt;binding:70250528827020 productscontroller#process_action="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" base.rb:188=""&gt;,
+ 23=&gt;#&lt;binding:70250529237440 productscontroller#process_action="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" rendering.rb:30=""&gt;,
+ 24=&gt;#&lt;binding:70250529377280 productscontroller#block="" in="" process_action="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" callbacks.rb:20=""&gt;,
+ 25=&gt;#&lt;binding:70250529649300 activesupport::callbacks::filters::end#call="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" activesupport-5.0.2="" lib="" active_support="" callbacks.rb:126=""&gt;,
+ 26=&gt;#&lt;binding:70250530017880 activesupport::callbacks::callbackchain#block="" (2="" levels)="" in="" compile="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" activesupport-5.0.2="" lib="" active_support="" callbacks.rb:506=""&gt;,
+ 27=&gt;#&lt;binding:70250530145300 activesupport::callbacks::callbacksequence#call="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" activesupport-5.0.2="" lib="" active_support="" callbacks.rb:455=""&gt;,
+ 28=&gt;#&lt;binding:70250530486720 productscontroller#__run_callbacks__="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" activesupport-5.0.2="" lib="" active_support="" callbacks.rb:101=""&gt;,
+ 29=&gt;#&lt;binding:70250528846540 productscontroller#_run_process_action_callbacks="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" activesupport-5.0.2="" lib="" active_support="" callbacks.rb:750=""&gt;,
+ 30=&gt;#&lt;binding:70250530706720 productscontroller#run_callbacks="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" activesupport-5.0.2="" lib="" active_support="" callbacks.rb:90=""&gt;,
+ 31=&gt;#&lt;binding:70250530360700 productscontroller#process_action="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" callbacks.rb:19=""&gt;,
+ 32=&gt;#&lt;binding:70250530031620 productscontroller#process_action="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" rescue.rb:20=""&gt;,
+ 33=&gt;#&lt;binding:70250529656440 productscontroller#block="" in="" process_action="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" instrumentation.rb:32=""&gt;,
+ 34=&gt;#&lt;binding:70250529412960 activesupport::notifications.block="" in="" instrument="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" activesupport-5.0.2="" lib="" active_support="" notifications.rb:164=""&gt;,
+ 35=&gt;#&lt;binding:70250529196080 activesupport::notifications::instrumenter#instrument="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" activesupport-5.0.2="" lib="" active_support="" notifications="" instrumenter.rb:21=""&gt;,
+ 36=&gt;#&lt;binding:70250528716060 activesupport::notifications.instrument="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" activesupport-5.0.2="" lib="" active_support="" notifications.rb:164=""&gt;,
+ 37=&gt;#&lt;binding:70250528347380 productscontroller#process_action="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" instrumentation.rb:30=""&gt;,
+ 38=&gt;#&lt;binding:70250528010780 productscontroller#process_action="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" params_wrapper.rb:248=""&gt;,
+ 39=&gt;#&lt;binding:70250527626540 productscontroller#process_action="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" activerecord-5.0.2="" lib="" active_record="" railties="" controller_runtime.rb:18=""&gt;,
+ 40=&gt;#&lt;binding:70250527305640 productscontroller#process="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" base.rb:126=""&gt;,
+ 41=&gt;#&lt;binding:70250527025880 productscontroller#process="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionview-5.0.2="" lib="" action_view="" rendering.rb:30=""&gt;,
+ 42=&gt;#&lt;binding:70250526688700 productscontroller#dispatch="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal.rb:190=""&gt;,
+ 43=&gt;#&lt;binding:70250526391200 productscontroller.dispatch="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal.rb:262=""&gt;,&lt;/binding:70250526391200&gt;&lt;/binding:70250526688700&gt;&lt;/binding:70250527025880&gt;&lt;/binding:70250527305640&gt;&lt;/binding:70250527626540&gt;&lt;/binding:70250528010780&gt;&lt;/binding:70250528347380&gt;&lt;/binding:70250528716060&gt;&lt;/binding:70250529196080&gt;&lt;/binding:70250529412960&gt;&lt;/binding:70250529656440&gt;&lt;/binding:70250530031620&gt;&lt;/binding:70250530360700&gt;&lt;/binding:70250530706720&gt;&lt;/binding:70250528846540&gt;&lt;/binding:70250530486720&gt;&lt;/binding:70250530145300&gt;&lt;/binding:70250530017880&gt;&lt;/binding:70250529649300&gt;&lt;/binding:70250529377280&gt;&lt;/binding:70250529237440&gt;&lt;/binding:70250528827020&gt;&lt;/binding:70250528465280&gt;&lt;/binding:70250528143220&gt;&lt;/binding:70250527818180&gt;&lt;/binding:70250527443460&gt;&lt;/binding:70250527139140&gt;&lt;/binding:70250526978760&gt;&lt;/binding:70250526546800&gt;&lt;/binding:70250526293340&gt;&lt;/binding:70250526005360&gt;&lt;/binding:70250525733820&gt;&lt;/binding:70250525316880&gt;&lt;/binding:70250525162960&gt;&lt;/binding:70250524727040&gt;&lt;/binding:70250524386040&gt;&lt;/binding:70250524267320&gt;&lt;/binding:70250523872240&gt;&lt;/binding:70250523597300&gt;&lt;/binding:70250523311660&gt;&lt;/binding:70250523128860&gt;&lt;/binding:70250513919800&gt;&lt;/binding:70250516430520&gt;&lt;/binding:70250515797060&gt;</class:0x007fc8f1f069e8></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>可发现有actionpack-5.0.2/lib/action_controller/metal/basic_implicit_render.rb</div>
+<div><br /></div>
+<pre><code>module ActionController
+  module BasicImplicitRender
+    def send_action(method, *args)
+      super.tap { default_render unless performed? }
+    end
+
+    def default_render(*args)
+      head :no_content
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>搜索BasicImplicitRender，可见implicit_render.rb中有include它</div>
+<div><br /></div>
+<pre><code>$ gems git:(master) grep BasicImplicitRender -rn a*
+actionpack-5.0.2/lib/action_controller.rb:31:    autoload :BasicImplicitRender
+actionpack-5.0.2/lib/action_controller/api.rb:119:      BasicImplicitRender,
+actionpack-5.0.2/lib/action_controller/metal/basic_implicit_render.rb:2:  module BasicImplicitRender # :nodoc:
+actionpack-5.0.2/lib/action_controller/metal/implicit_render.rb:32:    include BasicImplicitRender</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>ImplicitRender部分源码如下</div>
+<div><br /></div>
+<pre><code>module ImplicitRender
+
+  include BasicImplicitRender
+
+  def default_render(*args)
+    if template_exists?(action_name.to_s, _prefixes, variants: request.variant)
+      render(*args)
+    elsif any_templates?(action_name.to_s, _prefixes)
+      message = &#34;#{self.class.name}\##{action_name} is missing a template &#34; \
+        &#34;for this request format and variant.\n&#34; \
+        &#34;\nrequest.formats: #{request.formats.map(&amp;:to_s).inspect}&#34; \
+        &#34;\nrequest.variant: #{request.variant.inspect}&#34;
+
+      raise ActionController::UnknownFormat, message
+    elsif interactive_browser_request?
+      message = &#34;#{self.class.name}\##{action_name} is missing a template &#34; \
+        &#34;for this request format and variant.\n\n&#34; \
+        &#34;request.formats: #{request.formats.map(&amp;:to_s).inspect}\n&#34; \
+        &#34;request.variant: #{request.variant.inspect}\n\n&#34; \
+        &#34;NOTE! For XHR/Ajax or API requests, this action would normally &#34; \
+        &#34;respond with 204 No Content: an empty white screen. Since you&#39;re &#34; \
+        &#34;loading it in a web browser, we assume that you expected to &#34; \
+        &#34;actually render a template, not nothing, so we&#39;re showing an &#34; \
+        &#34;error to be extra-clear. If you expect 204 No Content, carry on. &#34; \
+        &#34;That&#39;s what you&#39;ll get from an XHR or API request. Give it a shot.&#34;
+
+      raise ActionController::UnknownFormat, message
+    else
+      logger.info &#34;No template found for #{self.class.name}\##{action_name}, rendering head :no_content&#34; if logger
+      super
+    end
+  end
+
+  # ...
+
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而ImplicitRender则在Base中被include</div>
+<div><br /></div>
+<pre><code>$ gems git:(master) grep ImplicitRender -rn a*
+actionpack-5.0.2/lib/action_controller.rb:31:    autoload :BasicImplicitRender
+actionpack-5.0.2/lib/action_controller.rb:32:    autoload :ImplicitRender
+actionpack-5.0.2/lib/action_controller/api.rb:119:      BasicImplicitRender,
+actionpack-5.0.2/lib/action_controller/base.rb:218:      ImplicitRender,
+actionpack-5.0.2/lib/action_controller/metal/basic_implicit_render.rb:2:  module BasicImplicitRender # :nodoc:
+actionpack-5.0.2/lib/action_controller/metal/implicit_render.rb:29:  module ImplicitRender
+actionpack-5.0.2/lib/action_controller/metal/implicit_render.rb:32:    include BasicImplicitRender</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>至此，整理一下，send_action是BasicImplicitRender才有的，但default_render是ImplicitRender的优先（只有在“No template found”是才super，去调include的BasicImplicitRender的default_render）</div>
+<div><br /></div>
+<div>而default_render是只在performed?为false时才会做</div>
+<div><br /></div>
+<div>这就是Agile Web Development with Rails 5中所谓的：</div>
+<div><br /></div>
+<div>Because the controller must respond exactly once, it checks to see whether a response has been generated just before it finishes handling a request. If not, the controller looks for a template named after the controller and action and automatically renders it. This is the most common way that rendering takes place. You may have noticed that in most of the actions in our shopping cart tutorial we never explicitly rendered anything. Instead, our action methods set up the context for the view and return. The controller notices that no rendering has taken place and automatically invokes the appropriate template</div>
+<div><br /></div>
+<div>检查一下哪些module有重载render方法</div>
+<div><br /></div>
+<pre><code>[2] pry(#&lt;#<class:0x007fc8f1f069e8>&gt;)&gt; _bsi_.select{|i, bi| bi.frame_env =~ /render/}
+=&gt; {4=&gt;#&lt;binding:70250147973180 productscontroller#_render_template="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionview-5.0.2="" lib="" action_view="" rendering.rb:98=""&gt;,
+ 5=&gt;#&lt;binding:70250147700480 productscontroller#_render_template="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" streaming.rb:217=""&gt;,
+ 6=&gt;#&lt;binding:70250147444120 productscontroller#render_to_body="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionview-5.0.2="" lib="" action_view="" rendering.rb:83=""&gt;,
+ 7=&gt;#&lt;binding:70250147166220 productscontroller#render_to_body="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" rendering.rb:52=""&gt;,
+ 8=&gt;#&lt;binding:70250146902260 productscontroller#render_to_body="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" renderers.rb:142=""&gt;,
+ 9=&gt;#&lt;binding:70250146642820 productscontroller#render="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" rendering.rb:26=""&gt;,
+ 10=&gt;#&lt;binding:70250146383760 productscontroller#render="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" rendering.rb:36=""&gt;,
+ 11=&gt;#&lt;binding:70250146058920 productscontroller#block="" (2="" levels)="" in="" render="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" instrumentation.rb:44=""&gt;,
+ 15=&gt;#&lt;binding:70250144916680 productscontroller#block="" in="" render="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" instrumentation.rb:44=""&gt;,
+ 18=&gt;#&lt;binding:70250144030980 productscontroller#render="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" instrumentation.rb:43=""&gt;,
+ 19=&gt;#&lt;binding:70250143729220 productscontroller#default_render="" home="" z="" .rbenv="" versions="" 2.3.3="" lib="" ruby="" gems="" 2.3.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" implicit_render.rb:36=""&gt;}&lt;/binding:70250143729220&gt;&lt;/binding:70250144030980&gt;&lt;/binding:70250144916680&gt;&lt;/binding:70250146058920&gt;&lt;/binding:70250146383760&gt;&lt;/binding:70250146642820&gt;&lt;/binding:70250146902260&gt;&lt;/binding:70250147166220&gt;&lt;/binding:70250147444120&gt;&lt;/binding:70250147700480&gt;&lt;/binding:70250147973180&gt;</class:0x007fc8f1f069e8></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>大概就是actionpack-5.0.2/lib/action_controller/metal/instrumentation.rb，actionpack-5.0.2/lib/action_controller/metal/rendering.rb，actionpack-5.0.2/lib/abstract_controller/rendering.rb。如无意外就是mixin然后super。</div>
+<div><br /></div>
+<div>actionpack-5.0.2/lib/action_controller/metal/instrumentation.rb如下，很直接地就用了Benchmark来计时，没有通过ActiveSupport::Notifications.instrument来调什么hook</div>
+<div><br /></div>
+<pre><code>def render(*args)
+  render_output = nil
+  self.view_runtime = cleanup_view_runtime do
+    Benchmark.ms { render_output = super }
+  end
+  render_output
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>actionpack-5.0.2/lib/action_controller/metal/rendering.rb如下，用于检查下有否显式地二次调用render</div>
+<div><br /></div>
+<pre><code>def render(*args) #:nodoc:
+  raise ::AbstractController::DoubleRenderError if self.response_body
+  super
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>actionpack-5.0.2/lib/abstract_controller/rendering.rb如下，真正地生成响应体，就是在这里了</div>
+<div><br /></div>
+<pre><code>def render(*args, &amp;block)
+  options = _normalize_render(*args, &amp;block)
+  rendered_body = render_to_body(options)
+  if options[:html]
+    _set_html_content_type
+  else
+    _set_rendered_content_type rendered_format
+  end
+  self.response_body = rendered_body
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><span style="font-weight: bold;">render干什么</span></div>
+<div><br /></div>
+<div>上面的分析仅仅是根据字面编程来猜测，而且似乎跑偏，但可进一步猜测是controller调用render，然后render会生成view，并将当前controller赋给view，然后把view渲染成字符串后，塞到响应体中。</div>
+<div><br /></div>
+<div>下面来看看具体过程，这次直接跟踪render_to_body</div>
+<div><br /></div>
+<pre><code># actionpack-5.0.2/lib/abstract_controller/rendering.rb
+def render(*args, &amp;block)
+  options = _normalize_render(*args, &amp;block)
+  #binding.pry
+  rendered_body = binding.trace_tree(html: true, tmp: [&#39;rails&#39;, &#34;render_#{options[:template]}.html&#34;]) do
+    render_to_body(options)
+  end
+  if options[:html]
+    _set_html_content_type
+  else
+    _set_rendered_content_type rendered_format
+  end
+  self.response_body = rendered_body
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>然后访问/products/1。跑的比较慢，生成的文件也很大，完整调用栈如下（注意，rendering.rb因为加入了三行调试语句，所以有关此文件的trace的结果，下半部分会往下偏移三行）</div>
+<div><br /></div>
+<div><a href="/assets/files/30f7c1069f3bd2289821c6efb7098be9/b1a2aea8ce51da0b6a864d62036e38ab.html"><img src="/assets/files/30f7c1069f3bd2289821c6efb7098be9/8fe8a80e9a2e62fbeda0e44b028f6ceb.png" alt="render_show.html" /></a></div>
+<div><br /></div>
+<div>还是从assign_controller查起，可看到controller被赋给了一个匿名类所生成的对象</div>
+<div><br /></div>
+<div><img src="/assets/files/30f7c1069f3bd2289821c6efb7098be9/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div>查源码，可知这里new的就是view对象，它来自动态生成的ActionView::Base子类</div>
+<div><br /></div>
+<pre><code>module ClassMethods
+  def view_context_class
+    @view_context_class ||= begin
+      supports_path = supports_path?
+      routes  = respond_to?(:_routes)  &amp;&amp; _routes
+      helpers = respond_to?(:_helpers) &amp;&amp; _helpers
+
+      Class.new(ActionView::Base) do
+        if routes
+          include routes.url_helpers(supports_path)
+          include routes.mounted_helpers
+        end
+
+        if helpers
+          include helpers
+        end
+      end
+    end
+  end
+end
+
+attr_internal_writer :view_context_class
+
+def view_context_class
+  @_view_context_class ||= self.class.view_context_class
+end
+
+# An instance of a view class. The default view class is ActionView::Base.
+#
+# The view class must have the following methods:
+# View.new[lookup_context, assigns, controller]
+#   Create a new ActionView instance for a controller and we can also pass the arguments.
+# View#render(option)
+#   Returns String with the rendered template
+#
+# Override this method in a module to change the default behavior.
+def view_context
+  view_context_class.new(view_renderer, view_assigns, self)
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而且，从注释也可看出，view接下来会被调用render来渲染出响应体</div>
+<div><br /></div>
+<div>于是，再往上推导一下，大概流程就是如下（不过这里又说是用renderer来做render）</div>
+<div><br /></div>
+<div><img src="/assets/files/30f7c1069f3bd2289821c6efb7098be9/91eee3f8d75dbb327ede474944726554.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div>另外，从view_context方法所使用的view_assigns如下，它其实就是controller的实例变量，只是简单地从controller复制到view，待会应该是会用到instance_variable_set的</div>
+<div><br /></div>
+<pre><code># actionpack-5.0.2/lib/abstract_controller/rendering.rb
+DEFAULT_PROTECTED_INSTANCE_VARIABLES = Set.new %i(
+  @_action_name @_response_body @_formats @_prefixes
+)
+
+# This method should return a hash with assigns.
+# You can overwrite this configuration per controller.
+# :api: public
+def view_assigns
+  protected_vars = _protected_ivars
+  variables      = instance_variables
+
+  variables.reject! { |s| protected_vars.include? s }
+  variables.each_with_object({}) { |name, hash|
+    hash[name.slice(1, name.length)] = instance_variable_get(name)
+  }
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>确实，在assign_controller之前，会assign这些变量</div>
+<div><br /></div>
+<div><img src="/assets/files/30f7c1069f3bd2289821c6efb7098be9/f7cb588f62bc16ba6c8ac0b4956bd711.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div>源码如下</div>
+<div><br /></div>
+<pre><code># actionview-5.0.2/lib/action_view/base.rb
+def initialize(context = nil, assigns = {}, controller = nil, formats = nil) #:nodoc:
+  @_config = ActiveSupport::InheritableOptions.new
+
+  if context.is_a?(ActionView::Renderer)
+    @view_renderer = context
+  else
+    lookup_context = context.is_a?(ActionView::LookupContext) ?
+      context : ActionView::LookupContext.new(context)
+    lookup_context.formats  = formats if formats
+    lookup_context.prefixes = controller._prefixes if controller
+    @view_renderer = ActionView::Renderer.new(lookup_context)
+  end
+
+  assign(assigns)
+  assign_controller(controller)
+  _prepare_context
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>直接加入断点的话，会看到有product这个变量（当然，set时候会前面带上@）</div>
+<div><br /></div>
+<pre><code>From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionview-5.0.2/lib/action_view/base.rb @ line 199 ActionView::Base#initialize:
+
+    197: def initialize(context = nil, assigns = {}, controller = nil, formats = nil) #:nodoc:
+    198:   binding.pry
+ =&gt; 199:   @_config = ActiveSupport::InheritableOptions.new
+    200:
+    201:   if context.is_a?(ActionView::Renderer)
+    202:     @view_renderer = context
+    203:   else
+    204:     lookup_context = context.is_a?(ActionView::LookupContext) ?
+    205:       context : ActionView::LookupContext.new(context)
+    206:     lookup_context.formats  = formats if formats
+    207:     lookup_context.prefixes = controller._prefixes if controller
+    208:     @view_renderer = ActionView::Renderer.new(lookup_context)
+    209:   end
+    210:
+    211:   assign(assigns)
+    212:   assign_controller(controller)
+    213:   _prepare_context
+    214: end
+
+[1] pry(#&lt;#<class:0x007ffa54853170>&gt;)&gt; assigns.keys
+=&gt; [&#34;marked_for_same_origin_verification&#34;, &#34;product&#34;]</class:0x007ffa54853170></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><span style="font-weight: bold;">小结</span></div>
+<div><br /></div>
+<div>至此，基本可以知道，flash、session等方法，是委托controller而来的，而controller的实例变量，是复制到view的</div>
+
+  </div><a class="u-url" href="/2017/05/02/30f7c1069f3bd2289821c6efb7098be9.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

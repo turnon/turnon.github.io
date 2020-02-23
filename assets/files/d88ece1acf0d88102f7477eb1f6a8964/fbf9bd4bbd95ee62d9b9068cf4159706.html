@@ -1,0 +1,96 @@
+<!DOCTYPE HTML><html><head><meta charset='utf-8'/><style>body {
+    font-family: 'Dejavu Sans Mono', 'Arial', sans-serif;
+    font-size: 13px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.tree-html ul {
+    margin-left: 15px;
+}
+
+.tree-html li {
+    list-style-type: none;
+    margin: 10px;
+    position: relative;
+}
+
+.tree-html li::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc;
+    width: 15px;
+    height: 15px;
+}
+
+.tree-html li::after {
+    position: absolute;
+    content: "";
+    top: 8px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    width: 15px;
+    height: 100%;
+}
+
+.tree-html li:last-child::after {
+    display: none;
+}
+
+ul.tree-html>li:first-child::before {
+    display: none;
+}
+
+.tree-html li a {
+    padding: 2px 5px;
+}
+
+.tree-html li a:hover, .tree-html li a:hover+ul li a,
+.tree-html li a:focus, .tree-html li a:focus+ul li a {
+    background-color: #d3d3d3;
+}
+
+.tree-html label {
+  margin: .2em 0 0 -.6em;
+  position: absolute;
+  border: 1px solid #ccc;
+  background: white;
+  width: .6em;
+  height: .6em;
+  display: inline-block;
+  line-height: .65;
+}
+
+.tree-html label.placeholder {
+  visibility: hidden;
+}
+
+.tree-html label::before {
+  color: #ccc;
+  font-family: serif;
+  margin-left: 0.02em;
+}
+
+input[type='checkbox'] {
+  margin-left: 5px;
+  display: none
+}
+
+input[type='checkbox']:checked ~ ul {
+  display: none
+}
+
+input[type="checkbox"] + label::before {
+  content: '-';
+}
+
+input[type="checkbox"]:checked + label::before {
+  content: '+';
+}
+.highlight{color: #a50000;}</style></head><body><ul class='tree-html'><li><input type='checkbox' id='69896801891800'><label for='69896801891800'></label><a><span class='highlight'>Object#block in __pry__</span> (pry):47</a><ul><li><input type='checkbox' id='69896801875740'><label for='69896801875740'></label><a><span class='highlight'>Student#name_changed?</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/attribute_methods.rb:383</a><ul><li><input type='checkbox' id='69896801867840'><label for='69896801867840'></label><a><span class='highlight'>Student#attribute_changed?</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_methods/dirty.rb:224</a><ul><li><input type='checkbox' id='69896801860600'><label for='69896801860600'></label><a><span class='highlight'>Student#emit_warning_if_needed</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_methods/dirty.rb:248</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Student#mutation_tracker</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_methods/dirty.rb:241</a></li><li><label class='placeholder'></label><a><span class='highlight'>Student#mutations_from_database</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_methods/dirty.rb:260</a></li><li><label class='placeholder'></label><a><span class='highlight'>BasicObject#equal?</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_methods/dirty.rb:249</a></li></ul></li><li><input type='checkbox' id='69896801804960'><label for='69896801804960'></label><a><span class='highlight'>Student#attribute_changed?</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/dirty.rb:180</a><ul><li><input type='checkbox' id='69896801797160'><label for='69896801797160'></label><a><span class='highlight'>Student#changes_include?</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_methods/dirty.rb:267</a><ul><li><input type='checkbox' id='69896801788800'><label for='69896801788800'></label><a><span class='highlight'>Student#changes_include?</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/dirty.rb:204</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Student#changed_attributes</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/dirty.rb:175</a></li><li><input type='checkbox' id='69896801688120'><label for='69896801688120'></label><a><span class='highlight'>ActiveSupport::HashWithIndifferentAccess#key?</span> $GemPath0/gems/activesupport-5.1.2/lib/active_support/hash_with_indifferent_access.rb:153</a><ul><li><input type='checkbox' id='69896801658140'><label for='69896801658140'></label><a><span class='highlight'>ActiveSupport::HashWithIndifferentAccess#convert_key</span> $GemPath0/gems/activesupport-5.1.2/lib/active_support/hash_with_indifferent_access.rb:288</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#kind_of?</span> $GemPath0/gems/activesupport-5.1.2/lib/active_support/hash_with_indifferent_access.rb:289</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Hash#key?</span> $GemPath0/gems/activesupport-5.1.2/lib/active_support/hash_with_indifferent_access.rb:154</a></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Student#mutation_tracker</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_methods/dirty.rb:241</a></li><li><input type='checkbox' id='69896801352980'><label for='69896801352980'></label><a><span class='highlight'>ActiveRecord::AttributeMutationTracker#changed?</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_mutation_tracker.rb:38</a><ul><li><label class='placeholder'></label><a><span class='highlight'>String#to_s</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_mutation_tracker.rb:39</a></li><li><label class='placeholder'></label><a><span class='highlight'>Set#include?</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/set.rb:232</a></li><li><input type='checkbox' id='69896801057600'><label for='69896801057600'></label><a><span class='highlight'>ActiveRecord::AttributeSet#[]</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_set.rb:12</a><ul><li><label class='placeholder'></label><a><span class='highlight'>ActiveRecord::LazyAttributeHash#[]</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute_set/builder.rb:41</a></li></ul></li><li><input type='checkbox' id='69896801003940'><label for='69896801003940'></label><a><span class='highlight'>ActiveRecord::Attribute::FromUser#changed?</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute.rb:54</a><ul><li><input type='checkbox' id='69896800996520'><label for='69896800996520'></label><a><span class='highlight'>ActiveRecord::Attribute::FromUser#changed_from_assignment?</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute.rb:153</a><ul><li><input type='checkbox' id='69896800979300'><label for='69896800979300'></label><a><span class='highlight'>ActiveRecord::Attribute::FromUser#original_value</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute.rb:42</a><ul><li><input type='checkbox' id='69896800971040'><label for='69896800971040'></label><a><span class='highlight'>ActiveRecord::Attribute::FromDatabase#original_value</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute.rb:42</a><ul><li><input type='checkbox' id='69896800961380'><label for='69896800961380'></label><a><span class='highlight'>ActiveRecord::Attribute::FromDatabase#type_cast</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute.rb:162</a><ul><li><input type='checkbox' id='69896800941880'><label for='69896800941880'></label><a><span class='highlight'>ActiveModel::Type::String#deserialize</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/type/value.rb:21</a><ul><li><input type='checkbox' id='69896800923500'><label for='69896800923500'></label><a><span class='highlight'>ActiveModel::Type::String#cast</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/type/value.rb:35</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#nil?</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/type/value.rb:36</a></li><li><input type='checkbox' id='69896800882180'><label for='69896800882180'></label><a><span class='highlight'>ActiveModel::Type::String#cast_value</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/type/string.rb:14</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Module#===</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/type/string.rb:16</a></li><li><input type='checkbox' id='69896800747080'><label for='69896800747080'></label><a><span class='highlight'>Class#new</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/type/string.rb:16</a><ul><li><label class='placeholder'></label><a><span class='highlight'>String#initialize</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/type/string.rb:16</a></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>ActiveRecord::Attribute::FromUser#value</span> $GemPath0/gems/activerecord-5.1.2/lib/active_record/attribute.rb:36</a></li><li><label class='placeholder'></label><a><span class='highlight'>ActiveModel::Type::String#changed?</span> $GemPath0/gems/activemodel-5.1.2/lib/active_model/type/value.rb:62</a></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></body></html>

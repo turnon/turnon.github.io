@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>IdentityCache的cache_index</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="IdentityCache的cache_index" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="cache_index所做的就是新增一个fetch_by_XXX方法（uniq的话还有_bang方法）以及fetch_id_by_XXX方法…" />
+<meta property="og:description" content="cache_index所做的就是新增一个fetch_by_XXX方法（uniq的话还有_bang方法）以及fetch_id_by_XXX方法…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-08-16T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"cache_index所做的就是新增一个fetch_by_XXX方法（uniq的话还有_bang方法）以及fetch_id_by_XXX方法…","@type":"BlogPosting","headline":"IdentityCache的cache_index","dateModified":"2017-08-16T00:00:00+00:00","url":"/2017/08/16/3410592285a7fc52f59eb11d7d5631e8.html","datePublished":"2017-08-16T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/08/16/3410592285a7fc52f59eb11d7d5631e8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">IdentityCache的cache_index</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-08-16T00:00:00+00:00" itemprop="datePublished">Aug 16, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>cache_index所做的就是新增一个fetch_by_XXX方法（uniq的话还有_bang方法）以及fetch_id_by_XXX方法</div>
+<div><br /></div>
+<div>调用fetch_by_XXX时，会先用fetch_id_by_XXX根据列值查出id，然后再用fetch_by_id找出对象</div>
+<div><br /></div>
+<pre><code>[70] pry(main)&gt; h = Human.fetch_by_name &#39;zed&#39;
+   (0.1ms)  SELECT &#34;humen&#34;.&#34;id&#34; FROM &#34;humen&#34; WHERE &#34;humen&#34;.&#34;name&#34; = ?  [[&#34;name&#34;, &#34;zed&#34;]]
+[IdentityCache] cache miss for IDC:7:attrs:Human:id:name:7416271391315032905
+  Human Load (0.1ms)  SELECT &#34;humen&#34;.* FROM &#34;humen&#34; WHERE &#34;humen&#34;.&#34;id&#34; = 3
+[IdentityCache] cache miss for IDC:7:blob:Human:5897275080375446043:3 (multi)
+=&gt; [#&lt;human:0x007f57dd69a7a8 id:="" 3,="" name:="" "zed",="" created_at:="" sun,="" 30="" jul="" 2017="" 15:14:01="" utc="" +00:00,="" updated_at:="" wed,="" 16="" aug="" 2017="" 14:52:13="" utc="" +00:00=""&gt;]&lt;/human:0x007f57dd69a7a8&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>源码如下</div>
+<div><br /></div>
+<pre><code># identity_cache-0.5.1/lib/identity_cache/configuration_dsl.rb
+def cache_index(*fields)
+  raise NotImplementedError, &#34;Cache indexes need an enabled primary index&#34; unless primary_cache_index_enabled
+  options = fields.extract_options!
+  unique = options[:unique] || false
+  cache_attribute_by_alias(&#39;primary_key&#39;, &#39;id&#39;, by: fields, unique: unique)
+
+  field_list = fields.join(&#34;_and_&#34;)
+  arg_list = (0...fields.size).collect { |i| &#34;arg#{i}&#34; }.join(&#39;,&#39;)
+
+  if unique
+    self.instance_eval(ruby = &lt;&lt;-CODE, __FILE__, __LINE__ + 1)
+      def fetch_by_#{field_list}(#{arg_list}, options={})
+        id = fetch_id_by_#{field_list}(#{arg_list})
+        id &amp;&amp; fetch_by_id(id, options)
+      end
+
+      # exception throwing variant
+      def fetch_by_#{field_list}!(#{arg_list}, options={})
+        fetch_by_#{field_list}(#{arg_list}, options) or raise ActiveRecord::RecordNotFound
+      end
+    CODE
+  else
+    self.instance_eval(ruby = &lt;&lt;-CODE, __FILE__, __LINE__ + 1)
+      def fetch_by_#{field_list}(#{arg_list}, options={})
+        ids = fetch_id_by_#{field_list}(#{arg_list})
+        ids.empty? ? ids : fetch_multi(ids, options)
+      end
+    CODE
+  end
+end
+
+def cache_attribute_by_alias(attribute, alias_name, options)
+  ensure_base_model
+  options[:by] ||= :id
+  alias_name = alias_name.to_sym
+  unique = options[:unique].nil? ? true : !!options[:unique]
+  fields = Array(options[:by])
+
+  self.cache_indexes.push [alias_name, fields, unique]
+
+  field_list = fields.join(&#34;_and_&#34;)
+  arg_list = (0...fields.size).collect { |i| &#34;arg#{i}&#34; }.join(&#39;,&#39;)
+
+  self.instance_eval(&lt;&lt;-CODE, __FILE__, __LINE__ + 1)
+    def fetch_#{alias_name}_by_#{field_list}(#{arg_list})
+      attribute_dynamic_fetcher(#{attribute}, #{fields.inspect}, [#{arg_list}], #{unique})
+    end
+  CODE
+end
+
+def attribute_dynamic_fetcher(attribute, fields, values, unique_index)
+  raise_if_scoped
+
+  if should_use_cache?
+    cache_key = rails_cache_key_for_attribute_and_fields_and_values(attribute, fields, values, unique_index)
+    IdentityCache.fetch(cache_key) do
+      dynamic_attribute_cache_miss(attribute, fields, values, unique_index)
+    end
+  else
+    dynamic_attribute_cache_miss(attribute, fields, values, unique_index)
+  end
+end
+
+def dynamic_attribute_cache_miss(attribute, fields, values, unique_index)
+  query = reorder(nil).where(Hash[fields.zip(values)])
+  query = query.limit(1) if unique_index
+  results = query.pluck(attribute)
+  unique_index ? results.first : results
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>为什么无论是否uniq，fetch_id_by_XXX查出的id/ids用到fetch_by_id去都没关系？因为fetch_by_id是where(primary_key =&gt; id).first的，如下</div>
+<div><br /></div>
+<pre><code># identity_cache-0.5.1/lib/identity_cache/query_api.rb
+def resolve_cache_miss(id)
+  record = self.includes(cache_fetch_includes).reorder(nil).where(primary_key =&gt; id).first
+  if record
+    preload_id_embedded_associations([record])
+    record.readonly! if IdentityCache.fetch_read_only_records &amp;&amp; should_use_cache?
+  end
+  record
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>fetch_by_id自然是有缓存，以前研究过了。而fetch_id_by_XXX，当然也有缓存（id），其key规则如下，需要依靠列名和列值</div>
+<div><br /></div>
+<pre><code># identity_cache-0.5.1/lib/identity_cache/cache_key_generation.rb
+module ClassMethods
+
+  def rails_cache_key_for_attribute_and_fields_and_values(attribute, fields, values, unique)
+    unique_indicator = unique ? &#39;&#39; : &#39;s&#39;
+    &#34;#{rails_cache_key_namespace}&#34; \
+      &#34;attr#{unique_indicator}&#34; \
+      &#34;:#{base_class.name}&#34; \
+      &#34;:#{attribute}&#34; \
+      &#34;:#{rails_cache_string_for_fields_and_values(fields, values)}&#34;
+  end
+
+  private
+  def rails_cache_string_for_fields_and_values(fields, values)
+    &#34;#{fields.join(&#39;/&#39;)}:#{IdentityCache.memcache_hash(values.join(&#39;/&#39;))}&#34;
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>其中transaction_changed_attributes来自IDC依赖的一个gem，如下</div>
+<div><br /></div>
+<pre><code>module ArTransactionChanges
+  def _run_commit_callbacks
+    super
+  ensure
+    @transaction_changed_attributes = nil
+  end
+
+  def _run_rollback_callbacks
+    super
+  ensure
+    @transaction_changed_attributes = nil
+  end
+
+  def transaction_changed_attributes
+    @transaction_changed_attributes ||= HashWithIndifferentAccess.new
+  end
+
+  def write_attribute(attr_name, value) # override
+    attr_name = attr_name.to_s
+    old_value = attributes[attr_name]
+    ret = super
+    unless transaction_changed_attributes.key?(attr_name) || value == old_value
+      transaction_changed_attributes[attr_name] = old_value
+    end
+    ret
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>当要做缓存失效时，除了删掉id =&gt; object缓存，还要删掉[fields, values] =&gt; id的缓存。</div>
+<div><br /></div>
+<div>如果不是新记录（所谓新记录：pk列有变且其旧值为nil），则是更新或删除，应根据cache列的旧值查找缓存来删除，以防fetch旧值时仍命中此记录</div>
+<div><br /></div>
+<div>如果不是删记录，则是更新或新增，应根据cache列的新值查找缓存来删除，以防fetch新值时命中的缓存不包含此记录</div>
+<div><br /></div>
+<pre><code># identity_cache-0.5.1/lib/identity_cache/query_api.rb
+def expire_attribute_indexes
+  cache_indexes.each do |(attribute, fields, unique)|
+    unless was_new_record?
+      old_cache_attribute_key = attribute_cache_key_for_attribute_and_previous_values(attribute, fields, unique)
+      IdentityCache.cache.delete(old_cache_attribute_key)
+    end
+    unless destroyed?
+      new_cache_attribute_key = attribute_cache_key_for_attribute_and_current_values(attribute, fields, unique)
+      if new_cache_attribute_key != old_cache_attribute_key
+        IdentityCache.cache.delete(new_cache_attribute_key)
+      end
+    end
+  end
+end
+
+def was_new_record?
+  pk = self.class.primary_key
+  !destroyed? &amp;&amp; transaction_changed_attributes.has_key?(pk) &amp;&amp; transaction_changed_attributes[pk].nil?
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>新值旧值的逻辑如下</div>
+<div><br /></div>
+<pre><code># identity_cache-0.5.1/lib/identity_cache/cache_key_generation.rb
+def attribute_cache_key_for_attribute_and_current_values(attribute, fields, unique)
+  self.class.rails_cache_key_for_attribute_and_fields_and_values(attribute, fields, current_values_for_fields(fields), unique)
+end
+
+def attribute_cache_key_for_attribute_and_previous_values(attribute, fields, unique)
+  self.class.rails_cache_key_for_attribute_and_fields_and_values(attribute, fields, old_values_for_fields(fields), unique)
+end
+
+def current_values_for_fields(fields)
+  fields.collect {|field| self.send(field)}
+end
+
+def old_values_for_fields(fields)
+  fields.map do |field|
+    field_string = field.to_s
+    if destroyed? &amp;&amp; transaction_changed_attributes.has_key?(field_string)
+      transaction_changed_attributes[field_string]
+    elsif persisted? &amp;&amp; transaction_changed_attributes.has_key?(field_string)
+      transaction_changed_attributes[field_string]
+    else
+      self.send(field)
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>运行试试，假设Human.cache_index :name，可见create删一次，update删两次，destroy删一次（说的都是expire_attribute_indexes）</div>
+<div><br /></div>
+<pre><code>[14] pry(main)&gt; leo = Human.new name: &#39;leo&#39;
+=&gt; #&lt;human:0x007f10ebe1ee68 id:="" nil,="" name:="" "leo",="" created_at:="" nil,="" updated_at:="" nil=""&gt;
+[15] pry(main)&gt; leo.save
+   (0.1ms)  begin transaction
+  SQL (0.2ms)  INSERT INTO &#34;humen&#34; (&#34;name&#34;, &#34;created_at&#34;, &#34;updated_at&#34;) VALUES (?, ?, ?)  [[&#34;name&#34;, &#34;leo&#34;], [&#34;created_at&#34;, &#34;2017-08-17 15:11:27.009507&#34;], [&#34;updated_at&#34;, &#34;2017-08-17 15:11:27.009507&#34;]]
+   (1.9ms)  commit transaction
+[IdentityCache] expiring=Human expiring_id=8 expiring_last_updated_at=
+[IdentityCache] delete recorded for IDC:7:blob:Human:5897275080375446043:8
+[IdentityCache] delete recorded for IDC:7:attrs:Human:id:name:15104357434540190954
+=&gt; true
+[16] pry(main)&gt; leo.update name: &#39;neo&#39;
+   (0.1ms)  begin transaction
+  SQL (0.2ms)  UPDATE &#34;humen&#34; SET &#34;name&#34; = ?, &#34;updated_at&#34; = ? WHERE &#34;humen&#34;.&#34;id&#34; = ?  [[&#34;name&#34;, &#34;neo&#34;], [&#34;updated_at&#34;, &#34;2017-08-17 15:20:08.148600&#34;], [&#34;id&#34;, 8]]
+   (2.0ms)  commit transaction
+[IdentityCache] expiring=Human expiring_id=8 expiring_last_updated_at=2017-08-17 15:11:27 UTC
+[IdentityCache] delete recorded for IDC:7:blob:Human:5897275080375446043:8
+[IdentityCache] delete recorded for IDC:7:attrs:Human:id:name:15104357434540190954
+[IdentityCache] delete recorded for IDC:7:attrs:Human:id:name:10331356276309087694
+=&gt; true
+[17] pry(main)&gt; leo.destroy
+   (0.1ms)  begin transaction
+  SQL (0.2ms)  DELETE FROM &#34;humen&#34; WHERE &#34;humen&#34;.&#34;id&#34; = ?  [[&#34;id&#34;, 8]]
+   (1.6ms)  commit transaction
+[IdentityCache] expiring=Human expiring_id=8 expiring_last_updated_at=2017-08-17 15:20:08 UTC
+[IdentityCache] delete recorded for IDC:7:blob:Human:5897275080375446043:8
+[IdentityCache] delete recorded for IDC:7:attrs:Human:id:name:10331356276309087694
+=&gt; #&lt;human:0x007f10ebe1ee68 id:="" 8,="" name:="" "neo",="" created_at:="" thu,="" 17="" aug="" 2017="" 15:11:27="" utc="" +00:00,="" updated_at:="" thu,="" 17="" aug="" 2017="" 15:20:08="" utc="" +00:00=""&gt;&lt;/human:0x007f10ebe1ee68&gt;&lt;/human:0x007f10ebe1ee68&gt;</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/08/16/3410592285a7fc52f59eb11d7d5631e8.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

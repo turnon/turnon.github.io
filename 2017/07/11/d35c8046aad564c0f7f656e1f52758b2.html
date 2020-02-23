@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>active_record的serialize类方法</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="active_record的serialize类方法" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="跟踪下serialize干了什么…" />
+<meta property="og:description" content="跟踪下serialize干了什么…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-07-11T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"跟踪下serialize干了什么…","@type":"BlogPosting","headline":"active_record的serialize类方法","dateModified":"2017-07-11T00:00:00+00:00","url":"/2017/07/11/d35c8046aad564c0f7f656e1f52758b2.html","datePublished":"2017-07-11T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/07/11/d35c8046aad564c0f7f656e1f52758b2.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">active_record的serialize类方法</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-07-11T00:00:00+00:00" itemprop="datePublished">Jul 11, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>跟踪下serialize干了什么</div>
+<div><br /></div>
+<pre><code>[2] pry(main)&gt; class Student
+[2] pry(main)*   binding.trace_tree(htmp: &#39;rails/serialize&#39;){serialize :alias_names, Array}
+[2] pry(main)* end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>完整调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/d35c8046aad564c0f7f656e1f52758b2/b12596ae9e176366148416ad99ec2b3e.html"><img src="/assets/files/d35c8046aad564c0f7f656e1f52758b2/a3d3088f6e8d923afeda1ff4d5c10580.png" alt="20170711_221055_529_serialize.html" /></a><br /></div>
+<div><br /></div>
+<div>如果指定Array、Hash，那么就会使用Coders::YAMLColumn来进行serialize/deserialize</div>
+<div><br /></div>
+<pre><code># activerecord-5.0.4/lib/active_record/attribute_methods/serialization.rb
+def serialize(attr_name, class_name_or_coder = Object)
+  # When ::JSON is used, force it to go through the Active Support JSON encoder
+  # to ensure special objects (e.g. Active Record models) are dumped correctly
+  # using the #as_json hook.
+  coder = if class_name_or_coder == ::JSON
+            Coders::JSON
+          elsif [:load, :dump].all? { |x| class_name_or_coder.respond_to?(x) }
+            class_name_or_coder
+          else
+            Coders::YAMLColumn.new(class_name_or_coder)
+          end
+
+  decorate_attribute_type(attr_name, :serialize) do |type|
+    Type::Serialized.new(type, coder)
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而从decorate_attribute_type下还可以看到，一个model的哪些属性使用了那些包装，可以用attribute_type_decorations来检查</div>
+<div><br /></div>
+<pre><code>[11] pry(main)&gt; Student.attribute_type_decorations
+=&gt; #&lt;activerecord::attributedecorators::typedecorator:0x007f8f78b94a38  @decorations=" " {"_time_zone_conversion"=""&gt;
+    [#&lt;proc:0x007f8f77cd7ba8@ home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activerecord-5.0.4="" lib="" active_record="" attribute_methods="" time_zone_conversion.rb:78="" (lambda)=""&gt;,
+     #&lt;proc:0x007f8f77cd7b08@ home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activerecord-5.0.4="" lib="" active_record="" attribute_methods="" time_zone_conversion.rb:79=""&gt;],
+   &#34;_optimistic_locking&#34;=&gt;
+    [#&lt;proc:0x007f8f77cd6028@ home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activerecord-5.0.4="" lib="" active_record="" locking="" optimistic.rb:177="" (lambda)=""&gt;,
+     #&lt;proc:0x007f8f77cd5fd8@ home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activerecord-5.0.4="" lib="" active_record="" locking="" optimistic.rb:178=""&gt;],
+   &#34;_gender_enum&#34;=&gt;
+    [#&lt;proc:0x007f8f77ccb128@ home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activerecord-5.0.4="" lib="" active_record="" attribute_decorators.rb:12="" (lambda)=""&gt;,
+     #&lt;proc:0x007f8f77ccb1f0@ home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activerecord-5.0.4="" lib="" active_record="" enum.rb:165=""&gt;],
+   &#34;_alias_names_serialize&#34;=&gt;
+    [#&lt;proc:0x007f8f78ce83a8@ home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activerecord-5.0.4="" lib="" active_record="" attribute_decorators.rb:12="" (lambda)=""&gt;,
+     #&lt;proc:0x007f8f78cf8190@ home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activerecord-5.0.4="" lib="" active_record="" attribute_methods="" serialization.rb:60=""&gt;]}&gt;&lt;/proc:0x007f8f78cf8190@&gt;&lt;/proc:0x007f8f78ce83a8@&gt;&lt;/proc:0x007f8f77ccb1f0@&gt;&lt;/proc:0x007f8f77ccb128@&gt;&lt;/proc:0x007f8f77cd5fd8@&gt;&lt;/proc:0x007f8f77cd6028@&gt;&lt;/proc:0x007f8f77cd7b08@&gt;&lt;/proc:0x007f8f77cd7ba8@&gt;&lt;/activerecord::attributedecorators::typedecorator:0x007f8f78b94a38&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>由此，可推断它跟enum一样也会经过同样的一套type cast流程。这个可以跟踪write和save来检查</div>
+<div><br /></div>
+<pre><code>[4] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/write_serialized_attr&#39;){s.alias_names = [&#39;jay&#39;, &#39;jj&#39;]}
+=&gt; [&#34;jay&#34;, &#34;jj&#34;]
+[7] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/save_serialized_attr&#39;){s.save}
+   (13.4ms)  begin transaction
+  SQL (16.2ms)  UPDATE &#34;students&#34; SET &#34;updated_at&#34; = ?, &#34;alias_names&#34; = ? WHERE &#34;students&#34;.&#34;no&#34; = ?  [[&#34;updated_at&#34;, &#34;2017-07-11 14:11:44.588915&#34;], [&#34;alias_names&#34;, &#34;---\n- jay\n- jj\n&#34;], [&#34;no&#34;, &#34;1&#34;]]
+   (20.7ms)  commit transaction
+=&gt; true</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>write如下</div>
+<div><br /></div>
+<div><a href="/assets/files/d35c8046aad564c0f7f656e1f52758b2/204236d216a90911a84de15d33185f0d.html"><img src="/assets/files/d35c8046aad564c0f7f656e1f52758b2/84da44fd6f91a756c8ece6694670e188.png" alt="20170711_221127_849_write_serialized_attr.html" /></a></div>
+<div><br /></div>
+<div>save如下</div>
+<div><br /></div>
+<div><a href="/assets/files/d35c8046aad564c0f7f656e1f52758b2/0046e054c7bdc7e0d1b9a68e64c3ccbb.html"><img src="/assets/files/d35c8046aad564c0f7f656e1f52758b2/d860e2a32ba5613e5697e0a3cc021de3.png" alt="20170711_221144_361_save_serialized_attr.html" /></a><br /></div>
+<div><br /></div>
+<div>从调用栈可知，赋值时会assert_valid_value，持久化时会dump（检查dirty?时似乎会load出来在ruby中对比）</div>
+<div><br /></div>
+<pre><code># activerecord-5.0.4/lib/active_record/coders/yaml_column.rb
+module ActiveRecord
+  module Coders
+    class YAMLColumn
+
+      def dump(obj)
+        return if obj.nil?
+
+        assert_valid_value(obj)
+        YAML.dump obj
+      end
+
+      def load(yaml)
+        return object_class.new if object_class != Object &amp;&amp; yaml.nil?
+        return yaml unless yaml.is_a?(String) &amp;&amp; yaml =~ /^---/
+        obj = YAML.load(yaml)
+
+        assert_valid_value(obj)
+        obj ||= object_class.new if object_class != Object
+
+        obj
+      end
+
+      def assert_valid_value(obj)
+        unless obj.nil? || obj.is_a?(object_class)
+          raise SerializationTypeMismatch,
+            &#34;Attribute was supposed to be a #{object_class}, but was a #{obj.class}. -- #{obj.inspect}&#34;
+        end
+      end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/07/11/d35c8046aad564c0f7f656e1f52758b2.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

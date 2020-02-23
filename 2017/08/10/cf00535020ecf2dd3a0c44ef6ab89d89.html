@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>rake的file task如何决定是否执行</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="rake的file task如何决定是否执行" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="在Rake Task Management Essentials一书中有如下描述…" />
+<meta property="og:description" content="在Rake Task Management Essentials一书中有如下描述…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-08-10T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"在Rake Task Management Essentials一书中有如下描述…","@type":"BlogPosting","headline":"rake的file task如何决定是否执行","dateModified":"2017-08-10T00:00:00+00:00","url":"/2017/08/10/cf00535020ecf2dd3a0c44ef6ab89d89.html","datePublished":"2017-08-10T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/08/10/cf00535020ecf2dd3a0c44ef6ab89d89.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">rake的file task如何决定是否执行</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-08-10T00:00:00+00:00" itemprop="datePublished">Aug 10, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>在Rake Task Management Essentials一书中有如下描述</div>
+<div><br /></div>
+<div>In addition to general task behavior, the file task has a very useful feature. If source files (prerequisites) are not changed, the second attempt won&#39;t execute the file task action at all. The file task handles timestamp changes for source files, and if they are not touched, Rake decides to not run this file task</div>
+<div><br /></div>
+<div>说得好像rake有记录下文件的修改时间一样，于是调试一下</div>
+<div><br /></div>
+<pre><code>file &#39;a.yml&#39; =&gt; &#39;a.yaml&#39; do
+  cp &#39;a.yaml&#39;, &#39;a.yml&#39;
+end
+
+binding.pry</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><a href="/assets/files/cf00535020ecf2dd3a0c44ef6ab89d89/d9d5ad81e511be7064d62d69a5668242.debug"><img src="/assets/files/cf00535020ecf2dd3a0c44ef6ab89d89/c3439131fa05b9a13577cedd018e0190.png" alt="rakefile01.debug" /></a></div>
+<div><br /></div>
+<div>经过一番up、next、step……，终于搞清file task的本质，其实就是build文件：如果文件不存在，则build；如果文件日期早于其依赖的文件，则build；如果指定了--build-all或-B，则build。这里所谓的build，就是执行任务定义的block，通常里面会建立、更新任务名所指的文件</div>
+<div><br /></div>
+<div>源码如下，根据needed?来判断</div>
+<div><br /></div>
+<pre><code># rake-12.0.0/lib/rake/task.rb
+def invoke_with_call_chain(task_args, invocation_chain) # :nodoc:
+  new_chain = InvocationChain.append(self, invocation_chain)
+  @lock.synchronize do
+    if application.options.trace
+      application.trace &#34;** Invoke #{name} #{format_trace_flags}&#34;
+    end
+    return if @already_invoked
+    @already_invoked = true
+    invoke_prerequisites(task_args, new_chain)
+    execute(task_args) if needed?
+  end
+rescue Exception =&gt; ex
+  add_chain_to(ex, new_chain)
+  raise ex
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而FileTask的needed?如下</div>
+<div><br /></div>
+<pre><code># rake-12.0.0/lib/rake/file_task.rb
+module Rake
+
+  # A FileTask is a task that includes time based dependencies.  If any of a
+  # FileTask&#39;s prerequisites have a timestamp that is later than the file
+  # represented by this task, then the file must be rebuilt (using the
+  # supplied actions).
+  #
+  class FileTask &lt; Task
+
+    # Is this file task needed?  Yes if it doesn&#39;t exist, or if its time stamp
+    # is out of date.
+    def needed?
+      ! File.exist?(name) || out_of_date?(timestamp) || @application.options.build_all
+    end
+
+    # Time stamp for file task.
+    def timestamp
+      if File.exist?(name)
+        File.mtime(name.to_s)
+      else
+        Rake::LATE
+      end
+    end
+
+    private
+
+    # Are there any prerequisites with a later time than the given time stamp?
+    def out_of_date?(stamp)
+      @prerequisites.any? { |n| application[n, @scope].timestamp &gt; stamp }
+    end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/08/10/cf00535020ecf2dd3a0c44ef6ab89d89.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

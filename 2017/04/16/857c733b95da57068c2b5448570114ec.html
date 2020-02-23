@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>helper的加载</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="helper的加载" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="想观察下helper是如何加载的，于是加个断点…" />
+<meta property="og:description" content="想观察下helper是如何加载的，于是加个断点…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-04-16T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"想观察下helper是如何加载的，于是加个断点…","@type":"BlogPosting","headline":"helper的加载","dateModified":"2017-04-16T00:00:00+00:00","url":"/2017/04/16/857c733b95da57068c2b5448570114ec.html","datePublished":"2017-04-16T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/04/16/857c733b95da57068c2b5448570114ec.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">helper的加载</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-04-16T00:00:00+00:00" itemprop="datePublished">Apr 16, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>想观察下helper是如何加载的，于是加个断点</div>
+<div><br /></div>
+<pre><code>From: /home/z/test_rails/depot/app/helpers/application_helper.rb @ line 3 :
+
+    1: binding.pry
+    2:
+ =&gt; 3: module ApplicationHelper
+    4:   def something_in_cart?
+    5:     @cart and not @cart.line_items.empty?
+    6:   end
+    7: end
+
+[1] pry(main)&gt; _bsi_
+=&gt; {0=&gt;#&lt;binding:70142525638460 object#&lt;top="" (required)=""&gt; /home/z/test_rails/depot/app/helpers/application_helper.rb:1&gt;,
+ 1=&gt;#&lt;binding:70142997020320 activesupport::dependencies.block="" in="" load_file="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:477=""&gt;,
+ 2=&gt;#&lt;binding:70142525785720 activesupport::dependencies.new_constants_in="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:662=""&gt;,
+ 3=&gt;#&lt;binding:70142525861020 activesupport::dependencies.load_file="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:476=""&gt;,
+ 4=&gt;#&lt;binding:70142996807940 activesupport::dependencies.block="" in="" require_or_load="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:375=""&gt;,
+ 5=&gt;#&lt;binding:70142996741920 activesupport::dependencies.block="" in="" load_interlock="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:37=""&gt;,
+ 6=&gt;#&lt;binding:70142526081600 activesupport::dependencies::interlock#block="" in="" loading="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies="" interlock.rb:12=""&gt;,
+ 7=&gt;#&lt;binding:70142996611320 activesupport::concurrency::sharelock#exclusive="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" concurrency="" share_lock.rb:150=""&gt;,
+ 8=&gt;#&lt;binding:70142996431800 activesupport::dependencies::interlock#loading="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies="" interlock.rb:11=""&gt;,
+ 9=&gt;#&lt;binding:70142996261040 activesupport::dependencies.load_interlock="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:37=""&gt;,
+ 10=&gt;#&lt;binding:70142996019940 activesupport::dependencies.require_or_load="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:358=""&gt;,
+ 11=&gt;#&lt;binding:70142995857360 activesupport::dependencies.depend_on="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:336=""&gt;,
+ 12=&gt;#&lt;binding:70142995630260 applicationcontroller.require_dependency="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:252=""&gt;,
+ 13=&gt;#&lt;binding:70142995556120 applicationcontroller.block="" in="" modules_for_helpers="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" helpers.rb:150=""&gt;,
+ 14=&gt;#&lt;binding:70142995421940 applicationcontroller.modules_for_helpers="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" helpers.rb:145=""&gt;,
+ 15=&gt;#&lt;binding:70142995222820 applicationcontroller.modules_for_helpers="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" helpers.rb:93=""&gt;,
+ 16=&gt;#&lt;binding:70142995114560 applicationcontroller.helper="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" helpers.rb:109=""&gt;,
+ 17=&gt;#&lt;binding:70142990394940 applicationcontroller.default_helper_module!="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" helpers.rb:187=""&gt;,
+ 18=&gt;#&lt;binding:70142990015780 applicationcontroller.block="" in="" inherited="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" helpers.rb:36=""&gt;,
+ 19=&gt;#&lt;binding:70142989367180 actioncontroller::base.inherited="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" helpers.rb:36=""&gt;,
+ 20=&gt;#&lt;binding:70142988773160 actioncontroller::base.inherited="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionview-5.0.2="" lib="" action_view="" layouts.rb:217=""&gt;,
+ 21=&gt;#&lt;binding:70142988435320 actioncontroller::base.inherited="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" rendering.rb:23=""&gt;,
+ 22=&gt;#&lt;binding:70142985277140 actioncontroller::base.inherited="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" metal="" params_wrapper.rb:224=""&gt;,
+ 23=&gt;#&lt;binding:70142984428220 actioncontroller::base.block="" (2="" levels)="" in="" with="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" abstract_controller="" railties="" routes_helpers.rb:7=""&gt;,
+ 24=&gt;#&lt;binding:70142981935200 actioncontroller::base.inherited="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_controller="" railties="" helpers.rb:5=""&gt;,
+ 25=&gt;#&lt;binding:70142976438520 object#&lt;top="" (required)=""&gt; /home/z/test_rails/depot/app/controllers/application_controller.rb:1&gt;,
+ 26=&gt;#&lt;binding:70142526053680 activesupport::dependencies.block="" in="" load_file="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:477=""&gt;,
+ 27=&gt;#&lt;binding:70142525963520 activesupport::dependencies.new_constants_in="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:662=""&gt;,
+ 28=&gt;#&lt;binding:70142525848780 activesupport::dependencies.load_file="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:476=""&gt;,
+ 29=&gt;#&lt;binding:70142525742220 activesupport::dependencies.block="" in="" require_or_load="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:375=""&gt;,
+ 30=&gt;#&lt;binding:70142525643900 activesupport::dependencies.block="" in="" load_interlock="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:37=""&gt;,
+ 31=&gt;#&lt;binding:70142525545500 activesupport::dependencies::interlock#block="" in="" loading="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies="" interlock.rb:12=""&gt;,
+ 32=&gt;#&lt;binding:70142525446900 activesupport::concurrency::sharelock#exclusive="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" concurrency="" share_lock.rb:150=""&gt;,
+ 33=&gt;#&lt;binding:70142525361420 activesupport::dependencies::interlock#loading="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies="" interlock.rb:11=""&gt;,
+ 34=&gt;#&lt;binding:70142525239600 activesupport::dependencies.load_interlock="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:37=""&gt;,
+ 35=&gt;#&lt;binding:70142525138400 activesupport::dependencies.require_or_load="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:358=""&gt;,
+ 36=&gt;#&lt;binding:70142525025400 activesupport::dependencies.load_missing_constant="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:511=""&gt;,
+ 37=&gt;#&lt;binding:70142524939660 object.const_missing="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:203=""&gt;,
+ 38=&gt;#&lt;binding:70142524828120 object#&lt;top="" (required)=""&gt; /home/z/test_rails/depot/app/controllers/store_controller.rb:1&gt;,
+ 39=&gt;#&lt;binding:70142524682320 activesupport::dependencies.block="" in="" load_file="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:477=""&gt;,
+ 40=&gt;#&lt;binding:70142524647060 activesupport::dependencies.new_constants_in="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:662=""&gt;,
+ 41=&gt;#&lt;binding:70142524575880 activesupport::dependencies.load_file="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:476=""&gt;,
+ 42=&gt;#&lt;binding:70142524494820 activesupport::dependencies.block="" in="" require_or_load="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:375=""&gt;,
+ 43=&gt;#&lt;binding:70142524409620 activesupport::dependencies.block="" in="" load_interlock="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:37=""&gt;,
+ 44=&gt;#&lt;binding:70142524308840 activesupport::dependencies::interlock#block="" in="" loading="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies="" interlock.rb:12=""&gt;,
+ 45=&gt;#&lt;binding:70142524258380 activesupport::concurrency::sharelock#exclusive="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" concurrency="" share_lock.rb:150=""&gt;,
+ 46=&gt;#&lt;binding:70142524085460 activesupport::dependencies::interlock#loading="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies="" interlock.rb:11=""&gt;,
+ 47=&gt;#&lt;binding:70142523974600 activesupport::dependencies.load_interlock="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:37=""&gt;,
+ 48=&gt;#&lt;binding:70142523875140 activesupport::dependencies.require_or_load="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:358=""&gt;,
+ 49=&gt;#&lt;binding:70142523766560 activesupport::dependencies.load_missing_constant="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:511=""&gt;,
+ 50=&gt;#&lt;binding:70142523602100 object.const_missing="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:203=""&gt;,
+ 51=&gt;#&lt;binding:70142523557000 activesupport::inflector.block="" in="" constantize="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" inflector="" methods.rb:268=""&gt;,
+ 52=&gt;#&lt;binding:70142523471880 activesupport::inflector.constantize="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" inflector="" methods.rb:266=""&gt;,
+ 53=&gt;#&lt;binding:70142523367100 activesupport::dependencies::classcache#get="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:583=""&gt;,
+ 54=&gt;#&lt;binding:70142523290820 activesupport::dependencies.constantize="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" dependencies.rb:614=""&gt;,
+ 55=&gt;#&lt;binding:70142523212960 actiondispatch::request#controller_class="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_dispatch="" http="" request.rb:81=""&gt;,
+ 56=&gt;#&lt;binding:70142523060760 actiondispatch::routing::routeset::dispatcher#controller="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_dispatch="" routing="" route_set.rb:44=""&gt;,
+ 57=&gt;#&lt;binding:70142523018800 actiondispatch::routing::routeset::dispatcher#serve="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_dispatch="" routing="" route_set.rb:30=""&gt;,
+ 58=&gt;#&lt;binding:70142522925400 actiondispatch::journey::router#block="" in="" serve="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_dispatch="" journey="" router.rb:39=""&gt;,
+ 59=&gt;#&lt;binding:70142522801580 actiondispatch::journey::router#serve="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_dispatch="" journey="" router.rb:26=""&gt;,
+ 60=&gt;#&lt;binding:70142522699960 actiondispatch::routing::routeset#call="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_dispatch="" routing="" route_set.rb:725=""&gt;,
+ 61=&gt;#&lt;binding:70142522594200 rack::etag#call="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" rack-2.0.1="" lib="" rack="" etag.rb:25=""&gt;,
+ # ...............&lt;/binding:70142522594200&gt;&lt;/binding:70142522699960&gt;&lt;/binding:70142522801580&gt;&lt;/binding:70142522925400&gt;&lt;/binding:70142523018800&gt;&lt;/binding:70142523060760&gt;&lt;/binding:70142523212960&gt;&lt;/binding:70142523290820&gt;&lt;/binding:70142523367100&gt;&lt;/binding:70142523471880&gt;&lt;/binding:70142523557000&gt;&lt;/binding:70142523602100&gt;&lt;/binding:70142523766560&gt;&lt;/binding:70142523875140&gt;&lt;/binding:70142523974600&gt;&lt;/binding:70142524085460&gt;&lt;/binding:70142524258380&gt;&lt;/binding:70142524308840&gt;&lt;/binding:70142524409620&gt;&lt;/binding:70142524494820&gt;&lt;/binding:70142524575880&gt;&lt;/binding:70142524647060&gt;&lt;/binding:70142524682320&gt;&lt;/binding:70142524828120&gt;&lt;/binding:70142524939660&gt;&lt;/binding:70142525025400&gt;&lt;/binding:70142525138400&gt;&lt;/binding:70142525239600&gt;&lt;/binding:70142525361420&gt;&lt;/binding:70142525446900&gt;&lt;/binding:70142525545500&gt;&lt;/binding:70142525643900&gt;&lt;/binding:70142525742220&gt;&lt;/binding:70142525848780&gt;&lt;/binding:70142525963520&gt;&lt;/binding:70142526053680&gt;&lt;/binding:70142976438520&gt;&lt;/binding:70142981935200&gt;&lt;/binding:70142984428220&gt;&lt;/binding:70142985277140&gt;&lt;/binding:70142988435320&gt;&lt;/binding:70142988773160&gt;&lt;/binding:70142989367180&gt;&lt;/binding:70142990015780&gt;&lt;/binding:70142990394940&gt;&lt;/binding:70142995114560&gt;&lt;/binding:70142995222820&gt;&lt;/binding:70142995421940&gt;&lt;/binding:70142995556120&gt;&lt;/binding:70142995630260&gt;&lt;/binding:70142995857360&gt;&lt;/binding:70142996019940&gt;&lt;/binding:70142996261040&gt;&lt;/binding:70142996431800&gt;&lt;/binding:70142996611320&gt;&lt;/binding:70142526081600&gt;&lt;/binding:70142996741920&gt;&lt;/binding:70142996807940&gt;&lt;/binding:70142525861020&gt;&lt;/binding:70142525785720&gt;&lt;/binding:70142997020320&gt;&lt;/binding:70142525638460&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>如无意外，应该是53到56之间的动作会加载controller，于是细看下55干的是什么</div>
+<div><br /></div>
+<pre><code>def controller_class
+  params = path_parameters
+
+  if params.key?(:controller)
+    controller_param = params[:controller].underscore
+    params[:action] ||= &#39;index&#39;
+    const_name = &#34;#{controller_param.camelize}Controller&#34;
+    ActiveSupport::Dependencies.constantize(const_name)
+  else
+    PASS_NOT_FOUND
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>要想知道加载哪个controller，需要从url中解析。而path_parameters这个方法并没有定义在当前类中，所以，进入该binding，检查path_parameters的source_location。不过，在当前类Request中method被重新定义过，所以需要拿Kernel的method来绑定当前binding来执行</div>
+<div><br /></div>
+<pre><code>[2] pry(main)&gt; _bsi_[55]
+=&gt; #&lt;binding:70142523212960 actiondispatch::request#controller_class="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_dispatch="" http="" request.rb:81=""&gt;
+[3] pry(main)&gt; _bsi_[55].eval(&#39;method(:path_parameters).source_location&#39;)
+ArgumentError: wrong number of arguments (given 1, expected 0)
+from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.0.2/lib/action_dispatch/http/request.rb:177:in `method&#39;
+[4] pry(main)&gt; _bsi_[55].eval(&#39;method = Kernel.instance_method(:method); method.bind(self).call(:path_parameters).source_location&#39;)
+=&gt; [&#34;/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.0.2/lib/action_dispatch/http/parameters.rb&#34;, 71]&lt;/binding:70142523212960&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>源码如下，但PARAMETERS_KEY也没定义在该源码文件中</div>
+<div><br /></div>
+<pre><code># Returns a hash with the \parameters used to form the \path of the request.
+# Returned hash keys are strings:
+#
+#   {&#39;action&#39; =&gt; &#39;my_action&#39;, &#39;controller&#39; =&gt; &#39;my_controller&#39;}
+def path_parameters
+  get_header(PARAMETERS_KEY) || set_header(PARAMETERS_KEY, {})
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>其实仅凭注释也知道它干啥，那索性执行下这个方法吧，应该没有副作用</div>
+<div><br /></div>
+<pre><code>[8] pry(main)&gt; cd _bsi_[55]
+[9] pry(#<actiondispatch::request>):1&gt; path_parameters
+=&gt; {:controller=&gt;&#34;store&#34;, :action=&gt;&#34;index&#34;}</actiondispatch::request></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>因为目前访问的就是root，而root在route中被指向到store#index，所以也就这样了</div>
+<div><br /></div>
+<div>接着再看回ActiveSupport::Dependencies.constantize</div>
+<div><br /></div>
+<pre><code>[12] pry(#<actiondispatch::request>):1&gt; ActiveSupport::Dependencies.method(:constantize).source_location
+=&gt; [&#34;/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/dependencies.rb&#34;, 613]</actiondispatch::request></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>简单来说，它就是用Inflector来查找类，然后cache起来</div>
+<div><br /></div>
+<pre><code>require &#39;active_support/inflector&#39;
+
+module ActiveSupport
+  module Dependencies
+    extend self
+
+    class ClassCache
+      def initialize
+        @store = Concurrent::Map.new
+      end
+
+      def get(key)
+        key = key.name if key.respond_to?(:name)
+        @store[key] ||= Inflector.constantize(key)
+      end
+    end
+
+    Reference = ClassCache.new
+
+    # Get the reference for class named +name+.
+    # Raises an exception if referenced class does not exist.
+    def constantize(name)
+      Reference.get(name)
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而在调用栈中，仅出现两次const_missing，它们的参数分别是:StoreController和:ApplicationController</div>
+<div><br /></div>
+<pre><code>[15] pry(main)&gt; cd _bsi_[50]
+[16] pry(Object):1&gt; const_name
+=&gt; :StoreController
+[17] pry(Object):1&gt; exit
+=&gt; Object
+[18] pry(main)&gt; cd _bsi_[37]
+[19] pry(Object):1&gt; const_name
+=&gt; :ApplicationController</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>那么helper是在哪里加载呢？再检查下require_or_load，直接从最近的查起</div>
+<div><br /></div>
+<pre><code>[21] pry(main)&gt; cd _bsi_[10]
+[22] pry(ActiveSupport::Dependencies):1&gt; file_name
+=&gt; &#34;/home/z/test_rails/depot/app/helpers/application_helper&#34;
+[23] pry(ActiveSupport::Dependencies):1&gt; exit
+=&gt; ActiveSupport::Dependencies
+[31] pry(main)&gt; cd _bsi_[11]
+[32] pry(ActiveSupport::Dependencies):1&gt; file_name
+=&gt; &#34;application_helper&#34;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>再往上，modules_for_helpers，其源码如下</div>
+<div><br /></div>
+<pre><code>def modules_for_helpers(args)
+  args += all_application_helpers if args.delete(:all)
+  super(args)
+end
+
+# Returns a list of helper names in a given path.
+#
+#   ActionController::Base.all_helpers_from_path &#39;app/helpers&#39;
+#   # =&gt; [&#34;application&#34;, &#34;chart&#34;, &#34;rubygems&#34;]
+def all_helpers_from_path(path)
+  helpers = Array(path).flat_map do |_path|
+    extract = /^#{Regexp.quote(_path.to_s)}\/?(.*)_helper.rb$/
+    names = Dir[&#34;#{_path}/**/*_helper.rb&#34;].map { |file| file.sub(extract, &#39;\1&#39;.freeze) }
+    names.sort!
+  end
+  helpers.uniq!
+  helpers
+end
+
+private
+# Extract helper names from files in <tt>app/helpers/**/*_helper.rb</tt>
+def all_application_helpers
+  all_helpers_from_path(helpers_path)
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>从这里可确定，它接受了值为&#34;application&#34;的参数</div>
+<div><br /></div>
+<pre><code>[34] pry(main)&gt; cd _bs_[15]
+[35] pry(ApplicationController):1&gt; all_application_helpers
+=&gt; []
+[36] pry(ApplicationController):1&gt; args
+=&gt; [&#34;application&#34;]
+[37] pry(ApplicationController):1&gt; helpers_path
+=&gt; []</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>再super的话，就转化为文件名了，&#34;#{arg.to_s.underscore}_helper&#34;</div>
+<div><br /></div>
+<pre><code>def modules_for_helpers(args)
+  args.flatten.map! do |arg|
+    case arg
+    when String, Symbol
+      file_name = &#34;#{arg.to_s.underscore}_helper&#34;
+      begin
+        require_dependency(file_name)
+      rescue LoadError =&gt; e
+        raise AbstractController::Helpers::MissingHelperError.new(e, file_name)
+      end
+
+      mod_name = file_name.camelize
+      begin
+        mod_name.constantize
+      rescue LoadError
+        # dependencies.rb gives a similar error message but its wording is
+        # not as clear because it mentions autoloading. To the user all it
+        # matters is that a helper module couldn&#39;t be loaded, autoloading
+        # is an internal mechanism that should not leak.
+        raise NameError, &#34;Couldn&#39;t find #{mod_name}, expected it to be defined in helpers/#{file_name}.rb&#34;
+      end
+    when Module
+      arg
+    else
+      raise ArgumentError, &#34;helper must be a String, Symbol, or Module&#34;
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>再往上，18和17是这样的，default_helper_module!会被调用，而所谓默认helper，就是当前controller名字转underscore，因此，helpers/目录中会有需有同名的helper的文件</div>
+<div><br /></div>
+<pre><code>def default_helper_module!
+  module_name = name.sub(/Controller$/, &#39;&#39;.freeze)
+  module_path = module_name.underscore
+  helper module_path
+rescue LoadError =&gt; e
+  raise e unless e.is_missing? &#34;helpers/#{module_path}_helper&#34;
+rescue NameError =&gt; e
+  raise e unless e.missing_name? &#34;#{module_name}Helper&#34;
+end
+
+# When the argument is a string or symbol, the method will provide the &#34;_helper&#34; suffix, require the file
+# and include the module in the template class. The second form illustrates how to include custom helpers
+# when working with namespaced controllers, or other cases where the file containing the helper definition is not
+# in one of Rails&#39; standard load paths:
+#   helper :foo             # =&gt; requires &#39;foo_helper&#39; and includes FooHelper
+#   helper &#39;resources/foo&#39;  # =&gt; requires &#39;resources/foo_helper&#39; and includes Resources::FooHelper
+def helper(*args, &amp;block)
+  modules_for_helpers(args).each do |mod|
+    add_template_helper(mod)
+  end
+
+  _helpers.module_eval(&amp;block) if block_given?
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而default_helper_module!是在inherited时调用的</div>
+<div><br /></div>
+<pre><code>def inherited(klass)
+  helpers = _helpers
+  klass._helpers = Module.new { include helpers }
+  klass.class_eval { default_helper_module! } unless klass.anonymous?
+  super
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>此时的子类是ApplicationController</div>
+<div><br /></div>
+<pre><code>[41] pry(main)&gt; cd _bs_[19]
+[42] pry(ActionController::Base):1&gt; klass
+=&gt; ApplicationController</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>总结起来，加载StoreController时，因需要继承ApplicationController，所以加载它，而ApplicationController的继承链上有AbstractController::Helpers，它会导致在inherited时，根据子类的名称去helpers/下找helper，因此，ApplicationController会找到application_helper.rb，StoreController作为ApplicationController的子类，也会去找store_helper.rb</div>
+<div><br /></div>
+<div>简单来说，按rails的约定，每个controller可有对应的helper在helpers/中，没有也可以。</div>
+
+  </div><a class="u-url" href="/2017/04/16/857c733b95da57068c2b5448570114ec.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>检查rakefile定义了些什么任务</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="检查rakefile定义了些什么任务" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="检索源码中是否有处理-T选项，是有的…" />
+<meta property="og:description" content="检索源码中是否有处理-T选项，是有的…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-08-08T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"检索源码中是否有处理-T选项，是有的…","@type":"BlogPosting","headline":"检查rakefile定义了些什么任务","dateModified":"2017-08-08T00:00:00+00:00","url":"/2017/08/08/3552b9d37f6bb5e79d326ff28ba61289.html","datePublished":"2017-08-08T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/08/08/3552b9d37f6bb5e79d326ff28ba61289.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">检查rakefile定义了些什么任务</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-08-08T00:00:00+00:00" itemprop="datePublished">Aug 8, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>检索源码中是否有处理-T选项，是有的</div>
+<div><br /></div>
+<pre><code># rake-12.0.0/lib/rake/application.rb
+# A list of all the standard options used in rake, suitable for
+# passing to OptionParser.
+def standard_rake_options
+  sort_options(
+    [
+      [&#34;--all&#34;, &#34;-A&#34;,
+        &#34;Show all tasks, even uncommented ones (in combination with -T or -D)&#34;,
+        lambda { |value|
+          options.show_all_tasks = value
+        }
+      ],
+      # ...
+      [&#34;--tasks&#34;, &#34;-T [PATTERN]&#34;,
+        &#34;Display the tasks (matching optional PATTERN) &#34; +
+        &#34;with descriptions, then exit. &#34; +
+        &#34;-AT combination displays all of tasks contained no description.&#34;,
+        lambda { |value|
+          select_tasks_to_show(options, :tasks, value)
+        }
+      ],
+      #...
+    ])
+end
+
+def select_tasks_to_show(options, show_tasks, value)
+  options.show_tasks = show_tasks
+  options.show_task_pattern = Regexp.new(value || &#34;&#34;)
+  Rake::TaskManager.record_task_metadata = true
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>再搜索下哪里有用到standard_rake_options，确实是OptionParser</div>
+<div><br /></div>
+<pre><code># rake-12.0.0/lib/rake/application.rb
+def handle_options # :nodoc:
+  options.rakelib = [&#34;rakelib&#34;]
+  options.trace_output = $stderr
+
+  OptionParser.new do |opts|
+    opts.banner = &#34;#{Rake.application.name} [-f rakefile] {options} targets...&#34;
+    opts.separator &#34;&#34;
+    opts.separator &#34;Options are ...&#34;
+
+    opts.on_tail(&#34;-h&#34;, &#34;--help&#34;, &#34;-H&#34;, &#34;Display this help message.&#34;) do
+      puts opts
+      exit
+    end
+
+    standard_rake_options.each { |args| opts.on(*args) }
+    opts.environment(&#34;RAKEOPT&#34;)
+  end.parse(ARGV)
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而options.show_tasks又在top_level中用到</div>
+<div><br /></div>
+<pre><code># rake-12.0.0/lib/rake/application.rb
+def top_level
+  run_with_threads do
+    if options.show_tasks
+      display_tasks_and_comments
+    elsif options.show_prereqs
+      display_prerequisites
+    else
+      top_level_tasks.each { |task_name| invoke_task(task_name) }
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>display_tasks_and_comments源码如下，一般来说，有desc的task才会被列出，除非有-A（show_all_tasks）</div>
+<div><br /></div>
+<pre><code>def display_tasks_and_comments # :nodoc:
+  displayable_tasks = tasks.select { |t|
+    (options.show_all_tasks || t.comment) &amp;&amp;
+      t.name =~ options.show_task_pattern
+  }
+  case options.show_tasks
+  when :tasks
+    # ...
+  when :describe
+    # ...
+  when :lines
+    # ...
+  else
+    fail &#34;Unknown show task mode: &#39;#{options.show_tasks}&#39;&#34;
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>用rake --help配合top_level来看，查看任务的选项有如下</div>
+<div><br /></div>
+<pre><code>[&#34;--all&#34;, &#34;-A&#34;,
+  &#34;Show all tasks, even uncommented ones (in combination with -T or -D)&#34;,
+  lambda { |value|
+    options.show_all_tasks = value
+  }
+],
+[&#34;--describe&#34;, &#34;-D [PATTERN]&#34;,
+  &#34;Describe the tasks (matching optional PATTERN), then exit.&#34;,
+  lambda { |value|
+    select_tasks_to_show(options, :describe, value)
+  }
+],
+[&#34;--prereqs&#34;, &#34;-P&#34;,
+  &#34;Display the tasks and dependencies, then exit.&#34;,
+  lambda { |value| options.show_prereqs = true }
+],
+[&#34;--tasks&#34;, &#34;-T [PATTERN]&#34;,
+  &#34;Display the tasks (matching optional PATTERN) &#34; +
+  &#34;with descriptions, then exit. &#34; +
+  &#34;-AT combination displays all of tasks contained no description.&#34;,
+  lambda { |value|
+    select_tasks_to_show(options, :tasks, value)
+  }
+],
+[&#34;--where&#34;, &#34;-W [PATTERN]&#34;,
+  &#34;Describe the tasks (matching optional PATTERN), then exit.&#34;,
+  lambda { |value|
+    select_tasks_to_show(options, :lines, value)
+    options.show_all_tasks = true
+  }
+]</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而关于任务描述，如果没有使用D、T、W选项之一来调用select_tasks_to_show，则location和description都是不会记录的</div>
+<div><br /></div>
+<pre><code># rake-12.0.0/lib/rake/application.rb
+def select_tasks_to_show(options, show_tasks, value)
+  options.show_tasks = show_tasks
+  options.show_task_pattern = Regexp.new(value || &#34;&#34;)
+  Rake::TaskManager.record_task_metadata = true
+end
+
+# rake-12.0.0/lib/rake/task_manager.rb
+def define_task(task_class, *args, &amp;block)
+  #...
+  task = intern(task_class, task_name)
+  task.set_arg_names(arg_names) unless arg_names.empty?
+  if Rake::TaskManager.record_task_metadata
+    add_location(task)
+    task.add_description(get_description(task))
+  end
+  task.enhance(deps, &amp;block)
+ensure
+  @scope = original_scope
+end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/08/08/3552b9d37f6bb5e79d326ff28ba61289.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

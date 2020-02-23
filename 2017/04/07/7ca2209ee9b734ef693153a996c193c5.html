@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>ActionDispatch::IntegrationTest基本运作</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="ActionDispatch::IntegrationTest基本运作" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="想了解下ActionDispatch::IntegrationTest怎样运作，trace一下…" />
+<meta property="og:description" content="想了解下ActionDispatch::IntegrationTest怎样运作，trace一下…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-04-07T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"想了解下ActionDispatch::IntegrationTest怎样运作，trace一下…","@type":"BlogPosting","headline":"ActionDispatch::IntegrationTest基本运作","dateModified":"2017-04-07T00:00:00+00:00","url":"/2017/04/07/7ca2209ee9b734ef693153a996c193c5.html","datePublished":"2017-04-07T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/04/07/7ca2209ee9b734ef693153a996c193c5.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">ActionDispatch::IntegrationTest基本运作</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-04-07T00:00:00+00:00" itemprop="datePublished">Apr 7, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>想了解下ActionDispatch::IntegrationTest怎样运作，trace一下</div>
+<div><br /></div>
+<pre><code>class ProductsControllerTest &lt; ActionDispatch::IntegrationTest
+
+  test &#34;should create product&#34; do
+    assert_difference(&#39;Product.count&#39;) do
+      binding.trace_tree(html: true, tmp: [&#39;rails&#39;, &#39;test_post_models_url.html&#39;]) do
+      post products_url, params: { product: @update }
+      end
+    end
+
+    assert_redirected_to product_url(Product.last)
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>但跑太久了，于是直接去ActionDispatch::IntegrationTest中查找下post方法</div>
+<div><br /></div>
+<div>毫不意外，它就在actionpack-5.0.2/lib/action_dispatch/testing/integration.rb之中</div>
+<div><br /></div>
+<pre><code>module ActionDispatch
+  module Integration
+    module RequestHelpers
+
+      def post(path, *args)
+        process_with_kwargs(:post, path, *args)
+      end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而RequestHelpers会被Session所include</div>
+<div><br /></div>
+<pre><code>module ActionDispatch
+  module Integration
+    class Session
+      DEFAULT_HOST = &#34;www.example.com&#34;
+
+      include Minitest::Assertions
+      include TestProcess, RequestHelpers, Assertions</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>post所调的process_with_kwargs也在Session当中</div>
+<div><br /></div>
+<pre><code>def process_with_kwargs(http_method, path, *args)
+  if kwarg_request?(args)
+    process(http_method, path, *args)
+  else
+    non_kwarg_request_warning if args.any?
+    process(http_method, path, { params: args[0], headers: args[1] })
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>无论如何，都会调process</div>
+<div><br /></div>
+<pre><code>def process(method, path, params: nil, headers: nil, env: nil, xhr: false, as: nil)
+
+  # ......
+
+  session = Rack::Test::Session.new(_mock_session)
+
+  session.request(build_full_uri(path, request_env), request_env)
+
+  @request_count += 1
+  @request = ActionDispatch::Request.new(session.last_request.env)
+  response = _mock_session.last_response
+  @response = ActionDispatch::TestResponse.from_response(response)
+  @response.request = @request
+  @html_document = nil
+  @url_options = nil
+
+  @controller = @request.controller_instance
+
+  response.status
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>此方法很长，比较值得关注的，是它构建request_env，并传给session.request的部分，这个session本质上是一个经过Rack::MockSession、Rack::Test::Session包裹的@app</div>
+<div><br /></div>
+<pre><code>def _mock_session
+  @_mock_session ||= Rack::MockSession.new(@app, host)
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>@app是ActionDispatch::Integration::Session初始化时塞进来的</div>
+<div><br /></div>
+<pre><code>def initialize(app)
+  super()
+  @app = app
+
+  reset!
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而app其实就是Application对象</div>
+<div><br /></div>
+<pre><code>From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.0.2/lib/action_dispatch/testing/integration.rb @ line 190 ActionDispatch::Integration::Session#initialize:
+
+    186:       def initialize(app)
+    187:         super()
+    188:         @app = app
+    189: binding.pry
+ =&gt; 190:         reset!
+    191:       end
+
+[1] pry(#&lt;#<class:0x007f67cf57f9c0>&gt;)&gt; app
+=&gt; #&lt;depot::application:0x007f67cd4e1e20&lt; code=""&gt;&lt;/depot::application:0x007f67cd4e1e20&lt;&gt;</class:0x007f67cf57f9c0></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>顺便检查下调用栈</div>
+<div><br /></div>
+<pre><code>[2] pry(#&lt;#<class:0x007f67cf57f9c0>&gt;)&gt; _bs_
+=&gt; [#&lt;binding:70041918524660 #&lt;class:0x007f67cf57f9c0=""&gt;#initialize /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.0.2/lib/action_dispatch/testing/integration.rb:189&gt;,
+ #&lt;binding:70041918553200 productscontrollertest#create_session="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_dispatch="" testing="" integration.rb:427=""&gt;,
+ #&lt;binding:70041907797400 productscontrollertest#integration_session="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_dispatch="" testing="" integration.rb:409=""&gt;,
+ #&lt;binding:70041918574500 productscontrollertest#method_missing="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.2="" lib="" action_dispatch="" testing="" integration.rb:486=""&gt;,
+ #&lt;binding:70041907765920 productscontrollertest#block="" (2="" levels)="" in="" &lt;class:productscontrollertest=""&gt; /home/z/test_rails/depot/test/controllers/products_controller_test.rb:51&gt;,
+ #&lt;binding:70041918595940 productscontrollertest#assert_difference="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" activesupport-5.0.2="" lib="" active_support="" testing="" assertions.rb:71=""&gt;,
+ #&lt;binding:70041918630920 productscontrollertest#block="" in="" &lt;class:productscontrollertest=""&gt; /home/z/test_rails/depot/test/controllers/products_controller_test.rb:50&gt;,
+ #&lt;binding:70041918649340 productscontrollertest#block="" (3="" levels)="" in="" run="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest="" test.rb:105=""&gt;,
+ #&lt;binding:70041907683800 productscontrollertest#capture_exceptions="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest="" test.rb:202=""&gt;,
+ #&lt;binding:70041918669560 productscontrollertest#block="" (2="" levels)="" in="" run="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest="" test.rb:102=""&gt;,
+ #&lt;binding:70041918697060 productscontrollertest#time_it="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest="" test.rb:253=""&gt;,
+ #&lt;binding:70041918717860 productscontrollertest#block="" in="" run="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest="" test.rb:101=""&gt;,
+ #&lt;binding:70041918710340 productscontrollertest.on_signal="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest.rb:349=""&gt;,
+ #&lt;binding:70041918755080 productscontrollertest#with_info_handler="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest="" test.rb:273=""&gt;,
+ #&lt;binding:70041918782460 productscontrollertest#run="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest="" test.rb:100=""&gt;,
+ #&lt;binding:70041907600120 minitest.run_one_method="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest.rb:822=""&gt;,
+ #&lt;binding:70041918801980 productscontrollertest.run_one_method="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest.rb:323=""&gt;,
+ #&lt;binding:70041918821760 productscontrollertest.block="" (2="" levels)="" in="" run="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest.rb:310=""&gt;,
+ #&lt;binding:70041918847720 productscontrollertest.block="" in="" run="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest.rb:309=""&gt;,
+ #&lt;binding:70041907564760 productscontrollertest.on_signal="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest.rb:349=""&gt;,
+ #&lt;binding:70041918866420 productscontrollertest.with_info_handler="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest.rb:336=""&gt;,
+ #&lt;binding:70041918884740 productscontrollertest.run="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest.rb:308=""&gt;,
+ #&lt;binding:70041918911000 productscontrollertest.run="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" railties-5.0.2="" lib="" rails="" test_unit="" line_filtering.rb:11=""&gt;,
+ #&lt;binding:70041918938180 minitest.block="" in="" __run="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest.rb:158=""&gt;,
+ #&lt;binding:70041907518220 minitest.__run="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest.rb:158=""&gt;,
+ #&lt;binding:70041918729260 minitest.run="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest.rb:135=""&gt;,
+ #&lt;binding:70041919011440 minitest.run="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" railties-5.0.2="" lib="" rails="" test_unit="" minitest_plugin.rb:72=""&gt;,
+ #&lt;binding:70041902328660 minitest.block="" in="" autorun="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" minitest-5.10.1="" lib="" minitest.rb:62=""&gt;,
+ #&lt;binding:70041919022500 spring::application#serve="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" spring-2.0.1="" lib="" spring="" application.rb:161=""&gt;,
+ #&lt;binding:70041919048940 spring::application#block="" in="" run="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" spring-2.0.1="" lib="" spring="" application.rb:131=""&gt;,
+ #&lt;binding:70041919075340 spring::application#run="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" spring-2.0.1="" lib="" spring="" application.rb:125=""&gt;,
+ #&lt;binding:70041919092680 object#&lt;top="" (required)=""&gt; /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/spring-2.0.1/lib/spring/application/boot.rb:19&gt;,
+ #&lt;binding:70041919117960 object#require="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" 2.4.0="" rubygems="" core_ext="" kernel_require.rb:55=""&gt;,
+ #&lt;binding:70041919135200 object#&lt;main=""&gt; -e:1&gt;]&lt;/binding:70041919135200&gt;&lt;/binding:70041919117960&gt;&lt;/binding:70041919092680&gt;&lt;/binding:70041919075340&gt;&lt;/binding:70041919048940&gt;&lt;/binding:70041919022500&gt;&lt;/binding:70041902328660&gt;&lt;/binding:70041919011440&gt;&lt;/binding:70041918729260&gt;&lt;/binding:70041907518220&gt;&lt;/binding:70041918938180&gt;&lt;/binding:70041918911000&gt;&lt;/binding:70041918884740&gt;&lt;/binding:70041918866420&gt;&lt;/binding:70041907564760&gt;&lt;/binding:70041918847720&gt;&lt;/binding:70041918821760&gt;&lt;/binding:70041918801980&gt;&lt;/binding:70041907600120&gt;&lt;/binding:70041918782460&gt;&lt;/binding:70041918755080&gt;&lt;/binding:70041918710340&gt;&lt;/binding:70041918717860&gt;&lt;/binding:70041918697060&gt;&lt;/binding:70041918669560&gt;&lt;/binding:70041907683800&gt;&lt;/binding:70041918649340&gt;&lt;/binding:70041918630920&gt;&lt;/binding:70041918595940&gt;&lt;/binding:70041907765920&gt;&lt;/binding:70041918574500&gt;&lt;/binding:70041907797400&gt;&lt;/binding:70041918553200&gt;&lt;/binding:70041918524660&gt;</class:0x007f67cf57f9c0></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>method_missing的出现令人有点疑惑，整理一下，意思是，IntegrationTest是一个Runner，当调用什么assert_xxx、post、products_url时，如果没这个方法定义，就委托到integration_session（通常就是assert_xxx之外的那些方法）</div>
+<div><br /></div>
+<pre><code>class IntegrationTest &lt; ActiveSupport::TestCase
+
+  module Behavior
+    extend ActiveSupport::Concern
+
+    include Integration::Runner
+  end
+
+  include Behavior
+
+  module Runner
+    include ActionDispatch::Assertions
+
+    APP_SESSIONS = {}
+
+    attr_reader :app
+
+    def initialize(*args, &amp;blk)
+      super(*args, &amp;blk)
+      @integration_session = nil
+    end
+
+    def method_missing(sym, *args, &amp;block)
+      if integration_session.respond_to?(sym)
+        integration_session.__send__(sym, *args, &amp;block).tap do
+          copy_session_variables!
+        end
+      else
+        super
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>根据调用栈来看，integration_session会在第一次调用时生成，所用的类是动态生成的Integration::Session子类</div>
+<div><br /></div>
+<pre><code>def create_session(app)
+  klass = APP_SESSIONS[app] ||= Class.new(Integration::Session) {
+    # If the app is a Rails app, make url_helpers available on the session
+    # This makes app.url_for and app.foo_path available in the console
+    if app.respond_to?(:routes)
+      include app.routes.url_helpers
+      include app.routes.mounted_helpers
+    end
+  }
+  klass.new(app)
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>为什么要使用Rack::MockSession、Rack::Test::Session来包装application呢？先查找下他们定义在哪里——原来是有专门的一个叫rack-test的gem的</div>
+<div><br /></div>
+<pre><code>[20] pry(#&lt;#<class:0x007f67cf57f9c0>&gt;)&gt; m = Rack::Test::Session; m.instance_methods(false).map{|meth| src = m.instance_method(meth).source_location and src[0]}.uniq
+=&gt; [&#34;/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-test-0.6.3/lib/rack/test.rb&#34;, &#34;/home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/forwardable.rb&#34;]
+[21] pry(#&lt;#<class:0x007f67cf57f9c0>&gt;)&gt; m = Rack::MockSession; m.instance_methods(false).map{|meth| src = m.instance_method(meth).source_location and src[0]}.uniq
+=&gt; [&#34;/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-test-0.6.3/lib/rack/mock_session.rb&#34;]</class:0x007f67cf57f9c0></class:0x007f67cf57f9c0></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>看看源码及注释就知道，它主要就是为了模拟与client的cookie的交互</div>
+<div><br /></div>
+<div>首先，所有get、post等等（从刚才Runner的method_missing发来）都会调process_request，然后process_request再委托到mock_session</div>
+<div><br /></div>
+<pre><code>module Rack
+  module Test
+
+    # This class represents a series of requests issued to a Rack app, sharing
+    # a single cookie jar
+    #
+    # Rack::Test::Session&#39;s methods are most often called through Rack::Test::Methods,
+    # which will automatically build a session when it&#39;s first used.
+    class Session
+      extend Forwardable
+      include Rack::Test::Utils
+
+      def_delegators :@rack_mock_session, :clear_cookies, :set_cookie, :last_response, :last_request
+
+      def initialize(mock_session)
+        @headers = {}
+        @env = {}
+
+        if mock_session.is_a?(MockSession)
+          @rack_mock_session = mock_session
+        else
+          @rack_mock_session = MockSession.new(mock_session)
+        end
+
+        @default_host = @rack_mock_session.default_host
+      end
+
+      def get(uri, params = {}, env = {}, &amp;block)
+        env = env_for(uri, env.merge(:method =&gt; &#34;GET&#34;, :params =&gt; params))
+        process_request(uri, env, &amp;block)
+      end
+
+      def process_request(uri, env)
+        uri = URI.parse(uri)
+        uri.host ||= @default_host
+
+        @rack_mock_session.request(uri, env)
+
+        if retry_with_digest_auth?(env)
+          auth_env = env.merge({
+            &#34;HTTP_AUTHORIZATION&#34;          =&gt; digest_auth_header,
+            &#34;rack-test.digest_auth_retry&#34; =&gt; true
+          })
+          auth_env.delete(&#39;rack.request&#39;)
+          process_request(uri.path, auth_env)
+        else
+          yield last_response if block_given?
+
+          last_response
+        end
+      end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而mock_session则会将下层application所返回的header里的&#34;Set-Cookie&#34;抽出，放到Rack::Test::CookieJar中，并且在一次IntegrationTest中，永远都只用这个cookie_jar，相当于把client推前到了这个Rack::MockSession栈帧中，对于请求来说，就是每次请求都先把上次塞入cookie_jar的东西取出放到env[&#34;HTTP_COOKIE&#34;]，才传给下层application</div>
+<div><br /></div>
+<pre><code>module Rack
+
+  class MockSession
+    attr_writer :cookie_jar
+    attr_reader :default_host
+
+    def initialize(app, default_host = Rack::Test::DEFAULT_HOST)
+      @app = app
+      @after_request = []
+      @default_host = default_host
+      @last_request = nil
+      @last_response = nil
+    end
+
+    def request(uri, env)
+      env[&#34;HTTP_COOKIE&#34;] ||= cookie_jar.for(uri)
+      @last_request = Rack::Request.new(env)
+      status, headers, body = @app.call(@last_request.env)
+
+      @last_response = MockResponse.new(status, headers, body, env[&#34;rack.errors&#34;].flush)
+      body.close if body.respond_to?(:close)
+
+      cookie_jar.merge(last_response.headers[&#34;Set-Cookie&#34;], uri)
+
+      @after_request.each { |hook| hook.call }
+
+      if @last_response.respond_to?(:finish)
+        @last_response.finish
+      else
+        @last_response
+      end
+    end
+
+    def cookie_jar
+      @cookie_jar ||= Rack::Test::CookieJar.new([], @default_host)
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>在刚才的binding.pry中，需exit 7次才跑完整个IntegrationTest，刚好与srcaffold生成的7个test对应，即每个test都有一个全新的session（不过用的都是同一个Application对象）</div>
+
+  </div><a class="u-url" href="/2017/04/07/7ca2209ee9b734ef693153a996c193c5.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

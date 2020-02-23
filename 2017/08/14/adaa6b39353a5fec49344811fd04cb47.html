@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>IdentityCache的缓存失效机制</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="IdentityCache的缓存失效机制" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="IDC的更新机制基本上是靠after_commit :expire_cache来做的，它使得commit后自动删掉对应“前缀+id”的缓存…" />
+<meta property="og:description" content="IDC的更新机制基本上是靠after_commit :expire_cache来做的，它使得commit后自动删掉对应“前缀+id”的缓存…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-08-14T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"IDC的更新机制基本上是靠after_commit :expire_cache来做的，它使得commit后自动删掉对应“前缀+id”的缓存…","@type":"BlogPosting","headline":"IdentityCache的缓存失效机制","dateModified":"2017-08-14T00:00:00+00:00","url":"/2017/08/14/adaa6b39353a5fec49344811fd04cb47.html","datePublished":"2017-08-14T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/08/14/adaa6b39353a5fec49344811fd04cb47.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">IdentityCache的缓存失效机制</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-08-14T00:00:00+00:00" itemprop="datePublished">Aug 14, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>IDC的更新机制基本上是靠after_commit :expire_cache来做的，它使得commit后自动删掉对应“前缀+id”的缓存</div>
+<div><br /></div>
+<div>至于为什么要after_commit而非after_save、after_update，那是因为commit只会有一次，而且只在整个transaction成功后才有。如果删缓存后，transaction中接下来的某个对象不合格导致rollback而使数据库没更新，那么缓存就白删了</div>
+<div><br /></div>
+<div>相关源码如下</div>
+<div><br /></div>
+<div>identity_cache-0.5.1/lib/identity_cache/query_api.rb</div>
+<div><br /></div>
+<pre><code>module IdentityCache
+  module QueryAPI
+    extend ActiveSupport::Concern
+
+    included do |base|
+      base.after_commit :expire_cache
+    end
+
+    module ClassMethods
+
+      def fetch_by_id(id, options={})
+        # ...
+        IdentityCache.fetch(rails_cache_key(id)){ coder_from_record(object = resolve_cache_miss(id)) }
+        # ...
+      end
+    end
+
+    def expire_cache
+      expire_primary_index
+      expire_attribute_indexes
+      true
+    end
+
+    def expire_primary_index
+      return unless self.class.primary_cache_index_enabled
+
+      IdentityCache.logger.debug do
+        extra_keys =
+          if respond_to?(:updated_at)
+            old_updated_at = old_values_for_fields([:updated_at]).first
+            &#34;expiring_last_updated_at=#{old_updated_at}&#34;
+          else
+            &#34;&#34;
+          end
+
+        &#34;[IdentityCache] expiring=#{self.class.name} expiring_id=#{id} #{extra_keys}&#34;
+      end
+
+      IdentityCache.cache.delete(primary_cache_index_key)
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>identity_cache-0.5.1/lib/identity_cache/cache_key_generation.rb</div>
+<div><br /></div>
+<pre><code>module IdentityCache
+  module CacheKeyGeneration
+    extend ActiveSupport::Concern
+    DEFAULT_NAMESPACE = &#34;IDC:#{CACHE_VERSION}:&#34;.freeze
+
+    module ClassMethods
+      def rails_cache_key(id)
+        &#34;#{prefixed_rails_cache_key}#{id}&#34;
+      end
+    end
+
+    def primary_cache_index_key
+      self.class.rails_cache_key(id)
+    end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/08/14/adaa6b39353a5fec49344811fd04cb47.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

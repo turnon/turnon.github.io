@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>redis-namespace</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="redis-namespace" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="代码来自redis-namespace-1.5.3/lib/redis/namespace.rb…" />
+<meta property="og:description" content="代码来自redis-namespace-1.5.3/lib/redis/namespace.rb…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-08-02T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"代码来自redis-namespace-1.5.3/lib/redis/namespace.rb…","@type":"BlogPosting","headline":"redis-namespace","dateModified":"2017-08-02T00:00:00+00:00","url":"/2017/08/02/c496dd255690d7a2453e95f99cbe4ee6.html","datePublished":"2017-08-02T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/08/02/c496dd255690d7a2453e95f99cbe4ee6.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">redis-namespace</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-08-02T00:00:00+00:00" itemprop="datePublished">Aug 2, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>代码来自redis-namespace-1.5.3/lib/redis/namespace.rb</div>
+<div><br /></div>
+<div>它主要是通过method_missing来代理操作实际的redis client</div>
+<div><br /></div>
+<pre><code>def method_missing(command, *args, &amp;block)
+  normalized_command = command.to_s.downcase
+
+  if ADMINISTRATIVE_COMMANDS.include?(normalized_command)
+    return super if deprecations?
+    call_with_namespace(command, *args, &amp;block)
+  elsif COMMANDS.include?(normalized_command)
+    call_with_namespace(command, *args, &amp;block)
+  elsif @redis.respond_to?(normalized_command) &amp;&amp; !deprecations?
+    @redis.send(command, *args, &amp;block)
+  else
+    super
+  end
+end
+
+def call_with_namespace(command, *args, &amp;block)
+  handling = COMMANDS[command.to_s.downcase]
+
+  if handling.nil?
+    fail(&#34;Redis::Namespace does not know how to handle &#39;#{command}&#39;.&#34;)
+  end
+
+  (before, after) = handling
+
+  # Modify the local *args array in-place, no need to copy it.
+  args.map! {|arg| clone_args(arg)}
+
+  # Add the namespace to any parameters that are keys.
+  case before
+  when :first
+    args[0] = add_namespace(args[0]) if args[0]
+  when :all
+    args = add_namespace(args)
+  when :exclude_first
+    first = args.shift
+    args = add_namespace(args)
+    args.unshift(first) if first
+  when :exclude_last
+    last = args.pop unless args.length == 1
+    args = add_namespace(args)
+    args.push(last) if last
+  when :exclude_options
+
+  # ...
+
+  result = @redis.send(command, *args, &amp;block)
+
+  # Don&#39;t try to remove namespace from a Redis::Future, you can&#39;t.
+  return result if result.is_a?(Redis::Future)
+
+  # Remove the namespace from results that are keys.
+  case after
+  when :all
+    result = rem_namespace(result)
+  when :first
+    result[0] = rem_namespace(result[0]) if result
+  when :second
+    result[1] = rem_namespace(result[1]) if result
+  end
+
+  result
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而给“参数中的键”、“返回值中的键”添加namespace的规则如下</div>
+<div><br /></div>
+<pre><code>NAMESPACED_COMMANDS = {
+  &#34;append&#34;           =&gt; [ :first ],
+  &#34;bitcount&#34;         =&gt; [ :first ],
+  &#34;bitop&#34;            =&gt; [ :exclude_first ],
+  &#34;blpop&#34;            =&gt; [ :exclude_last, :first ],
+  &#34;brpop&#34;            =&gt; [ :exclude_last, :first ],
+  &#34;brpoplpush&#34;       =&gt; [ :exclude_last ],
+  &#34;debug&#34;            =&gt; [ :exclude_first ],
+  &#34;decr&#34;             =&gt; [ :first ],
+  # ...</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/08/02/c496dd255690d7a2453e95f99cbe4ee6.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

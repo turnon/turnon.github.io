@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>resque的运作</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="resque的运作" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="为检查Resque是如何执行队列里的job的，加入调试代码如下…" />
+<meta property="og:description" content="为检查Resque是如何执行队列里的job的，加入调试代码如下…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2018-04-22T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"为检查Resque是如何执行队列里的job的，加入调试代码如下…","@type":"BlogPosting","headline":"resque的运作","dateModified":"2018-04-22T00:00:00+00:00","url":"/2018/04/22/e3e5a97651bb61660cf90f04a7f4b822.html","datePublished":"2018-04-22T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2018/04/22/e3e5a97651bb61660cf90f04a7f4b822.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">resque的运作</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2018-04-22T00:00:00+00:00" itemprop="datePublished">Apr 22, 2018
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>为检查Resque是如何执行队列里的job的，加入调试代码如下</div>
+<div><br /></div>
+<pre><code>class TryResque
+  @queue = :just_try_resque
+
+  def self.perform *args
+    puts args
+    puts caller
+  end
+
+  def self.enqueue *args
+    Resque.enqueue self, *args
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>然后起job</div>
+<div><br /></div>
+<pre><code>$ QUEUE=just_try_resque bundle exec rake resque:work</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>入队</div>
+<div><br /></div>
+<pre><code>[1] pry(main)&gt; TryResque.enqueue 1,2,3</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>可见终端输出</div>
+<div><br /></div>
+<pre><code>1
+2
+3
+/home/z/.rbenv/versions/2.1.5/lib/ruby/gems/2.1.0/gems/resque-1.25.2/lib/resque/job.rb:227:in `perform&#39;
+/home/z/.rbenv/versions/2.1.5/lib/ruby/gems/2.1.0/gems/resque-1.25.2/lib/resque/worker.rb:250:in `perform&#39;
+/home/z/.rbenv/versions/2.1.5/lib/ruby/gems/2.1.0/gems/resque-1.25.2/lib/resque/worker.rb:189:in `block in work&#39;
+/home/z/.rbenv/versions/2.1.5/lib/ruby/gems/2.1.0/gems/resque-1.25.2/lib/resque/worker.rb:166:in `loop&#39;
+/home/z/.rbenv/versions/2.1.5/lib/ruby/gems/2.1.0/gems/resque-1.25.2/lib/resque/worker.rb:166:in `work&#39;
+/home/z/.rbenv/versions/2.1.5/lib/ruby/gems/2.1.0/gems/resque-1.25.2/lib/resque/tasks.rb:41:in `block (2 levels) in &lt;top (required)=""&gt;&#39;
+...&lt;/top&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>起job任务如下</div>
+<div><br /></div>
+<pre><code># resque-1.25.2/lib/resque/lib/resque/tasks.rb
+desc &#34;Start a Resque worker&#34;
+task :work =&gt; [ :preload, :setup ] do
+  require &#39;resque&#39;
+
+  queues = (ENV[&#39;QUEUES&#39;] || ENV[&#39;QUEUE&#39;]).to_s.split(&#39;,&#39;)
+
+  begin
+    worker = Resque::Worker.new(*queues)
+    if ENV[&#39;LOGGING&#39;] || ENV[&#39;VERBOSE&#39;]
+      worker.verbose = ENV[&#39;LOGGING&#39;] || ENV[&#39;VERBOSE&#39;]
+    end
+    if ENV[&#39;VVERBOSE&#39;]
+      worker.very_verbose = ENV[&#39;VVERBOSE&#39;]
+    end
+    worker.term_timeout = ENV[&#39;RESQUE_TERM_TIMEOUT&#39;] || 4.0
+    worker.term_child = ENV[&#39;TERM_CHILD&#39;]
+    worker.run_at_exit_hooks = ENV[&#39;RUN_AT_EXIT_HOOKS&#39;]
+  rescue Resque::NoQueueError
+    abort &#34;set QUEUE env var, e.g. $ QUEUE=critical,high rake resque:work&#34;
+  end
+
+  if ENV[&#39;BACKGROUND&#39;]
+    unless Process.respond_to?(&#39;daemon&#39;)
+        abort &#34;env var BACKGROUND is set, which requires ruby &gt;= 1.9&#34;
+    end
+    Process.daemon(true, true)
+  end
+
+  if ENV[&#39;PIDFILE&#39;]
+    File.open(ENV[&#39;PIDFILE&#39;], &#39;w&#39;) { |f| f &lt;&lt; worker.pid }
+  end
+
+  worker.log &#34;Starting worker #{worker}&#34;
+
+  worker.work(ENV[&#39;INTERVAL&#39;] || 5) # interval, will block
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>方法work如下（resque-1.25.2/lib/resque/worker.rb），就是一个循环从队列取job，然后执行的流程</div>
+<div><br /></div>
+<pre><code># The following events occur during a worker&#39;s life cycle:
+#
+# 1. Startup:   Signals are registered, dead workers are pruned,
+#               and this worker is registered.
+# 2. Work loop: Jobs are pulled from a queue and processed.
+# 3. Teardown:  This worker is unregistered.
+def work(interval = 5.0, &amp;block)
+  interval = Float(interval)
+  $0 = &#34;resque: Starting&#34;
+  startup
+
+  loop do
+    break if shutdown?
+
+    if not paused? and job = reserve
+      log &#34;got: #{job.inspect}&#34;
+      job.worker = self
+      working_on job
+
+      procline &#34;Processing #{job.queue} since #{Time.now.to_i} [#{job.payload_class_name}]&#34;
+      if @child = fork(job)
+        srand # Reseeding
+        procline &#34;Forked #{@child} at #{Time.now.to_i}&#34;
+        begin
+          Process.waitpid(@child)
+        rescue SystemCallError
+          nil
+        end
+        job.fail(DirtyExit.new($?.to_s)) if $?.signaled?
+      else
+        unregister_signal_handlers if will_fork? &amp;&amp; term_child
+        begin
+
+          reconnect
+          perform(job, &amp;block)
+
+        rescue Exception =&gt; exception
+          report_failed_job(job,exception)
+        end
+
+        if will_fork?
+          run_at_exit_hooks ? exit : exit!
+        end
+      end
+
+      done_working
+      @child = nil
+    else
+      break if interval.zero?
+      log! &#34;Sleeping for #{interval} seconds&#34;
+      procline paused? ? &#34;Paused&#34; : &#34;Waiting for #{@queues.join(&#39;,&#39;)}&#34;
+      sleep interval
+    end
+  end
+
+  unregister_worker
+rescue Exception =&gt; exception
+  unless exception.class == SystemExit &amp;&amp; !@child &amp;&amp; run_at_exit_hooks
+    log &#34;Failed to start worker : #{exception.inspect}&#34;
+
+    unregister_worker(exception)
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>关于shutdown，查找代码，可见在work方法中调用startup时，就注册了信号</div>
+<div><br /></div>
+<pre><code># resque-1.25.2/lib/resque/worker.rb
+def startup
+  Kernel.warn &#34;WARNING: This way of doing signal handling is now deprecated. Please see http://hone.heroku.com/resque/2012/08/21/resque-signals.html for more info.&#34; unless term_child or $TESTING
+  enable_gc_optimizations
+  register_signal_handlers
+  prune_dead_workers
+  run_hook :before_first_fork
+  register_worker
+
+  # Fix buffering so we can `rake resque:work &gt; resque.log` and
+  # get output from the child in there.
+  $stdout.sync = true
+end
+
+def register_signal_handlers
+  trap(&#39;TERM&#39;) { shutdown!  }
+  trap(&#39;INT&#39;)  { shutdown!  }371
+  #...
+end
+
+def shutdown
+  log &#39;Exiting...&#39;
+  @shutdown = true
+end
+
+# Kill the child and shutdown immediately.
+# If not forking, abort this process.
+def shutdown!
+  shutdown
+  # ...
+end
+
+# Should this worker shutdown as soon as current job is finished?
+def shutdown?
+  @shutdown
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而队列是有namespace名为queue的。（当然，在设置Resque.redis=时，可以自己再包多一层namespace）</div>
+<div><br /></div>
+<pre><code># resque-1.25.2/lib/resque.rb
+def push(queue, item)
+  redis.pipelined do
+    watch_queue(queue)
+    redis.rpush &#34;queue:#{queue}&#34;, encode(item)
+  end
+end
+
+def pop(queue)
+  decode redis.lpop(&#34;queue:#{queue}&#34;)
+end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2018/04/22/e3e5a97651bb61660cf90f04a7f4b822.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

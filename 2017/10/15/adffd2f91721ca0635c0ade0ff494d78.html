@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>redis-rb的pipeline实现</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="redis-rb的pipeline实现" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="跟踪一下…" />
+<meta property="og:description" content="跟踪一下…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-10-15T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"跟踪一下…","@type":"BlogPosting","headline":"redis-rb的pipeline实现","dateModified":"2017-10-15T00:00:00+00:00","url":"/2017/10/15/adffd2f91721ca0635c0ade0ff494d78.html","datePublished":"2017-10-15T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/10/15/adffd2f91721ca0635c0ade0ff494d78.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">redis-rb的pipeline实现</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-10-15T00:00:00+00:00" itemprop="datePublished">Oct 15, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>跟踪一下</div>
+<div><br /></div>
+<pre><code>[4] pry(main)&gt; binding.trace_tree(htmp: &#39;redis/pipeline&#39;) do
+[4] pry(main)*   $redis.pipelined do  
+[4] pry(main)*     $redis.set &#39;i&#39;, 1    
+[4] pry(main)*     $redis.set &#39;j&#39;, 2    
+[4] pry(main)*     $redis.set &#39;k&#39;, 3    
+[4] pry(main)*   end    
+[4] pry(main)* end  
+=&gt; [&#34;OK&#34;, &#34;OK&#34;, &#34;OK&#34;]</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>得调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/adffd2f91721ca0635c0ade0ff494d78/b2d4fd40ec173b4061cf473f2ba1830e.html"><img src="/assets/files/adffd2f91721ca0635c0ade0ff494d78/1e72ec399d965936c1f79e3db42b2a9a.png" alt="20171015_172152_460_pipeline.html" /></a></div>
+<div><br /></div>
+<div>首先，pipelined方法会将内部的@client替换成Pipeline对象，然后再执行要批处理的操作</div>
+<div><br /></div>
+<pre><code>def pipelined
+  synchronize do |client|
+    begin
+      original, @client = @client, Pipeline.new
+      yield(self)
+      original.call_pipeline(@client)
+    ensure
+      @client = original
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>此部分调用如下</div>
+<div><br /></div>
+<div><img src="/assets/files/adffd2f91721ca0635c0ade0ff494d78/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div>Pipeline跟Client一样都响应call方法</div>
+<div><br /></div>
+<pre><code>def set(key, value, options = {})
+  args = []
+
+  ex = options[:ex]
+  args.concat([&#34;EX&#34;, ex]) if ex
+
+  px = options[:px]
+  args.concat([&#34;PX&#34;, px]) if px
+
+  nx = options[:nx]
+  args.concat([&#34;NX&#34;]) if nx
+
+  xx = options[:xx]
+  args.concat([&#34;XX&#34;]) if xx
+
+  synchronize do |client|
+    if nx || xx
+      client.call([:set, key, value.to_s] + args, &amp;BoolifySet)
+    else
+      client.call([:set, key, value.to_s] + args)
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>不同的是，Client是直接“处理”，而Pipeline是将每个命令暂存到一个个Future对象中</div>
+<div><br /></div>
+<pre><code># lib/redis/client.rb
+def call(command)
+  reply = process([command]) { read }
+  raise reply if reply.is_a?(CommandError)
+
+  if block_given?
+    yield reply
+  else
+    reply
+  end
+end
+
+# lib/redis/pipeline.rb
+def call(command, &amp;block)                                                                                                                                                                                                           
+  # A pipeline that contains a shutdown should not raise ECONNRESET when
+  # the connection is gone.
+  @shutdown = true if command.first == :shutdown
+  future = Future.new(command, block)
+  @futures &lt;&lt; future
+  future
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>接着，再由pipeline.finish(call_pipelined(pipeline.commands))实际完成</div>
+<div><br /></div>
+<pre><code>def call_pipeline(pipeline)
+  with_reconnect pipeline.with_reconnect? do
+    begin
+      pipeline.finish(call_pipelined(pipeline.commands)).tap do
+        self.db = pipeline.db if pipeline.db
+      end
+    rescue ConnectionError =&gt; e
+      return nil if pipeline.shutdown?
+      # Assume the pipeline was sent in one piece, but execution of
+      # SHUTDOWN caused none of the replies for commands that were executed
+      # prior to it from coming back around.
+      raise e
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>从源码来看，process循环将命令发送出去（write），然后call_pipelined会根据命令数量，循环读取结果（read），然后将收集的结果（result），对应填到每个Future中，因而在pipeline的block中可以每行命令赋值一个变量，以单独获取每条命令的结果</div>
+<div><br /></div>
+<pre><code># lib/redis/client.rb
+def call_pipelined(commands)
+  return [] if commands.empty?
+
+  # The method #ensure_connected (called from #process) reconnects once on
+  # I/O errors. To make an effort in making sure that commands are not
+  # executed more than once, only allow reconnection before the first reply
+  # has been read. When an error occurs after the first reply has been
+  # read, retrying would re-execute the entire pipeline, thus re-issuing
+  # already successfully executed commands. To circumvent this, don&#39;t retry
+  # after the first reply has been read successfully.
+
+  result = Array.new(commands.size)
+  reconnect = @reconnect
+
+  begin
+    exception = nil
+
+    process(commands) do
+      result[0] = read
+
+      @reconnect = false
+
+      (commands.size - 1).times do |i|
+        reply = read
+        result[i + 1] = reply
+        exception = reply if exception.nil? &amp;&amp; reply.is_a?(CommandError)
+      end
+    end
+
+    raise exception if exception
+  ensure
+    @reconnect = reconnect
+  end
+
+  result
+end
+
+def process(commands)
+  logging(commands) do
+    ensure_connected do
+      commands.each do |command|
+        if command_map[command.first]
+          command = command.dup
+          command[0] = command_map[command.first]
+        end
+
+        write(command)
+      end
+
+      yield if block_given?
+    end
+  end
+end
+
+# lib/redis/pipeline.rb
+def finish(replies, &amp;blk)
+  if blk
+    futures.each_with_index.map do |future, i|
+      future._set(blk.call(replies[i]))
+    end
+  else
+    futures.each_with_index.map do |future, i|
+      future._set(replies[i])
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>可以对比一下，与Pipeline不同，普通的Client因为只会一次write一条命令，所以也只会read一次</div>
+<div><br /></div>
+<pre><code># lib/redis/client.rb
+def call(command)
+  reply = process([command]) { read }
+  raise reply if reply.is_a?(CommandError)
+
+  if block_given?
+    yield reply
+  else
+    reply
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>这样看来，多条命令，不管是pipeline还是不pipeline，都一样要write/read同样次数，那pipeline怎么会更加高效呢？</div>
+<div><br /></div>
+<div>首先，从上面看到，write跟read不必是连续的，write只返回发送字数，不需等待redis处理。其次，一次read所产生的网络IO是有可能把多个命令的结果都返回的。如源码所示，一次gets，读取1024字节，如果没读完一个命令的结果（根据RESP，每个结果以\r\n结尾），则继续请求（_read_from_socket）。如果1024字节中已包含了多个结果，则下次read进入gets时，直接slice!取出下一段结果就可以了</div>
+<div><br /></div>
+<pre><code># lib/redis/connection/ruby.rb
+def gets
+  crlf = nil
+
+  while (crlf = @buffer.index(CRLF)) == nil
+    @buffer &lt;&lt; _read_from_socket(1024)
+  end
+
+  @buffer.slice!(0, crlf + CRLF.bytesize)
+end
+
+def _read_from_socket(nbytes)
+
+  begin
+    read_nonblock(nbytes)
+
+  rescue #...
+  end
+
+rescue EOFError
+  raise Errno::ECONNRESET
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而例子中三个set，结果返回三个OK，是不足1024字节的。因此，调用栈有三次gets，但只有一次_read_from_socket。这样当然比非pipeline的write完马上read要高效</div>
+<div><br /></div>
+<div><img src="/assets/files/adffd2f91721ca0635c0ade0ff494d78/91eee3f8d75dbb327ede474944726554.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/10/15/adffd2f91721ca0635c0ade0ff494d78.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE HTML><html><head><meta charset='utf-8'/><style>body {
+    font-family: 'Dejavu Sans Mono', 'Arial', sans-serif;
+    font-size: 13px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.tree-html ul {
+    margin-left: 15px;
+}
+
+.tree-html li {
+    list-style-type: none;
+    margin: 10px;
+    position: relative;
+}
+
+.tree-html li::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc;
+    width: 15px;
+    height: 15px;
+}
+
+.tree-html li::after {
+    position: absolute;
+    content: "";
+    top: 8px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    width: 15px;
+    height: 100%;
+}
+
+.tree-html li:last-child::after {
+    display: none;
+}
+
+ul.tree-html>li:first-child::before {
+    display: none;
+}
+
+.tree-html li a {
+    padding: 2px 5px;
+}
+
+.tree-html li a:hover, .tree-html li a:hover+ul li a,
+.tree-html li a:focus, .tree-html li a:focus+ul li a {
+    background-color: #d3d3d3;
+}
+
+.tree-html label {
+  margin: .2em 0 0 -.6em;
+  position: absolute;
+  border: 1px solid #ccc;
+  background: white;
+  width: .6em;
+  height: .6em;
+  display: inline-block;
+  line-height: .65;
+}
+
+.tree-html label.placeholder {
+  visibility: hidden;
+}
+
+.tree-html label::before {
+  color: #ccc;
+  font-family: serif;
+  margin-left: 0.02em;
+}
+
+input[type='checkbox'] {
+  margin-left: 5px;
+  display: none
+}
+
+input[type='checkbox']:checked ~ ul {
+  display: none
+}
+
+input[type="checkbox"] + label::before {
+  content: '-';
+}
+
+input[type="checkbox"]:checked + label::before {
+  content: '+';
+}
+.highlight{color: #a50000;}</style></head><body><ul class='tree-html'><li><input type='checkbox' id='70244533048320'><label for='70244533048320'></label><a><span class='highlight'>#&lt;Class:0x007fc6674c7810&gt;#block in _app_views_layouts_application_html_erb___2326577585563971038_70244547546760</span> /home/z/test_rails/dapo/app/views/layouts/application.html.erb:24</a><ul><li><input type='checkbox' id='70245044051540'><label for='70245044051540'></label><a><span class='highlight'>#&lt;Class:0x007fc6674c7810&gt;#flash</span> $GemPath0/gems/actionview-5.0.2/lib/action_view/helpers/controller_helper.rb:10</a><ul><li><input type='checkbox' id='70244546151520'><label for='70244546151520'></label><a><span class='highlight'>ArticlesController#flash</span> $GemPath0/gems/actionpack-5.0.2/lib/action_controller/metal/flash.rb:9</a><ul><li><input type='checkbox' id='70244536252480'><label for='70244536252480'></label><a><span class='highlight'>ActionDispatch::Request#flash</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/middleware/flash.rb:45</a><ul><li><input type='checkbox' id='70244531448540'><label for='70244531448540'></label><a><span class='highlight'>ActionDispatch::Request#flash_hash</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/middleware/flash.rb:55</a><ul><li><label class='placeholder'></label><a><span class='highlight'>ActionDispatch::Request#get_header</span> $GemPath0/gems/rack-2.0.1/lib/rack/request.rb:50</a></li></ul></li><li><input type='checkbox' id='70244536172800'><label for='70244536172800'></label><a><span class='highlight'>ActionDispatch::Request#session</span> $GemPath0/gems/rack-2.0.1/lib/rack/request.rb:144</a><ul><li><input type='checkbox' id='70244550760200'><label for='70244550760200'></label><a><span class='highlight'>ActionDispatch::Request#fetch_header</span> $GemPath0/gems/rack-2.0.1/lib/rack/request.rb:56</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Hash#fetch</span> $GemPath0/gems/rack-2.0.1/lib/rack/request.rb:57</a></li></ul></li></ul></li><li><input type='checkbox' id='70244544841720'><label for='70244544841720'></label><a><span class='highlight'>ActionDispatch::Request::Session#[]</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/request/session.rb:89</a><ul><li><input type='checkbox' id='70244531600860'><label for='70244531600860'></label><a><span class='highlight'>ActionDispatch::Request::Session#load_for_read!</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/request/session.rb:207</a><ul><li><label class='placeholder'></label><a><span class='highlight'>ActionDispatch::Request::Session#loaded?</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/request/session.rb:187</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>String#to_s</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/request/session.rb:91</a></li></ul></li><li><input type='checkbox' id='70244542198560'><label for='70244542198560'></label><a><span class='highlight'>ActionDispatch::Flash::FlashHash.from_session_value</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/middleware/flash.rb:112</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Module#===</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/middleware/flash.rb:114</a></li><li><label class='placeholder'></label><a><span class='highlight'>Module#===</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/middleware/flash.rb:120</a></li><li><input type='checkbox' id='70244550347520'><label for='70244550347520'></label><a><span class='highlight'>Class#new</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/middleware/flash.rb:127</a><ul><li><input type='checkbox' id='70244544784720'><label for='70244544784720'></label><a><span class='highlight'>ActionDispatch::Flash::FlashHash#initialize</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/middleware/flash.rb:139</a><ul><li><input type='checkbox' id='70244552361960'><label for='70244552361960'></label><a><span class='highlight'>ActionDispatch::Flash::FlashHash#stringify_array</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/middleware/flash.rb:284</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Array#map</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/middleware/flash.rb:285</a></li></ul></li><li><input type='checkbox' id='70244537370420'><label for='70244537370420'></label><a><span class='highlight'>Class#new</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/middleware/flash.rb:140</a><ul><li><input type='checkbox' id='70244545871720'><label for='70244545871720'></label><a><span class='highlight'>Set#initialize</span> /home/z/.rbenv/versions/2.3.3/lib/ruby/2.3.0/set.rb:82</a><ul><li><input type='checkbox' id='70244545187680'><label for='70244545187680'></label><a><span class='highlight'>Class#new</span> /home/z/.rbenv/versions/2.3.3/lib/ruby/2.3.0/set.rb:83</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Hash#initialize</span> /home/z/.rbenv/versions/2.3.3/lib/ruby/2.3.0/set.rb:83</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Kernel#nil?</span> /home/z/.rbenv/versions/2.3.3/lib/ruby/2.3.0/set.rb:85</a></li><li><input type='checkbox' id='70244535666000'><label for='70244535666000'></label><a><span class='highlight'>Set#merge</span> /home/z/.rbenv/versions/2.3.3/lib/ruby/2.3.0/set.rb:384</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#class</span> /home/z/.rbenv/versions/2.3.3/lib/ruby/2.3.0/set.rb:385</a></li><li><label class='placeholder'></label><a><span class='highlight'>Kernel#instance_of?</span> /home/z/.rbenv/versions/2.3.3/lib/ruby/2.3.0/set.rb:385</a></li><li><input type='checkbox' id='70244549689040'><label for='70244549689040'></label><a><span class='highlight'>Set#do_with_enum</span> /home/z/.rbenv/versions/2.3.3/lib/ruby/2.3.0/set.rb:94</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#respond_to?</span> /home/z/.rbenv/versions/2.3.3/lib/ruby/2.3.0/set.rb:95</a></li><li><input type='checkbox' id='70244546340880'><label for='70244546340880'></label><a><span class='highlight'>Enumerable#each_entry</span> /home/z/.rbenv/versions/2.3.3/lib/ruby/2.3.0/set.rb:96</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Array#each</span> /home/z/.rbenv/versions/2.3.3/lib/ruby/2.3.0/set.rb:96</a></li></ul></li></ul></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70245055701820'><label for='70245055701820'></label><a><span class='highlight'>Hash#stringify_keys</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/hash/keys.rb:37</a><ul><li><input type='checkbox' id='70244546724540'><label for='70244546724540'></label><a><span class='highlight'>Hash#transform_keys</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/hash/keys.rb:12</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#block_given?</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/hash/keys.rb:13</a></li><li><label class='placeholder'></label><a><span class='highlight'>Hash#each_key</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/hash/keys.rb:15</a></li></ul></li></ul></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70244549430740'><label for='70244549430740'></label><a><span class='highlight'>ActionDispatch::Request#flash=</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/middleware/flash.rb:51</a><ul><li><label class='placeholder'></label><a><span class='highlight'>ActionDispatch::Request#set_header</span> $GemPath0/gems/rack-2.0.1/lib/rack/request.rb:66</a></li></ul></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70244546194980'><label for='70244546194980'></label><a><span class='highlight'>ActionDispatch::Flash::FlashHash#[]</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/middleware/flash.rb:159</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Symbol#to_s</span> $GemPath0/gems/actionpack-5.0.2/lib/action_dispatch/middleware/flash.rb:160</a></li></ul></li></ul></li></ul></body></html>

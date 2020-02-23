@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Resque::Mailer的运作</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="Resque::Mailer的运作" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="跟踪一下include了Resque::Mailer的一个ActionMailer::Base子类Notifier的运作…" />
+<meta property="og:description" content="跟踪一下include了Resque::Mailer的一个ActionMailer::Base子类Notifier的运作…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-06-20T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"跟踪一下include了Resque::Mailer的一个ActionMailer::Base子类Notifier的运作…","@type":"BlogPosting","headline":"Resque::Mailer的运作","dateModified":"2019-06-20T00:00:00+00:00","url":"/2019/06/20/d85bb470288b890c0425399f527d303a.html","datePublished":"2019-06-20T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2019/06/20/d85bb470288b890c0425399f527d303a.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Resque::Mailer的运作</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-06-20T00:00:00+00:00" itemprop="datePublished">Jun 20, 2019
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>跟踪一下include了Resque::Mailer的一个ActionMailer::Base子类Notifier的运作</div>
+<div><br /></div>
+<pre><code>[2] pry(main)&gt; binding.trace_tree(htmp: &#39;resque_mailer&#39;){ Notifier.send_an_email(&#39;a@b.com&#39;, &#39;subject&#39;, &#39;content&#39;).deliver }
+  Rendered notifier/send_an_email.html.erb within layouts/notifier (1.7ms)
+
+Notifier#send_an_email: processed outbound mail in 70.8ms
+=&gt; true</code></pre>
+<div><br /></div>
+<div>得调用栈如下：</div>
+<div><br /></div>
+<div><a href="/assets/files/d85bb470288b890c0425399f527d303a/966fd60eee1a84fc34340fc5ada1e04c.html"><img src="/assets/files/d85bb470288b890c0425399f527d303a/80575672010a217168e0d4d377d22173.png" alt="20190620_111819_204_resque_mailer.html" /></a></div>
+<div><br /></div>
+<div>基本流程如下：</div>
+<div><br /></div>
+<div><img src="/assets/files/d85bb470288b890c0425399f527d303a/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div>ActionMailer::Base的子类只需定义实例方法，调用时按类方法来调，然后进入method_missing，如果方法action_methods计算出的controller实例方法包含该方法名，则将实际类名、方法名和参数包装成一个MessageDecoy</div>
+<div><br /></div>
+<pre><code>module Resque
+  module Mailer
+    class &lt;&lt; self
+     def included(base)
+       base.extend(ClassMethods)
+     end
+   end
+
+   module ClassMethods
+     def method_missing(method_name, *args)
+       if action_methods.include?(method_name.to_s)
+         MessageDecoy.new(self, method_name, *args)
+       else
+         super
+       end
+     end</code></pre>
+<div><br /></div>
+<div>MessageDecoy的deliver就是通过Resque塞到redis里</div>
+<div><br /></div>
+<pre><code>def deliver
+  return deliver! if environment_excluded?
+
+  if @mailer_class.deliver?
+    begin
+      resque.enqueue(@mailer_class, @method_name, @serialized_args)
+    rescue Errno::ECONNREFUSED, Redis::CannotConnectError
+      logger.error &#34;Unable to connect to Redis; falling back to synchronous mail delivery&#34; if logger
+      deliver!
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div>注意塞进resque的参数应是能准确序列化和反序列化的</div>
+
+  </div><a class="u-url" href="/2019/06/20/d85bb470288b890c0425399f527d303a.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

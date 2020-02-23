@@ -1,0 +1,96 @@
+<!DOCTYPE HTML><html><head><meta charset='utf-8'/><style>body {
+    font-family: 'Dejavu Sans Mono', 'Arial', sans-serif;
+    font-size: 13px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.tree-html ul {
+    margin-left: 15px;
+}
+
+.tree-html li {
+    list-style-type: none;
+    margin: 10px;
+    position: relative;
+}
+
+.tree-html li::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc;
+    width: 15px;
+    height: 15px;
+}
+
+.tree-html li::after {
+    position: absolute;
+    content: "";
+    top: 8px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    width: 15px;
+    height: 100%;
+}
+
+.tree-html li:last-child::after {
+    display: none;
+}
+
+ul.tree-html>li:first-child::before {
+    display: none;
+}
+
+.tree-html li a {
+    padding: 2px 5px;
+}
+
+.tree-html li a:hover, .tree-html li a:hover+ul li a,
+.tree-html li a:focus, .tree-html li a:focus+ul li a {
+    background-color: #d3d3d3;
+}
+
+.tree-html label {
+  margin: .2em 0 0 -.6em;
+  position: absolute;
+  border: 1px solid #ccc;
+  background: white;
+  width: .6em;
+  height: .6em;
+  display: inline-block;
+  line-height: .65;
+}
+
+.tree-html label.placeholder {
+  visibility: hidden;
+}
+
+.tree-html label::before {
+  color: #ccc;
+  font-family: serif;
+  margin-left: 0.02em;
+}
+
+input[type='checkbox'] {
+  margin-left: 5px;
+  display: none
+}
+
+input[type='checkbox']:checked ~ ul {
+  display: none
+}
+
+input[type="checkbox"] + label::before {
+  content: '-';
+}
+
+input[type="checkbox"]:checked + label::before {
+  content: '+';
+}
+.highlight{color: #a50000;}</style></head><body><ul class='tree-html'><li><input type='checkbox' id='70041151751880'><label for='70041151751880'></label><a><span class='highlight'>ProductTest.block in &lt;class:ProductTest&gt;</span> /home/z/test_rails/depot/test/models/product_test.rb:5</a><ul><li><input type='checkbox' id='70041144731460'><label for='70041144731460'></label><a><span class='highlight'>ProductTest.fixtures</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:904</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Array#first</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:905</a></li><li><label class='placeholder'></label><a><span class='highlight'>Array#flatten</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:909</a></li><li><input type='checkbox' id='70041152190900'><label for='70041152190900'></label><a><span class='highlight'>Array#map</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:909</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Symbol#to_s</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:909</a></li></ul></li><li><input type='checkbox' id='70041150709220'><label for='70041150709220'></label><a><span class='highlight'>ProductTest.block (4 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:90</a><ul><li><label class='placeholder'></label><a><span class='highlight'>ProductTest.block (4 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:90</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Array#|</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:912</a></li><li><input type='checkbox' id='70041150927860'><label for='70041150927860'></label><a><span class='highlight'>ProductTest.block (2 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:87</a><ul><li><input type='checkbox' id='70041139971820'><label for='70041139971820'></label><a><span class='highlight'>ProductTest.block (2 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:87</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#singleton_class</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:88</a></li><li><input type='checkbox' id='70041139989180'><label for='70041139989180'></label><a><span class='highlight'>Module#class_eval</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:88</a><ul><li><input type='checkbox' id='70041152731080'><label for='70041152731080'></label><a><span class='highlight'>#&lt;Class:ProductTest&gt;.block (3 levels) in class_attribute</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:88</a><ul><li><input type='checkbox' id='70041150830340'><label for='70041150830340'></label><a><span class='highlight'>#&lt;Class:ProductTest&gt;.remove_possible_method</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/module/remove_method.rb:3</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Module#method_defined?</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/module/remove_method.rb:4</a></li><li><input type='checkbox' id='70041145281220'><label for='70041145281220'></label><a><span class='highlight'>Module#undef_method</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/module/remove_method.rb:5</a><ul><li><label class='placeholder'></label><a><span class='highlight'>BasicObject#singleton_method_undefined</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/module/remove_method.rb:5</a></li></ul></li></ul></li><li><input type='checkbox' id='70041150990900'><label for='70041150990900'></label><a><span class='highlight'>Module#define_method</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:90</a><ul><li><label class='placeholder'></label><a><span class='highlight'>BasicObject#singleton_method_added</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:90</a></li></ul></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Module#singleton_class?</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/class/attribute.rb:93</a></li></ul></li></ul></li><li><input type='checkbox' id='70041138346020'><label for='70041138346020'></label><a><span class='highlight'>ProductTest.setup_fixture_accessors</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:916</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#Array</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:917</a></li><li><input type='checkbox' id='70041138241660'><label for='70041138241660'></label><a><span class='highlight'>Class#new</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:918</a><ul><li><input type='checkbox' id='70041152199340'><label for='70041152199340'></label><a><span class='highlight'>Module#initialize</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:918</a><ul><li><input type='checkbox' id='70041145575900'><label for='70041145575900'></label><a><span class='highlight'>#&lt;Module:0x007f6773fe35d0&gt;.block in setup_fixture_accessors</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:918</a><ul><li><input type='checkbox' id='70041135975600'><label for='70041135975600'></label><a><span class='highlight'>Array#each</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:919</a><ul><li><input type='checkbox' id='70041151962440'><label for='70041151962440'></label><a><span class='highlight'>#&lt;Module:0x007f6773fe35d0&gt;.block (2 levels) in setup_fixture_accessors</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:919</a><ul><li><label class='placeholder'></label><a><span class='highlight'>String#to_s</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:920</a></li><li><label class='placeholder'></label><a><span class='highlight'>String#tr</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:921</a></li><li><label class='placeholder'></label><a><span class='highlight'>String#to_sym</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:921</a></li><li><input type='checkbox' id='70041136236660'><label for='70041136236660'></label><a><span class='highlight'>Module#define_method</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:923</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Module#method_added</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:923</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Module#private</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:941</a></li></ul></li></ul></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70041135545200'><label for='70041135545200'></label><a><span class='highlight'>Module#include(#&lt;Module:0x007f6773fe35d0&gt;)</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:944</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Module#append_features(#&lt;Module:0x007f6773fe35d0&gt;)</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:944</a></li><li><label class='placeholder'></label><a><span class='highlight'>Module#included</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/fixtures.rb:944</a></li></ul></li></ul></li></ul></li></ul></li></ul></body></html>

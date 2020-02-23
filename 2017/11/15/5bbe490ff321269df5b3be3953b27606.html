@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>rails的query cache</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="rails的query cache" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="跟踪一下两次查询所使用的query cache…" />
+<meta property="og:description" content="跟踪一下两次查询所使用的query cache…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-11-15T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"跟踪一下两次查询所使用的query cache…","@type":"BlogPosting","headline":"rails的query cache","dateModified":"2017-11-15T00:00:00+00:00","url":"/2017/11/15/5bbe490ff321269df5b3be3953b27606.html","datePublished":"2017-11-15T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/11/15/5bbe490ff321269df5b3be3953b27606.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">rails的query cache</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-11-15T00:00:00+00:00" itemprop="datePublished">Nov 15, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>跟踪一下两次查询所使用的query cache</div>
+<div><br /></div>
+<pre><code>class StudentsController &lt; ApplicationController
+  def show
+    id = params[:id]
+    @student =binding.trace_tree(htmp: &#39;ar/query_cache&#39;) do
+      Student.find id
+      Student.find id
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>然后执行</div>
+<div><br /></div>
+<pre><code>[2] pry(main)&gt; app.get &#39;/students/2&#39;
+Started GET &#34;/students/2&#34; for 127.0.0.1 at 2017-11-15 21:57:28 +0800
+   (0.1ms)  SELECT &#34;schema_migrations&#34;.&#34;version&#34; FROM &#34;schema_migrations&#34; ORDER BY &#34;schema_migrations&#34;.&#34;version&#34; ASC
+Processing by StudentsController#show as HTML
+  Parameters: {&#34;id&#34;=&gt;&#34;2&#34;}
+  Student Load (75.4ms)  SELECT  &#34;students&#34;.* FROM &#34;students&#34; WHERE &#34;students&#34;.&#34;id&#34; = ? LIMIT ?  [[&#34;id&#34;, 2], [&#34;LIMIT&#34;, 1]]
+  CACHE Student Load (25.6ms)  SELECT  &#34;students&#34;.* FROM &#34;students&#34; WHERE &#34;students&#34;.&#34;id&#34; = ? LIMIT ?  [[&#34;id&#34;, 2], [&#34;LIMIT&#34;, 1]]
+  Rendering students/show.html.erb within layouts/application
+  Rendered students/show.html.erb within layouts/application (5.4ms)</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>得调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/5bbe490ff321269df5b3be3953b27606/7c734c67e0af70c929c68bc7746299ad.html"><img src="/assets/files/5bbe490ff321269df5b3be3953b27606/79c5f3344166c89371d82329373b2127.png" alt="20171115_215728_424_query_cache.html" /></a></div>
+<div><br /></div>
+<div>检查第二个find，可看到cached_find_by_statement、StatementCache、cache_sql、query_cache.rb这些字眼。这个过程经历的代码大概如下</div>
+<div><br /></div>
+<div>activerecord-5.1.4/lib/active_record/core.rb</div>
+<div><br /></div>
+<pre><code>def cached_find_by_statement(key, &amp;block)
+  cache = @find_by_statement_cache[connection.prepared_statements]
+  cache[key] || cache.synchronize {
+    cache[key] ||= StatementCache.create(connection, &amp;block)
+  }
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>activerecord-5.1.4/lib/active_record/statement_cache.rb</div>
+<div><br /></div>
+<pre><code>def execute(params, klass, connection, &amp;block)
+  bind_values = bind_map.bind params
+
+  sql = query_builder.sql_for bind_values, connection
+
+  klass.find_by_sql(sql, bind_values, preparable: true, &amp;block)
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>activerecord-5.1.4/lib/active_record/connection_adapters/abstract/query_cache.rb</div>
+<div><br /></div>
+<pre><code>def select_all(arel, name = nil, binds = [], preparable: nil)
+  if @query_cache_enabled &amp;&amp; !locked?(arel)
+    arel, binds = binds_from_relation arel, binds
+    sql = to_sql(arel, binds)
+    cache_sql(sql, name, binds) { super(sql, name, binds, preparable: preparable) }
+  else
+    super
+  end
+end
+
+private
+
+  def cache_sql(sql, name, binds)
+    @lock.synchronize do
+      result =
+        if @query_cache[sql].key?(binds)
+          ActiveSupport::Notifications.instrument(
+            &#34;sql.active_record&#34;,
+            sql: sql,
+            binds: binds,
+            name: name,
+            connection_id: object_id,
+            cached: true,
+          )
+          @query_cache[sql][binds]
+        else
+          @query_cache[sql][binds] = yield
+        end
+      result.dup
+    end
+  end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>在query_cache.rb中，调用cache_sql的就只有select_all，莫非所有查询最终都会去到select_all？</div>
+<div><br /></div>
+<div>于是尝试一个稍微复杂的sql</div>
+<div><br /></div>
+<pre><code>[4] pry(main)&gt; binding.trace_tree(htmp: &#39;ar/joins&#39;){ Human.joins(:cells, :spirit).where(&#39;cells.id &gt;= 18&#39;).to_a }
+  Human Load (31.3ms)  SELECT &#34;humen&#34;.* FROM &#34;humen&#34; INNER JOIN &#34;cells&#34; ON &#34;cells&#34;.&#34;human_id&#34; = &#34;humen&#34;.&#34;id&#34; INNER JOIN &#34;spirits&#34; ON &#34;spirits&#34;.&#34;human_id&#34; = &#34;humen&#34;.&#34;id&#34; WHERE (cells.id &gt;= 18)
+=&gt; [#&lt;human:0x007f3f2bab5c18 id:="" 9,="" name:="" "ken",="" created_at:="" sun,="" 05="" nov="" 2017="" 13:07:10="" utc="" +00:00,="" updated_at:="" tue,="" 07="" nov="" 2017="" 14:06:53="" utc="" +00:00=""&gt;,
+#&lt;human:0x007f3f2f286638 id:="" 9,="" name:="" "ken",="" created_at:="" sun,="" 05="" nov="" 2017="" 13:07:10="" utc="" +00:00,="" updated_at:="" tue,="" 07="" nov="" 2017="" 14:06:53="" utc="" +00:00=""&gt;]&lt;/human:0x007f3f2f286638&gt;&lt;/human:0x007f3f2bab5c18&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>完整调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/5bbe490ff321269df5b3be3953b27606/4e79dfb62d70fff0b7f45b686fab7928.html"><img src="/assets/files/5bbe490ff321269df5b3be3953b27606/211aac3fa772ef10b0e38dd92e47dfb3.png" alt="20171115_223217_038_joins.html" /></a></div>
+<div><br /></div>
+<div><span style="line-height: 1.45;">确实是的</span></div>
+<div><br /></div>
+<div><img src="/assets/files/5bbe490ff321269df5b3be3953b27606/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div>那么@query_cache_enabled是怎么设为true的呢？为了得知，加入puts caller</div>
+<div><br /></div>
+<pre><code>module ActiveRecord
+  module ConnectionAdapters
+    module QueryCache
+
+      def enable_query_cache!
+        puts caller
+        @query_cache_enabled = true
+      end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>再rails s访问，得</div>
+<div><br /></div>
+<pre><code>Started GET &#34;/students/2&#34; for 192.168.0.103 at 2017-11-15 23:42:01 +0800
+Cannot render console from 192.168.0.103! Allowed networks: 127.0.0.1, ::1, 127.0.0.0/127.255.255.255
+Processing by StudentsController#show as HTML
+  Parameters: {&#34;id&#34;=&gt;&#34;2&#34;}
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.1.4/lib/active_record/connection_adapters/abstract/query_cache.rb:131:in `configure_query_cache!&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:413:in `block in make_lambda&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:270:in `block in simple&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:511:in `block in invoke_after&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:511:in `each&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:511:in `invoke_after&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:132:in `run_callbacks&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:827:in `_run_checkout_callbacks&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.1.4/lib/active_record/connection_adapters/abstract/connection_pool.rb:807:in `checkout_and_verify&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.1.4/lib/active_record/connection_adapters/abstract/connection_pool.rb:500:in `checkout&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.1.4/lib/active_record/connection_adapters/abstract/connection_pool.rb:374:in `connection&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.1.4/lib/active_record/connection_adapters/abstract/connection_pool.rb:931:in `retrieve_connection&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.1.4/lib/active_record/connection_handling.rb:116:in `retrieve_connection&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.1.4/lib/active_record/connection_handling.rb:88:in `connection&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.1.4/lib/active_record/core.rb:301:in `cached_find_by_statement&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.1.4/lib/active_record/core.rb:183:in `find&#39;
+# ...</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>这里获取数据库连接的checkout方法，已在query_cache.rb中定义了configure_query_cache!的callback</div>
+<div><br /></div>
+<pre><code>def connection
+  @thread_cached_conns[connection_cache_key(@lock_thread || Thread.current)] ||= checkout
+end
+
+def checkout(checkout_timeout = @checkout_timeout)
+  checkout_and_verify(acquire_connection(checkout_timeout))
+end
+
+def checkout_and_verify(c)
+  c._run_checkout_callbacks do
+    c.verify!
+  end
+  c
+rescue
+  remove c
+  c.disconnect!
+  raise
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>那么，为什么在console直接查询（非app.get ...）又没有query cache呢？</div>
+<div><br /></div>
+<div>首先，回调configure_query_cache!是根据connection_pool是否query_cache_enabled来设置connection的enable_query_cache的</div>
+<div><br /></div>
+<pre><code># activerecord-5.1.4/lib/active_record/connection_adapters/abstract/query_cache.rb
+def configure_query_cache!
+  enable_query_cache! if pool.query_cache_enabled
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而connection_pool所include的ConnectionPoolConfiguration要靠有人调用enable_query_cache!来设置缓存开关</div>
+<div><br /></div>
+<pre><code># activerecord-5.1.4/lib/active_record/connection_adapters/abstract/query_cache.rb
+module ActiveRecord                                                                                                                                                                                                                     
+  module ConnectionAdapters
+    module QueryCache
+
+      module ConnectionPoolConfiguration
+        def enable_query_cache!
+          @query_cache_enabled[connection_cache_key(Thread.current)] = true
+          connection.enable_query_cache! if active_connection?
+        end
+
+        def query_cache_enabled
+          @query_cache_enabled[connection_cache_key(Thread.current)]
+        end
+      end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>搜索一下enable_query_cache!，会发现它是hook的</div>
+<div><br /></div>
+<pre><code># activerecord-5.1.4/lib/active_record/query_cache.rb
+module ActiveRecord
+  class QueryCache          
+    def self.run
+      caching_pool = ActiveRecord::Base.connection_pool
+      caching_was_enabled = caching_pool.query_cache_enabled
+
+      caching_pool.enable_query_cache!                                                                                                                                                                                                  
+
+      [caching_pool, caching_was_enabled]
+    end          
+
+    def self.install_executor_hooks(executor = ActiveSupport::Executor)
+      executor.register_hook(self)
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>于是，在run中加入puts caller，再次rails c并app.get</div>
+<div><br /></div>
+<pre><code>[1] pry(main)&gt; app.get &#39;/students/2&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/execution_wrapper.rb:25:in `before&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:413:in `block in make_lambda&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:197:in `block (2 levels) in halting&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:601:in `block (2 levels) in default_terminator&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:600:in `catch&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:600:in `block in default_terminator&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:198:in `block in halting&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:507:in `block in invoke_before&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:507:in `each&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:507:in `invoke_before&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/callbacks.rb:130:in `run_callbacks&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/execution_wrapper.rb:108:in `run!&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/execution_wrapper.rb:70:in `block in run!&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/execution_wrapper.rb:67:in `tap&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.1.4/lib/active_support/execution_wrapper.rb:67:in `run!&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.4/lib/action_dispatch/middleware/executor.rb:10:in `call&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.4/lib/action_dispatch/middleware/static.rb:125:in `call&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/sendfile.rb:111:in `call&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.4/lib/rails/engine.rb:522:in `call&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-test-0.7.0/lib/rack/mock_session.rb:30:in `request&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-test-0.7.0/lib/rack/test.rb:249:in `process_request&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-test-0.7.0/lib/rack/test.rb:125:in `request&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.4/lib/action_dispatch/testing/integration.rb:261:in `process&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.4/lib/action_dispatch/testing/integration.rb:16:in `get&#39;
+(pry):1:in `</code><main><code>&#39;</code></main></pre>
+<div><br /></div>
+<div><br /></div>
+<div>可以看出这个回调在某层middleware被触发</div>
+<div><br /></div>
+<pre><code># actionpack-5.1.4/lib/action_dispatch/middleware/executor.rb
+module ActionDispatch
+  class Executor
+    def initialize(app, executor)
+      @app, @executor = app, executor
+    end
+
+    def call(env)
+      state = @executor.run!
+      begin
+        response = @app.call(env)
+        returned = response &lt;&lt; ::Rack::BodyProxy.new(response.pop) { state.complete! }
+      ensure
+        state.complete! unless returned              
+      end                                                                                           
+    end                                             
+  end                                             
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>因此，只有经过rack才会设置query cache，单单在console中是没打开这一功能的（当然手动enable是可以）</div>
+
+  </div><a class="u-url" href="/2017/11/15/5bbe490ff321269df5b3be3953b27606.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

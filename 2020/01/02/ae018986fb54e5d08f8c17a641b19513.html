@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>chewy的witchcraft的运作分析</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="chewy的witchcraft的运作分析" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="查看witchcraft!方法的定义，发现它只是给当前索引类设置了类变量_witchcraft为true，并确认parse、unparse这些gem有没有引入，此外没干什么…" />
+<meta property="og:description" content="查看witchcraft!方法的定义，发现它只是给当前索引类设置了类变量_witchcraft为true，并确认parse、unparse这些gem有没有引入，此外没干什么…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-01-02T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"查看witchcraft!方法的定义，发现它只是给当前索引类设置了类变量_witchcraft为true，并确认parse、unparse这些gem有没有引入，此外没干什么…","@type":"BlogPosting","headline":"chewy的witchcraft的运作分析","dateModified":"2020-01-02T00:00:00+00:00","url":"/2020/01/02/ae018986fb54e5d08f8c17a641b19513.html","datePublished":"2020-01-02T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2020/01/02/ae018986fb54e5d08f8c17a641b19513.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">chewy的witchcraft的运作分析</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2020-01-02T00:00:00+00:00" itemprop="datePublished">Jan 2, 2020
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>查看witchcraft!方法的定义，发现它只是给当前索引类设置了类变量_witchcraft为true，并确认parse、unparse这些gem有没有引入，此外没干什么</div>
+<div><br /></div>
+<pre><code># chewy-5.1.0/lib/chewy/type/witchcraft.rb
+module Chewy
+  class Type
+    module Witchcraft
+      extend ActiveSupport::Concern
+
+      included do
+        class_attribute :_witchcraft, instance_reader: false, instance_writer: false
+      end
+
+      module ClassMethods
+        def witchcraft!
+          self._witchcraft = true
+          check_requirements!
+        end</code></pre>
+<div><br /></div>
+<div>料想它应该是在查询数据时才组建函数，于是在整个chewy的代码中搜索witchcraft字样，发现如下使用之处，那应该就没错了</div>
+<div><br /></div>
+<pre><code># chewy-5.1.0/lib/chewy/type/import.rb
+def compose(object, crutches = nil, fields: [])
+  crutches ||= Chewy::Type::Crutch::Crutches.new self, [object]
+
+  if witchcraft? &amp;&amp; root.children.present?
+    cauldron(fields: fields).brew(object, crutches)
+  else
+    root.compose(object, crutches, fields: fields)
+  end
+end</code></pre>
+<div><br /></div>
+<div>于是跟踪一下在witchcraft模式下的import过程。先建一个索引类：</div>
+<div><br /></div>
+<pre><code>class BookIndex &lt; Chewy::Index
+  define_type Book.includes(:author, :tags, :comments) do
+    witchcraft!
+    field :title, type: &#39;text&#39;
+    field :author, value: -&gt;{ author.name }
+    field :tags, type: &#39;keyword&#39;, value: -&gt;{ tags.map(&amp;:name) }
+    field :comments, type: &#39;nested&#39; do
+      field :comment, value: -&gt; (book, comment) { comment.comment }
+      field :rating
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div>（此索引类必须写在文件里，因为parse需要根据代码语法树的位置来抽取代码，所以需要文件、行数）</div>
+<div><br /></div>
+<div>然后执行一次import</div>
+<div><br /></div>
+<pre><code>[4] pry(main)&gt; binding.trace_tree(htmp: &#39;witchcraft_import&#39;, transcode: true, no_methods: /perform_request/){ BookIndex::Book.import [1] }
+   (46.6ms)  SELECT COUNT(*) FROM &#34;books&#34; WHERE &#34;books&#34;.&#34;id&#34; IN (1)
+  Book Load (59.8ms)  SELECT &#34;books&#34;.* FROM &#34;books&#34; WHERE &#34;books&#34;.&#34;id&#34; IN (1)
+  Dude Load (65.4ms)  SELECT &#34;dudes&#34;.* FROM &#34;dudes&#34; WHERE &#34;dudes&#34;.&#34;id&#34; IN (1)
+  SQL (159.2ms)  SELECT &#34;taggings&#34;.*, &#34;taggings&#34;.&#34;id&#34; AS t0_r0, &#34;taggings&#34;.&#34;tag_id&#34; AS t0_r1, &#34;taggings&#34;.&#34;taggable_id&#34; AS t0_r2, &#34;taggings&#34;.&#34;taggable_type&#34; AS t0_r3, &#34;taggings&#34;.&#34;tagger_id&#34; AS t0_r4, &#34;taggings&#34;.&#34;tagger_type&#34; AS t0_r5, &#34;taggings&#34;.&#34;context&#34; AS t0_r6, &#34;taggings&#34;.&#34;created_at&#34; AS t0_r7, &#34;tags&#34;.&#34;id&#34; AS t1_r0, &#34;tags&#34;.&#34;name&#34; AS t1_r1, &#34;tags&#34;.&#34;taggings_count&#34; AS t1_r2 FROM &#34;taggings&#34; LEFT OUTER JOIN &#34;tags&#34; ON &#34;tags&#34;.&#34;id&#34; = &#34;taggings&#34;.&#34;tag_id&#34; WHERE &#34;taggings&#34;.&#34;context&#34; = ? AND &#34;taggings&#34;.&#34;taggable_type&#34; = &#39;Book&#39; AND &#34;taggings&#34;.&#34;taggable_id&#34; IN (1)  [[&#34;context&#34;, &#34;tags&#34;]]
+  Comment Load (69.1ms)  SELECT &#34;comments&#34;.* FROM &#34;comments&#34; WHERE &#34;comments&#34;.&#34;book_id&#34; IN (1)
+  BookIndex::Book Import (29470.0ms) {:index=&gt;1}
+=&gt; true</code></pre>
+<div><br /></div>
+<div>得调用栈如下，即使屏蔽了faraday的perform_request，依然非常庞大</div>
+<div><br /></div>
+<div><a href="/assets/files/ae018986fb54e5d08f8c17a641b19513/51cf1c73235aea4a78971da6c973e4f2.html"><img src="/assets/files/ae018986fb54e5d08f8c17a641b19513/47a83afe63d3ef18df565a3ee5164e60.png" alt="20200102_155803_086_witchcraft_import.html" /></a></div>
+<div><br /></div>
+<div>于是尝试找出关键位置。从compose方法可见，witchcraft会用到Cauldron#brew，于是检查其代码</div>
+<div><br /></div>
+<pre><code># chewy-5.1.0/lib/chewy/type/witchcraft.rb
+class Cauldron
+  attr_reader :locals
+
+  # @param type [Chewy::Type] type for composition
+  # @param fields [Array<symbol>] restricts the fields for composition
+  def initialize(type, fields: [])
+    @type = type
+    @locals = []
+    @fields = fields
+  end
+
+  def brew(object, crutches = nil)
+    alicorn.call(locals, object, crutches).as_json
+  end
+
+private
+
+  def alicorn
+    @alicorn ||= class_eval &lt;&lt;-RUBY, __FILE__, __LINE__ + 1
+      -&gt; (locals, object0, crutches) do
+        #{composed_values(@type.root, 0)}
+      end
+    RUBY
+  end
+
+  def composed_values(field, nesting)
+    source = &lt;&lt;-RUBY
+      non_proc_values#{nesting} = #{non_proc_values(field, nesting)}
+      proc_values#{nesting} = #{proc_values(field, nesting)}
+      non_proc_values#{nesting}.merge!(proc_values#{nesting})
+    RUBY
+    source.gsub(&#34;\n,&#34;, &#39;,&#39;)
+  end</symbol></code></pre>
+<div><br /></div>
+<div>可见composed_values方法会返回non_pro_values字样，于是在调用栈中查找该返回值，得：</div>
+<div><br /></div>
+<div><img src="/assets/files/ae018986fb54e5d08f8c17a641b19513/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div>即是，alicorn方法会生成以下block，并缓存于@alicorn中：</div>
+<div><br /></div>
+<pre><code>-&gt; (locals, object0, crutches) do
+  non_proc_values0 =               (if object0.is_a?(Hash)
+      {
+        &#39;title&#39;.freeze =&gt; object0.has_key?(:title) ? object0[:title] : object0[&#39;title&#39;], &#39;comments&#39;.freeze =&gt;
+        # ...
+      }
+    else
+      {
+        &#39;title&#39;.freeze =&gt; object0.title, &#39;comments&#39;.freeze =&gt;
+        # ...
+      }
+    end)
+  
+  proc_values0 =               {
+      &#39;author&#39;.freeze =&gt; (object0.author.name), &#39;tags&#39;.freeze =&gt; (object0.tags.map(&amp;:name))
+    }
+  
+  non_proc_values0.merge!(proc_values0)
+end</code></pre>
+<div><br /></div>
+<div>当要调用时，object0会传入Book对象，至于crutches参数，因为定义索引时没有为comments数据使用crutches模式，所以生成的代码里也没有crutches字眼的替换</div>
+<div><br /></div>
+<div>再看看非witchcraft的源码。根据源码，witchcraft模式下json数据的生成是依靠cauldron(fields: fields).brew(object, crutches)，而非witchcraft则是root.compose(object, crutches, fields: fields)。于是查找compose，得：</div>
+<div><br /></div>
+<pre><code># chewy-5.1.0/lib/chewy/fields/root.rb
+def compose(object, crutches = nil, fields: [])
+  result = evaluate([object, crutches])
+
+  if children.present?
+    child_fields = if fields.present?
+      child_hash.slice(*fields).values
+    else
+      children
+    end
+
+    child_fields.each_with_object({}) do |field, memo|
+      memo.merge!(field.compose(result, crutches) || {})
+    end.as_json
+  elsif fields.present?
+    result.as_json(only: fields, root: false)
+  else
+    result.as_json(root: false)
+  end
+end</code></pre>
+<div><br /></div>
+<div>root的compose如上，root下的field以及field下的field，递归如下</div>
+<div><br /></div>
+<pre><code># chewy-5.1.0/lib/chewy/fields/base.rb
+def compose(*objects)
+  result = evaluate(objects)
+
+  if children.present? &amp;&amp; !multi_field?
+    result = if result.respond_to?(:to_ary)
+      result.to_ary.map { |item| compose_children(item, *objects) }
+    else
+      compose_children(result, *objects)
+    end
+  end
+
+  {name =&gt; result}
+end
+
+private
+
+def evaluate(objects)
+  object = objects.first
+
+  if value.is_a?(Proc)
+    if value.arity.zero?
+      object.instance_exec(&amp;value)
+    elsif value.arity &lt; 0
+      value.call(*object)
+    else
+      value.call(*objects.first(value.arity))
+    end
+  else
+    message = value.is_a?(Symbol) || value.is_a?(String) ? value.to_sym : name
+
+    if object.is_a?(Hash)
+      if object.key?(message)
+        object[message]
+      else
+        object[message.to_s]
+      end
+    else
+      object.send(message)
+    end
+  end
+end
+
+def compose_children(value, *parent_objects)
+  return unless value
+
+  children.each_with_object({}) do |field, result|
+    result.merge!(field.compose(value, *parent_objects) || {})
+  end
+end</code></pre>
+<div><br /></div>
+<div>可见每读取一个字段的值，都要判断索引字段是否通过Proc定义，其中还有一些instance_exec、send之类的操作，性能应该不及witchcraft里代码拼接的写死</div>
+<div><br /></div>
+<div>再检查brew和compose运行时的调用栈底下有多少函数调用（brew应该调用两次再作检查，因为第一次需要生产代码）：</div>
+<div><br /></div>
+<div>compose有2225个调用</div>
+<div><br /></div>
+<div><img src="/assets/files/ae018986fb54e5d08f8c17a641b19513/91eee3f8d75dbb327ede474944726554.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div>brew有2115</div>
+<div><br /></div>
+<div><img src="/assets/files/ae018986fb54e5d08f8c17a641b19513/f7cb588f62bc16ba6c8ac0b4956bd711.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div>好吧，相差不大，而实际从时间上看，在个人机器上也是几十毫秒的差别，不过有提升的话还是尽量用一下witchcraft吧……</div>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2020/01/02/ae018986fb54e5d08f8c17a641b19513.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

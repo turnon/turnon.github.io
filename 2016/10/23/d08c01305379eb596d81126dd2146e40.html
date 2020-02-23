@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>ruby类变量的陷阱与替代实现</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="ruby类变量的陷阱与替代实现" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="@@是不推荐使用的…" />
+<meta property="og:description" content="@@是不推荐使用的…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2016-10-23T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"@@是不推荐使用的…","@type":"BlogPosting","headline":"ruby类变量的陷阱与替代实现","dateModified":"2016-10-23T00:00:00+00:00","url":"/2016/10/23/d08c01305379eb596d81126dd2146e40.html","datePublished":"2016-10-23T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2016/10/23/d08c01305379eb596d81126dd2146e40.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">ruby类变量的陷阱与替代实现</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2016-10-23T00:00:00+00:00" itemprop="datePublished">Oct 23, 2016
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><b>@@是不推荐使用的</b></div>
+<div><br /></div>
+<div>因为class variables are bound at compile-time</div>
+<div><br /></div>
+<div>Like unqualified constants, class variables are bound to your current scope when the .rb file is being parsed.</div>
+<div>This will probably trip you up when you are writing a module or trait that defines class variables for other classes.</div>
+<div><br /></div>
+<div>Say you have the following code:</div>
+<div><br /></div>
+<pre><code>module Mod
+  def foo
+    @@foo
+  end
+end
+
+class Klass
+  include Mod
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>@@foo does not mean Klass::@@foo (qualifier added to make my point; it is not valid Ruby expression). It actually means Mod::@@foo and is shared between Mod, all classes including Mod as well as all their subclasses.</div>
+<div><br /></div>
+<div>Also note that only the class and module keywords can be used to change the scope to which class variables are bound. You can not change scope by using class_eval or instance_eval. For instance, the code below declares a variable @@counter that is shared between all classes of your application:</div>
+<div><br /></div>
+<pre><code>ActiveRecord::Base.class_eval do
+  @@counter = 1
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>When encountering such code, Ruby will warn you:</div>
+<div><br /></div>
+<pre><code>warning: class variable access from toplevel</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>Unlike constants, which you can qualify like Klass::CONSTANT, there is no way to qualify a class variable like Klass::@@variable. When you want to tell Ruby that you mean another scope than the current scope, you need to use class_variable_get and class_variable_set.</div>
+<div><br /></div>
+<div><b>替代1：类的实例变量</b></div>
+<div><br /></div>
+<div>缺点就是无法让子类自动查找到</div>
+<div><br /></div>
+<div><b>替代2：hanami util的class_attribute</b></div>
+<div><br /></div>
+<div>缺点，它是通过inherited的hook来将当前变量值传给子类，因而如果父类本身需要另外一些inherited逻辑，就比较麻烦</div>
+<div><br /></div>
+<div>摘自utils/lib/hanami/utils/class_attribute.rb（de705e02b83f52df4edb4e9e37c79d053acb99da）：<br /></div>
+<div><br /></div>
+<pre><code>require &#39;set&#39;
+require &#39;hanami/utils/duplicable&#39;
+
+module Hanami
+  module Utils
+    # Inheritable class level variable accessors.
+    # @since 0.1.0
+    #
+    # @see Hanami::Utils::ClassAttribute::ClassMethods
+    module ClassAttribute
+      def self.included(base)
+        base.extend ClassMethods
+      end
+
+      # @since 0.1.0
+      # @api private
+      module ClassMethods
+        # Defines a class level accessor for the given attribute(s).
+        #
+        # A value set for a superclass is automatically available by their
+        # subclasses, unless a different value is explicitely set within the
+        # inheritance chain.
+        #
+        # @param attributes [Array<symbol>] a single or multiple attribute name(s)
+        #
+        # @return [void]
+        #
+        # @since 0.1.0
+        #
+        # @example
+        #   require &#39;hanami/utils/class_attribute&#39;
+        #
+        #   class Vehicle
+        #     include Hanami::Utils::ClassAttribute
+        #     class_attribute :engines, :wheels
+        #
+        #     self.engines = 0
+        #     self.wheels  = 0
+        #   end
+        #
+        #   class Car &lt; Vehicle
+        #     self.engines = 1
+        #     self.wheels  = 4
+        #   end
+        #
+        #   class Airplane &lt; Vehicle
+        #     self.engines = 4
+        #     self.wheels  = 16
+        #   end
+        #
+        #   class SmallAirplane &lt; Airplane
+        #     self.engines = 2
+        #     self.wheels  = 8
+        #   end
+        #
+        #   Vehicle.engines # =&gt; 0
+        #   Vehicle.wheels  # =&gt; 0
+        #
+        #   Car.engines # =&gt; 1
+        #   Car.wheels  # =&gt; 4
+        #
+        #   Airplane.engines # =&gt; 4
+        #   Airplane.wheels  # =&gt; 16
+        #
+        #   SmallAirplane.engines # =&gt; 2
+        #   SmallAirplane.wheels  # =&gt; 8
+        def class_attribute(*attributes)
+          singleton_class.class_eval do
+            attr_accessor(*attributes)
+          end
+
+          class_attributes.merge(attributes)
+        end
+
+        protected
+
+        # @see Class#inherited
+        def inherited(subclass)
+          class_attributes.each do |attr|
+            value = send(attr)
+            value = Duplicable.dup(value)
+            subclass.class_attribute attr
+            subclass.send(&#34;#{attr}=&#34;, value)
+          end
+
+          super
+        end
+
+        private
+
+        # Class accessor for class attributes.
+        # @private
+        def class_attributes
+          @class_attributes ||= Set.new
+        end
+      end
+    end
+  end
+end</symbol></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><b>替代3：active support的class_attribute</b></div>
+<div><br /></div>
+<div>缺点：没明显缺点，就是有点复杂</div>
+<div><br /></div>
+<div>摘自activesupport-5.0.0.1/lib/active_support/core_ext/class/attribute.rb：</div>
+<div><br /></div>
+<pre><code>class Class
+  # 因是定义类的单例类的实例方法，所以子类也能访问到
+  #
+  #   class Base
+  #     class_attribute :setting
+  #   end
+  #
+  #   class Subclass &lt; Base
+  #   end
+  #
+  #   Base.setting = true
+  #   Subclass.setting            # =&gt; true
+  #   Subclass.setting = false
+  #   Subclass.setting            # =&gt; false
+  #   Base.setting                # =&gt; true
+  #
+  # 修改内容的话，会影响父类，因子类的单例类继承自父类的单例类
+  # 而父类的单例类的实例方法的定义有闭包
+  #
+  #   Base.setting = []
+  #   Base.setting                # =&gt; []
+  #   Subclass.setting            # =&gt; []
+  #
+  #   # Appending in child changes both parent and child because it is the same object:
+  #   Subclass.setting &lt;&lt; :foo
+  #   Base.setting               # =&gt; [:foo]
+  #   Subclass.setting           # =&gt; [:foo]
+  #
+  #   除非重新赋值
+  #
+  #   Base.setting = []
+  #   Subclass.setting += [:foo]
+  #   Base.setting               # =&gt; []
+  #   Subclass.setting           # =&gt; [:foo]
+  #
+  # For convenience, an instance predicate method is defined as well.
+  # To skip it, pass <tt>instance_predicate: false</tt>.
+  #
+  #   Subclass.setting?       # =&gt; false
+  #
+  # 实例会先探测自己是否有该名字的实例变量，因此，可重写而不影响类变量
+  #
+  #   Base.setting = true
+  #   object = Base.new
+  #   object.setting          # =&gt; true
+  #   object.setting = false
+  #   object.setting          # =&gt; false
+  #   Base.setting            # =&gt; true
+  #
+  # To opt out of the instance reader method, pass <tt>instance_reader: false</tt>.
+  #
+  #   object.setting          # =&gt; NoMethodError
+  #   object.setting?         # =&gt; NoMethodError
+  #
+  # To opt out of the instance writer method, pass <tt>instance_writer: false</tt>.
+  #
+  #   object.setting = false  # =&gt; NoMethodError
+  #
+  # To opt out of both instance methods, pass <tt>instance_accessor: false</tt>.
+  def class_attribute(*attrs)
+    options = attrs.extract_options!
+
+    # 默认带有，除非设false
+    instance_reader = options.fetch(:instance_accessor, true) &amp;&amp; options.fetch(:instance_reader, true)
+    instance_writer = options.fetch(:instance_accessor, true) &amp;&amp; options.fetch(:instance_writer, true)
+    instance_predicate = options.fetch(:instance_predicate, true)
+
+    attrs.each do |name|
+
+      # 定义class_reader
+      remove_possible_singleton_method(name)
+      define_singleton_method(name) { nil }
+
+      # 定义类class_reader?
+      remove_possible_singleton_method(&#34;#{name}?&#34;)
+      define_singleton_method(&#34;#{name}?&#34;) { !!public_send(name) } if instance_predicate
+
+      ivar = &#34;@#{name}&#34;
+
+      # 定义类writer，其做法是：
+      # 当被调用时，重定义class_reader
+      remove_possible_singleton_method(&#34;#{name}=&#34;)
+      define_singleton_method(&#34;#{name}=&#34;) do |val|
+        singleton_class.class_eval do
+          remove_possible_method(name)
+          define_method(name) { val }
+        end
+
+        # 如果是这样调用：
+        #   class &lt;&lt; A; class_attribute :v; end
+        # 则只有在：
+        #   class &lt;&lt; A; self.v = 123; end
+        # 才能从A.v访问到，因调用&#34;#{name}=&#34;后才会定义reader
+        # 对于一般对象：
+        #   class &lt;&lt; A; class_attribute :v; end
+        # 也同理
+        # 不过，有人这样用吗……
+        if singleton_class?
+          class_eval do
+            remove_possible_method(name)
+            define_method(name) do
+              if instance_variable_defined? ivar
+                instance_variable_get ivar
+              else
+                singleton_class.send name
+              end
+            end
+          end
+        end
+        val
+      end
+
+      # 因instance_writer用的是attr_writer，修改实例变量
+      # 所以需先检查实例变量，没有的话，才用类变量
+      if instance_reader
+        remove_possible_method name
+        define_method(name) do
+          if instance_variable_defined?(ivar)
+            instance_variable_get ivar
+          else
+            self.class.public_send name
+          end
+        end
+
+        remove_possible_method &#34;#{name}?&#34;
+        define_method(&#34;#{name}?&#34;) { !!public_send(name) } if instance_predicate
+      end
+
+      if instance_writer
+        remove_possible_method &#34;#{name}=&#34;
+        attr_writer name
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2016/10/23/d08c01305379eb596d81126dd2146e40.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

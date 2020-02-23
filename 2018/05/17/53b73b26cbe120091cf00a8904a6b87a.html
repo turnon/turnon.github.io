@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>ActiveRecord的嵌套事务</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="ActiveRecord的嵌套事务" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="先看现象，再看源码…" />
+<meta property="og:description" content="先看现象，再看源码…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2018-05-17T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"先看现象，再看源码…","@type":"BlogPosting","headline":"ActiveRecord的嵌套事务","dateModified":"2018-05-17T00:00:00+00:00","url":"/2018/05/17/53b73b26cbe120091cf00a8904a6b87a.html","datePublished":"2018-05-17T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2018/05/17/53b73b26cbe120091cf00a8904a6b87a.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">ActiveRecord的嵌套事务</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2018-05-17T00:00:00+00:00" itemprop="datePublished">May 17, 2018
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>先看现象，再看源码</div>
+<div><br /></div>
+<div>在父transaction作rollback，两个都rollback</div>
+<div><br /></div>
+<pre><code>[2] pry(main)&gt; binding.trace_tree(htmp: &#39;tx_rollback_parent&#39;){ Post.transaction{ Post.create(title: &#39;b&#39;); Post.transaction{ Post.create(title: &#39;c&#39;) }; raise ActiveRecord::Rollback } }
+   (26.5ms)  BEGIN
+  SQL (40.3ms)  INSERT INTO &#34;posts&#34; (&#34;created_at&#34;, &#34;title&#34;, &#34;updated_at&#34;) VALUES ($1, $2, $3) RETURNING &#34;id&#34;  [[&#34;created_at&#34;, &#34;2019-06-27 13:04:54.258657&#34;], [&#34;title&#34;, &#34;b&#34;], [&#34;updated_at&#34;, &#34;2019-06-27 13:04:54.258657&#34;]]
+  SQL (41.7ms)  INSERT INTO &#34;posts&#34; (&#34;created_at&#34;, &#34;title&#34;, &#34;updated_at&#34;) VALUES ($1, $2, $3) RETURNING &#34;id&#34;  [[&#34;created_at&#34;, &#34;2019-06-27 13:04:57.019647&#34;], [&#34;title&#34;, &#34;c&#34;], [&#34;updated_at&#34;, &#34;2019-06-27 13:04:57.019647&#34;]]
+   (27.0ms)  ROLLBACK
+=&gt; nil</code></pre>
+<div><br /></div>
+<div>调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/53b73b26cbe120091cf00a8904a6b87a/84d1df5a971e044ae5dda19a554928a0.html"><img src="/assets/files/53b73b26cbe120091cf00a8904a6b87a/8702ce0f58578dbfcd5a048d70fcd6f3.png" alt="20190627_130453_469_tx_rollback_parent.html" /></a></div>
+<div><br /></div>
+<div>在子transaction作rollback，两个都commit</div>
+<div><br /></div>
+<pre><code>[3] pry(main)&gt; binding.trace_tree(htmp: &#39;tx_rollback_child&#39;){ Post.transaction{ Post.create(title: &#39;b&#39;); Post.transaction{ Post.create(title: &#39;c&#39;); raise ActiveRecord::Rollback } } }
+   (25.1ms)  BEGIN
+  SQL (38.4ms)  INSERT INTO &#34;posts&#34; (&#34;created_at&#34;, &#34;title&#34;, &#34;updated_at&#34;) VALUES ($1, $2, $3) RETURNING &#34;id&#34;  [[&#34;created_at&#34;, &#34;2019-06-27 13:05:15.824843&#34;], [&#34;title&#34;, &#34;b&#34;], [&#34;updated_at&#34;, &#34;2019-06-27 13:05:15.824843&#34;]]
+  SQL (39.7ms)  INSERT INTO &#34;posts&#34; (&#34;created_at&#34;, &#34;title&#34;, &#34;updated_at&#34;) VALUES ($1, $2, $3) RETURNING &#34;id&#34;  [[&#34;created_at&#34;, &#34;2019-06-27 13:05:18.605931&#34;], [&#34;title&#34;, &#34;c&#34;], [&#34;updated_at&#34;, &#34;2019-06-27 13:05:18.605931&#34;]]
+   (25.2ms)  COMMIT
+=&gt; nil</code></pre>
+<div><br /></div>
+<div>调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/53b73b26cbe120091cf00a8904a6b87a/00cc968d6cba7a20f7c96116b4526626.html"><img src="/assets/files/53b73b26cbe120091cf00a8904a6b87a/f425b7c5f3f48fe0e301a1dbc33f4578.png" alt="20190627_130515_228_tx_rollback_child.html" /></a></div>
+<div><br /></div>
+<div>子transaction有requires_new，在父transaction作rollback，两个都rollback</div>
+<div><br /></div>
+<pre><code>[4] pry(main)&gt; binding.trace_tree(htmp: &#39;tx_rq_new_rollback_parent&#39;){ Post.transaction{ Post.create(title: &#39;b&#39;); Post.transaction(requires_new: true){ Post.create(title: &#39;c&#39;) }; raise ActiveRecord::Rollback } }
+   (25.5ms)  BEGIN
+  SQL (41.8ms)  INSERT INTO &#34;posts&#34; (&#34;created_at&#34;, &#34;title&#34;, &#34;updated_at&#34;) VALUES ($1, $2, $3) RETURNING &#34;id&#34;  [[&#34;created_at&#34;, &#34;2019-06-27 13:05:34.815014&#34;], [&#34;title&#34;, &#34;b&#34;], [&#34;updated_at&#34;, &#34;2019-06-27 13:05:34.815014&#34;]]
+   (27.1ms)  SAVEPOINT active_record_1
+  SQL (42.6ms)  INSERT INTO &#34;posts&#34; (&#34;created_at&#34;, &#34;title&#34;, &#34;updated_at&#34;) VALUES ($1, $2, $3) RETURNING &#34;id&#34;  [[&#34;created_at&#34;, &#34;2019-06-27 13:05:37.624946&#34;], [&#34;title&#34;, &#34;c&#34;], [&#34;updated_at&#34;, &#34;2019-06-27 13:05:37.624946&#34;]]
+   (26.8ms)  RELEASE SAVEPOINT active_record_1
+   (26.9ms)  ROLLBACK
+=&gt; nil</code></pre>
+<div><br /></div>
+<div>调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/53b73b26cbe120091cf00a8904a6b87a/813636f0dd571346b2cd5870c95d02dc.html"><img src="/assets/files/53b73b26cbe120091cf00a8904a6b87a/1d298612b87003fac5541c86b5a8592f.png" alt="20190627_130534_104_tx_rq_new_rollback_parent.html" /></a></div>
+<div><br /></div>
+<div>子transaction有requires_new，在子transaction作rollback，只有子transaction会rollback，而父transaction会commit</div>
+<div><br /></div>
+<pre><code>[5] pry(main)&gt; binding.trace_tree(htmp: &#39;tx_rq_new_rollback_child&#39;){ Post.transaction{ Post.create(title: &#39;b&#39;); Post.transaction(requires_new: true){ Post.create(title: &#39;c&#39;); raise ActiveRecord::Rollback } } }
+   (26.3ms)  BEGIN
+  SQL (38.3ms)  INSERT INTO &#34;posts&#34; (&#34;created_at&#34;, &#34;title&#34;, &#34;updated_at&#34;) VALUES ($1, $2, $3) RETURNING &#34;id&#34;  [[&#34;created_at&#34;, &#34;2019-06-27 13:05:57.555988&#34;], [&#34;title&#34;, &#34;b&#34;], [&#34;updated_at&#34;, &#34;2019-06-27 13:05:57.555988&#34;]]
+   (27.3ms)  SAVEPOINT active_record_1
+  SQL (42.3ms)  INSERT INTO &#34;posts&#34; (&#34;created_at&#34;, &#34;title&#34;, &#34;updated_at&#34;) VALUES ($1, $2, $3) RETURNING &#34;id&#34;  [[&#34;created_at&#34;, &#34;2019-06-27 13:06:00.295987&#34;], [&#34;title&#34;, &#34;c&#34;], [&#34;updated_at&#34;, &#34;2019-06-27 13:06:00.295987&#34;]]
+   (29.6ms)  ROLLBACK TO SAVEPOINT active_record_1
+   (26.0ms)  COMMIT
+=&gt; nil</code></pre>
+<div><br /></div>
+<div>调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/53b73b26cbe120091cf00a8904a6b87a/db0ebc1fe781ffbeb92c076a457e1cb1.html"><img src="/assets/files/53b73b26cbe120091cf00a8904a6b87a/712ac0af5b85e64fa86251a91506704e.png" alt="20190627_130556_760_tx_rq_new_rollback_child.html" /></a></div>
+<div><br /></div>
+<div><b>上述的子事务rollback而不影响父事务是如何实现的呢？</b></div>
+<div><br /></div>
+<div>在未调用过transaction的情况下（current_transaction为joinable?等于false的伪事务ClosedTransaction），或者requires_new为false、nil的情况下，transaction都会走within_new_transaction，其他情况会直接yield</div>
+<div><br /></div>
+<div>而因为我们调用的transaction方法，其实是Thread.current中持有的connection的transaction方法，所以直接yield的时候，尽管是transaction{ transaction{} }，但表现起来这两个block是串行而非嵌套的</div>
+<div><br /></div>
+<div>当利用requires_new开启子事务时，父与子block的CRUD才是嵌套运行在不同的within_new_transaction之中的。这时，子事务的ActiveRecord::Rollback或其他Exception，会在本层捕获，然后调用rollback_transaction，给数据库发rollback命令。之后再把异常往上抛给transaction方法，transaction方法会忽略ActiveRecord::Rollback，这就使得父事务不会因子事务的ActiveRecord::Rollback而rollback，但其他类型的异常还是会导致父事务rollback</div>
+<div><br /></div>
+<pre><code># activerecord-4.1.4/lib/active_record/connection_adapters/abstract/database_statements.rb
+module ActiveRecord
+  module ConnectionAdapters
+    module DatabaseStatements
+
+      def transaction(options = {})
+        options.assert_valid_keys :requires_new, :joinable, :isolation
+
+        if !options[:requires_new] &amp;&amp; current_transaction.joinable?
+          if options[:isolation]
+            raise ActiveRecord::TransactionIsolationError, &#34;cannot set isolation when joining a transaction&#34;
+          end
+
+          yield
+        else
+          within_new_transaction(options) { yield }
+        end
+      rescue ActiveRecord::Rollback
+        # rollbacks are silently swallowed
+      end
+
+      def within_new_transaction(options = {}) #:nodoc:
+        transaction = begin_transaction(options)
+        yield
+      rescue Exception =&gt; error
+        rollback_transaction if transaction
+        raise
+      ensure
+        begin
+          commit_transaction unless error
+        rescue Exception
+          rollback_transaction
+          raise
+        end
+      end</code></pre>
+<div><br /></div>
+<div>begin_transaction调用的是当前transaction实例的begin方法，如果当前@transaction是顶级的伪事务ClosedTransaction，则会开一个RealTransaction，否则检查是否finishing?（finishing?可通过掉rollback和commit置为true，一般不会手动调用，而是让事务block的rescue和ensure来调），不是finishing?则会开一个SavepointTransaction，并设置其parent为当前@transaction。当begin方法返回时@transaction会赋值为新的transaction实例，源码如下</div>
+<div><br /></div>
+<pre><code># activerecord-4.1.4/lib/active_record/connection_adapters/abstract/database_statements.rb
+def begin_transaction(options = {})
+  @transaction = @transaction.begin(options)
+end
+
+def commit_transaction
+  @transaction = @transaction.commit
+end
+
+def rollback_transaction
+  @transaction = @transaction.rollback
+end</code></pre>
+<div><br /></div>
+<div>（在rails 5中，父子结构是使用栈实现的，栈顶是子，子事务运行完，则会pop掉）</div>
+<div><br /></div>
+<div>此外，SavepointTransaction的初始化过程中还会调用connection.create_savepoint，底层运作是让具体数据库adapter发送创建savepoint的语句，如下流程</div>
+<div><br /></div>
+<div><img src="/assets/files/53b73b26cbe120091cf00a8904a6b87a/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /><br /></div>
+<div><br /></div>
+<div>rollback的实现同理，要分开RealTransaction和SavepointTransaction，SavepointTransaction发的是rollback savepoint命令，RealTransaction发rollback</div>
+<div><br /></div>
+<div>源码如下</div>
+<div><br /></div>
+<pre><code># activerecord-4.1.4/lib/active_record/connection_adapters/abstract/transaction.rb
+module ActiveRecord
+  module ConnectionAdapters
+
+    class ClosedTransaction &lt; Transaction    
+      def begin(options = {})
+        RealTransaction.new(connection, self, options)
+      end
+    end
+  
+    class OpenTransaction &lt; Transaction
+      def begin(options = {})
+        if finishing?
+          parent.begin
+        else
+          SavepointTransaction.new(connection, self, options)
+        end
+      end
+
+      def rollback
+        @finishing = true
+        perform_rollback
+        parent
+      end
+    end
+
+    class RealTransaction &lt; OpenTransaction
+      def perform_rollback
+        connection.rollback_db_transaction
+        rollback_records
+      end
+    end
+
+    class SavepointTransaction &lt; OpenTransaction194
+      def perform_rollback
+        connection.rollback_to_savepoint
+        rollback_records
+      end
+    end
+
+  end
+end</code></pre>
+<div><br /></div>
+<div><b>那为什么非require_new的子transaction里raise ActiveRecord::Rollback，对父子都没有影响呢？</b></div>
+<div><br /></div>
+<div>还是看回transaction和within_new_transaction的源码。没有require_new时，子transaction是的rollback实际是</div>
+<div><br /></div>
+<pre><code>transaction do
+  within_new_transaction do
+    transaction do
+      raise ActiveRecord::Rollback
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div>内层transaction并没有自己的<span style="font-size: medium; letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; color: rgb(0, 0, 0); font-family: 微软雅黑; font-variant-caps: normal; font-variant-ligatures: normal;">within_new_transaction，所以没有rescue调用</span>rollback_transaction方法，而且，transaction方法本来就会吃掉ActiveRecord::Rollback，所以，也不会让父事务感知，于是没有任何rollback，这其实也不构成父子事务。当然其他异常还是会导致整个事务rollback的。</div>
+<div><br /></div>
+<div><b>使用技巧</b></div>
+<div><br /></div>
+<div>如果确定当前事务会被嵌套使用，而且希望所有嵌套在外的事务都会因为内层的错误而rollback，那就raise ActiveRecord::Rollback以外的异常。</div>
+<div><br /></div>
+<div>如果希望只rollback内层的事务，则使用requires_new和raise ActiveRecord::Rollback。</div>
+
+  </div><a class="u-url" href="/2018/05/17/53b73b26cbe120091cf00a8904a6b87a.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>rake的import</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="rake的import" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="设Rakefile如下…" />
+<meta property="og:description" content="设Rakefile如下…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-08-09T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"设Rakefile如下…","@type":"BlogPosting","headline":"rake的import","dateModified":"2017-08-09T00:00:00+00:00","url":"/2017/08/09/ddc4f9c3217e4f578464925ee878e270.html","datePublished":"2017-08-09T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/08/09/ddc4f9c3217e4f578464925ee878e270.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">rake的import</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-08-09T00:00:00+00:00" itemprop="datePublished">Aug 9, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>设Rakefile如下</div>
+<div><br /></div>
+<pre><code>desc &#39;default task&#39;
+task default: [:print]
+
+desc &#39;print task&#39;
+task :print do
+  puts &#39;hello&#39;
+end
+
+require &#39;trace_tree&#39;
+
+binding.trace_tree do
+  import &#39;dep.rb&#39;
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>dep.rb文件如下</div>
+<div><br /></div>
+<pre><code>puts caller</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>运行一下</div>
+<div><br /></div>
+<pre><code>$ rake
+Object#block in &lt;top (required)=""&gt; /home/z/test_rails/rk/Rakefile:10
+└─Object#import $GemPath0/gems/rake-12.0.0/lib/rake/dsl_definition.rb:182
+  └─Array#each $GemPath0/gems/rake-12.0.0/lib/rake/dsl_definition.rb:183
+    └─Object#block in import $GemPath0/gems/rake-12.0.0/lib/rake/dsl_definition.rb:183
+      ├─Rake.application $GemPath0/gems/rake-12.0.0/lib/rake/rake_module.rb:7
+      └─Rake::Application#add_import $GemPath0/gems/rake-12.0.0/lib/rake/application.rb:754
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/rake_module.rb:28:in `load&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/rake_module.rb:28:in `load_rakefile&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/default_loader.rb:10:in `load&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:765:in `load_imports&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:695:in `raw_load_rakefile&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:96:in `block in load_rakefile&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:178:in `standard_exception_handling&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:95:in `load_rakefile&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:79:in `block in run&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:178:in `standard_exception_handling&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:77:in `run&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/exe/rake:27:in `&lt;top (required)=""&gt;&#39;
+/home/z/.rbenv/versions/2.4.0/bin/rake:22:in `load&#39;
+/home/z/.rbenv/versions/2.4.0/bin/rake:22:in `&lt;/top&gt;&lt;/top&gt;</code><main><code>&#39;
+hello</code></main></pre>
+<div><br /></div>
+<div><br /></div>
+<div>用源码来看，import只是将文件名暂存起来</div>
+<div><br /></div>
+<pre><code>def add_import(fn)
+  @pending_imports &lt;&lt; fn
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>然后，在读完整个rakefile（即做完task、import等等）之后，运行任务之前，才加载这些要import的文件，所以即使importee依赖importor中的某些东西（例如importor中定义的方法），import语句也不必写在被依赖之物的后面</div>
+<div><br /></div>
+<pre><code>def load_imports
+  while fn = @pending_imports.shift
+    next if @imported.member?(fn)
+    fn_task = lookup(fn) and fn_task.invoke
+    ext = File.extname(fn)
+    loader = @loaders[ext] || @default_loader
+    loader.load(fn)
+    if fn_task = lookup(fn) and fn_task.needed?
+      fn_task.reenable
+      fn_task.invoke
+      loader.load(fn)
+    end
+    @imported &lt;&lt; fn
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而Rake Task Management Essentials一书中的例子</div>
+<div><br /></div>
+<pre><code>task &#39;dep.rb&#39; do
+  sh %Q{echo &#34;puts &#39;Hello, from the dep.rb&#39;&#34; &gt; dep.rb}
+end
+
+task :hello =&gt; &#39;dep.rb&#39;
+
+import &#39;dep.rb&#39;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>运行时输出</div>
+<div><br /></div>
+<pre><code>$ rake hello
+echo &#34;puts &#39;Hello, from the dep.rb&#39;&#34; &gt; dep.rb
+Hello, from the dep.rb
+echo &#34;puts &#39;Hello, from the dep.rb&#39;&#34; &gt; dep.rb
+Hello, from the dep.rb</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>与书中只输出一次echo...Hello不符，是因为有两次fn_task.invoke。这里的机制主要是lookup然后invoke，如果import的参数恰好是之前定义过的task，则会先调用一下这个task</div>
+<div><br /></div>
+<pre><code># rake-12.0.0/lib/rake/task_manager.rb
+def lookup(task_name, initial_scope=nil)
+  initial_scope ||= @scope
+  task_name = task_name.to_s
+  if task_name =~ /^rake:/
+    scopes = Scope.make
+    task_name = task_name.sub(/^rake:/, &#34;&#34;)
+  elsif task_name =~ /^(\^+)/
+    scopes = initial_scope.trim($1.size)
+    task_name = task_name.sub(/^(\^+)/, &#34;&#34;)
+  else
+    scopes = initial_scope
+  end
+  lookup_in_scope(task_name, scopes)
+end
+
+def lookup_in_scope(name, scope)
+  loop do
+    tn = scope.path_with_task_name(name)
+    task = @tasks[tn]
+    return task if task
+    break if scope.empty?
+    scope = scope.tail
+  end
+  nil
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>不过还是没明白书中举这例子有何意义</div>
+
+  </div><a class="u-url" href="/2017/08/09/ddc4f9c3217e4f578464925ee878e270.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

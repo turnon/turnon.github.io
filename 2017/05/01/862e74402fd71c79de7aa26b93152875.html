@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>active record的callback的顺序</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="active record的callback的顺序" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="先对所有callback都定义一次（不含around）…" />
+<meta property="og:description" content="先对所有callback都定义一次（不含around）…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-05-01T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"先对所有callback都定义一次（不含around）…","@type":"BlogPosting","headline":"active record的callback的顺序","dateModified":"2017-05-01T00:00:00+00:00","url":"/2017/05/01/862e74402fd71c79de7aa26b93152875.html","datePublished":"2017-05-01T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/05/01/862e74402fd71c79de7aa26b93152875.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">active record的callback的顺序</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-05-01T00:00:00+00:00" itemprop="datePublished">May 1, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>先对所有callback都定义一次（不含around）</div>
+<div><br /></div>
+<div>（全部callback的名字可在ActiveRecord::Callbacks::CALLBACKS查到）</div>
+<div><br /></div>
+<pre><code>irb(main):001:0&gt; callbacks = User.methods.select{|m| m =~ /before|after/ and m.to_s.count(&#39;_&#39;) == 1}
+=&gt; [:after_find, :after_touch, :before_save, :after_save, :before_create, :after_create, :before_update, :after_update, :before_destroy, :after_destroy, :after_initialize, :after_commit, :after_rollback, :before_commit, :before_validation, :after_validation]
+irb(main):002:0&gt; callbacks.each do |cb|
+irb(main):003:1*   User.send cb, &amp;-&gt; *arg {
+irb(main):004:2*     stack = caller.each_with_object [] do |frame, st|
+irb(main):005:3*       st &lt;&lt; frame unless st[-1] =~ /irb_binding/
+irb(main):006:3&gt;     end
+irb(main):007:2&gt;     stack = &#34;\n   &#34; + stack.join(&#34;\n   &#34;)
+irb(main):008:2&gt;     puts &#34;#{cb}:#{stack}&#34;
+irb(main):009:2&gt;   }
+irb(main):010:1&gt; end
+=&gt; [:after_find, :after_touch, :before_save, :after_save, :before_create, :after_create, :before_update, :after_update, :before_destroy, :after_destroy, :after_initialize, :after_commit, :after_rollback, :before_commit, :before_validation, :after_validation]</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>试试new，可看到它会调用after_initialize</div>
+<div><br /></div>
+<pre><code>irb(main):011:0&gt; u = User.new name: &#39;ken&#39;, password: &#39;123&#39;
+after_initialize:
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `instance_exec&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `block in make_lambda&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:207:in `block in halting_and_conditional&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `block in call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `each&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:101:in `__run_callbacks__&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:750:in `_run_initialize_callbacks&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/core.rb:322:in `initialize&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/inheritance.rb:65:in `new&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/inheritance.rb:65:in `new&#39;
+   (irb):11:in `irb_binding&#39;
+=&gt; #&lt;user id:="" nil,="" name:="" "ken",="" password_digest:="" "$2a$10$1n0qb0yysm5x37pmlzu4ceflo8byfsei7ovgedidkhz...",="" created_at:="" nil,="" updated_at:="" nil=""&gt;&lt;/user&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>源码如下</div>
+<div><br /></div>
+<pre><code># activerecord-5.0.2/lib/active_record/core.rb
+def initialize(attributes = nil)
+  self.class.define_attribute_methods
+  @attributes = self.class._default_attributes.deep_dup
+
+  init_internals
+  initialize_internals_callback
+
+  assign_attributes(attributes) if attributes
+
+  yield self if block_given?
+  _run_initialize_callbacks
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而save相关的callback，顺序如下：before_validation，after_validation，before_save，before_create，after_create，after_save，before_commit，after_commit</div>
+<div><br /></div>
+<pre><code>irb(main):012:0&gt; u.save
+   (0.1ms)  begin transaction
+before_validation:
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `instance_exec&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `block in make_lambda&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:169:in `block (2 levels) in halting&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:770:in `block (2 levels) in deprecated_false_terminator&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:769:in `catch&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:769:in `block in deprecated_false_terminator&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:170:in `block in halting&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:454:in `block in call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:454:in `each&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:454:in `call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:101:in `__run_callbacks__&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:750:in `_run_validation_callbacks&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activemodel-5.0.2/lib/active_model/validations/callbacks.rb:113:in `run_validations!&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activemodel-5.0.2/lib/active_model/validations.rb:338:in `valid?&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/validations.rb:65:in `valid?&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/validations.rb:82:in `perform_validations&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/validations.rb:44:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/attribute_methods/dirty.rb:22:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:319:in `block (2 levels) in save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:395:in `block in with_transaction_returning_status&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232:in `block in transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/transaction.rb:189:in `within_new_transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:211:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:392:in `with_transaction_returning_status&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:319:in `block in save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:334:in `rollback_active_record_state!&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:318:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/suppressor.rb:41:in `save&#39;
+   (irb):12:in `irb_binding&#39;
+after_validation:
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `instance_exec&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `block in make_lambda&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:218:in `block in halting&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `block in call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `each&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:101:in `__run_callbacks__&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:750:in `_run_validation_callbacks&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activemodel-5.0.2/lib/active_model/validations/callbacks.rb:113:in `run_validations!&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activemodel-5.0.2/lib/active_model/validations.rb:338:in `valid?&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/validations.rb:65:in `valid?&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/validations.rb:82:in `perform_validations&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/validations.rb:44:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/attribute_methods/dirty.rb:22:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:319:in `block (2 levels) in save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:395:in `block in with_transaction_returning_status&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232:in `block in transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/transaction.rb:189:in `within_new_transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:211:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:392:in `with_transaction_returning_status&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:319:in `block in save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:334:in `rollback_active_record_state!&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:318:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/suppressor.rb:41:in `save&#39;
+   (irb):12:in `irb_binding&#39;
+before_save:
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `instance_exec&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `block in make_lambda&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:169:in `block (2 levels) in halting&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:770:in `block (2 levels) in deprecated_false_terminator&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:769:in `catch&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:769:in `block in deprecated_false_terminator&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:170:in `block in halting&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:454:in `block in call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:454:in `each&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:454:in `call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:101:in `__run_callbacks__&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:750:in `_run_save_callbacks&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/callbacks.rb:298:in `create_or_update&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/persistence.rb:125:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/validations.rb:44:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/attribute_methods/dirty.rb:22:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:319:in `block (2 levels) in save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:395:in `block in with_transaction_returning_status&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232:in `block in transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/transaction.rb:189:in `within_new_transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:211:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:392:in `with_transaction_returning_status&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:319:in `block in save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:334:in `rollback_active_record_state!&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:318:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/suppressor.rb:41:in `save&#39;
+   (irb):12:in `irb_binding&#39;
+before_create:
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `instance_exec&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `block in make_lambda&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:169:in `block (2 levels) in halting&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:770:in `block (2 levels) in deprecated_false_terminator&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:769:in `catch&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:769:in `block in deprecated_false_terminator&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:170:in `block in halting&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:454:in `block in call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:454:in `each&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:454:in `call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:101:in `__run_callbacks__&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:750:in `_run_create_callbacks&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/callbacks.rb:302:in `_create_record&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/timestamp.rb:68:in `_create_record&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/persistence.rb:540:in `create_or_update&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/callbacks.rb:298:in `block in create_or_update&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:126:in `call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:506:in `block (2 levels) in compile&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:455:in `call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:101:in `__run_callbacks__&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:750:in `_run_save_callbacks&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/callbacks.rb:298:in `create_or_update&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/persistence.rb:125:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/validations.rb:44:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/attribute_methods/dirty.rb:22:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:319:in `block (2 levels) in save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:395:in `block in with_transaction_returning_status&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232:in `block in transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/transaction.rb:189:in `within_new_transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:211:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:392:in `with_transaction_returning_status&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:319:in `block in save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:334:in `rollback_active_record_state!&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:318:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/suppressor.rb:41:in `save&#39;
+   (irb):12:in `irb_binding&#39;
+  SQL (0.5ms)  INSERT INTO &#34;users&#34; (&#34;name&#34;, &#34;password_digest&#34;, &#34;created_at&#34;, &#34;updated_at&#34;) VALUES (?, ?, ?, ?)  [[&#34;name&#34;, &#34;ken&#34;], [&#34;password_digest&#34;, &#34;$2a$10$1N0qb0YySm5X37pMLzu4CeFlo8BYFSEi7OVgeDIdKhZlLfE6lTbf2&#34;], [&#34;created_at&#34;, 2017-05-01 04:49:18 UTC], [&#34;updated_at&#34;, 2017-05-01 04:49:18 UTC]]
+after_create:
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `instance_exec&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `block in make_lambda&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:207:in `block in halting_and_conditional&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `block in call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `each&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:101:in `__run_callbacks__&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:750:in `_run_create_callbacks&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/callbacks.rb:302:in `_create_record&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/timestamp.rb:68:in `_create_record&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/persistence.rb:540:in `create_or_update&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/callbacks.rb:298:in `block in create_or_update&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:126:in `call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:506:in `block (2 levels) in compile&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:455:in `call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:101:in `__run_callbacks__&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:750:in `_run_save_callbacks&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/callbacks.rb:298:in `create_or_update&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/persistence.rb:125:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/validations.rb:44:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/attribute_methods/dirty.rb:22:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:319:in `block (2 levels) in save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:395:in `block in with_transaction_returning_status&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232:in `block in transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/transaction.rb:189:in `within_new_transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:211:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:392:in `with_transaction_returning_status&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:319:in `block in save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:334:in `rollback_active_record_state!&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:318:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/suppressor.rb:41:in `save&#39;
+   (irb):12:in `irb_binding&#39;
+after_save:
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `instance_exec&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `block in make_lambda&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:207:in `block in halting_and_conditional&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `block in call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `each&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:101:in `__run_callbacks__&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:750:in `_run_save_callbacks&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/callbacks.rb:298:in `create_or_update&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/persistence.rb:125:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/validations.rb:44:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/attribute_methods/dirty.rb:22:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:319:in `block (2 levels) in save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:395:in `block in with_transaction_returning_status&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232:in `block in transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/transaction.rb:189:in `within_new_transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:211:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:392:in `with_transaction_returning_status&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:319:in `block in save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:334:in `rollback_active_record_state!&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:318:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/suppressor.rb:41:in `save&#39;
+   (irb):12:in `irb_binding&#39;
+before_commit:
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `instance_exec&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `block in make_lambda&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:169:in `block (2 levels) in halting&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:770:in `block (2 levels) in deprecated_false_terminator&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:769:in `catch&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:769:in `block in deprecated_false_terminator&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:170:in `block in halting&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:454:in `block in call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:454:in `each&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:454:in `call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:101:in `__run_callbacks__&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:750:in `_run_before_commit_callbacks&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:344:in `before_committed!&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/transaction.rb:80:in `each&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/transaction.rb:80:in `before_commit_records&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/transaction.rb:172:in `commit_transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/transaction.rb:202:in `within_new_transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:211:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:392:in `with_transaction_returning_status&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:319:in `block in save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:334:in `rollback_active_record_state!&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:318:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/suppressor.rb:41:in `save&#39;
+   (irb):12:in `irb_binding&#39;
+   (2.3ms)  commit transaction
+after_commit:
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `instance_exec&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:396:in `block in make_lambda&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:242:in `block in simple&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `block in call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `each&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:456:in `call&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:101:in `__run_callbacks__&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.2/lib/active_support/callbacks.rb:750:in `_run_commit_callbacks&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:354:in `committed!&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/transaction.rb:87:in `commit_records&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/transaction.rb:178:in `commit_transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/transaction.rb:202:in `within_new_transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/connection_adapters/abstract/database_statements.rb:232:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:211:in `transaction&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:392:in `with_transaction_returning_status&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:319:in `block in save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:334:in `rollback_active_record_state!&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/transactions.rb:318:in `save&#39;
+   /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.2/lib/active_record/suppressor.rb:41:in `save&#39;
+   (irb):12:in `irb_binding&#39;
+=&gt; true</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>其它find、update、destroy也可由此检查，其结果会是如下</div>
+<div><br /></div>
+<div><img src="/assets/files/862e74402fd71c79de7aa26b93152875/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div>真去查看源码的话，会发现_run_xxx_callbacks都是写死的（约定的），因为active_support/callback所生成的callback方法就是这种命名规则</div>
+
+  </div><a class="u-url" href="/2017/05/01/862e74402fd71c79de7aa26b93152875.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

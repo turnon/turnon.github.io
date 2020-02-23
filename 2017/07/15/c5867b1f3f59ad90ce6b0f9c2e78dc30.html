@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>ActiveModel::AttributeMethods的用例与机制</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="ActiveModel::AttributeMethods的用例与机制" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="跟踪一下define_attribute_method注释中的例子…" />
+<meta property="og:description" content="跟踪一下define_attribute_method注释中的例子…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-07-15T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"跟踪一下define_attribute_method注释中的例子…","@type":"BlogPosting","headline":"ActiveModel::AttributeMethods的用例与机制","dateModified":"2017-07-15T00:00:00+00:00","url":"/2017/07/15/c5867b1f3f59ad90ce6b0f9c2e78dc30.html","datePublished":"2017-07-15T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/07/15/c5867b1f3f59ad90ce6b0f9c2e78dc30.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">ActiveModel::AttributeMethods的用例与机制</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-07-15T00:00:00+00:00" itemprop="datePublished">Jul 15, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>跟踪一下define_attribute_method注释中的例子</div>
+<div><br /></div>
+<pre><code>[1] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/attribute_methods&#39;) do
+[1] pry(main)*   class Person
+[1] pry(main)*     include ActiveModel::AttributeMethods
+[1] pry(main)*
+[1] pry(main)*     attr_accessor :name
+[1] pry(main)*     attribute_method_suffix &#39;_short?&#39;
+[1] pry(main)*
+[1] pry(main)*     # Call to define_attribute_method must appear after the
+[1] pry(main)*     # attribute_method_prefix, attribute_method_suffix or
+[1] pry(main)*     # attribute_method_affix declarations.
+[1] pry(main)*     define_attribute_method :name
+[1] pry(main)*
+[1] pry(main)*     private
+[1] pry(main)*
+[1] pry(main)*     def attribute_short?(attr)
+[1] pry(main)*       send(attr).length &lt; 5
+[1] pry(main)*     end
+[1] pry(main)*   end
+[1] pry(main)* end
+=&gt; :attribute_short?</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>完整调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/c5867b1f3f59ad90ce6b0f9c2e78dc30/cee57fa2fc95a7a11bc7bb75647e237b.html"><img src="/assets/files/c5867b1f3f59ad90ce6b0f9c2e78dc30/6444e58e430d7da20081708542e928eb.png" alt="20170715_210556_908_attribute_methods.html" /></a></div>
+<div><br /></div>
+<div>首先，include了ActiveModel::AttributeMethods的类都会带有attribute_aliases和attribute_method_matchers类变量</div>
+<div><br /></div>
+<pre><code>included do
+  class_attribute :attribute_aliases, :attribute_method_matchers, instance_writer: false
+  self.attribute_aliases = {}
+  self.attribute_method_matchers = [ClassMethods::AttributeMethodMatcher.new]
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>检查这两个类变量，会发现在刚才整套Person类定义下来，attribute_method_matchers除了included时的ClassMethods::AttributeMethodMatcher.new，还多了一个attribute_short?的ActiveModel::AttributeMethods::ClassMethods::AttributeMethodMatcher</div>
+<div><br /></div>
+<pre><code>[3] pry(main)&gt; person.attribute_method_matchers
+=&gt; [#&lt;activemodel::attributemethods::classmethods::attributemethodmatcher:0x007f7b1a45d520 @method_missing_target="attribute" ,="" @method_name="%s" ,="" @prefix="" ,="" @regex="/^(?:)(.*)(?:)$/," @suffix=""&gt;,
+ #&lt;activemodel::attributemethods::classmethods::attributemethodmatcher:0x007f7b1a24fc88 @method_missing_target="attribute_short?" ,="" @method_name="%s_short?" ,="" @prefix="" ,="" @regex="/^(?:)(.*)(?:_short\?)$/," @suffix="_short?"&gt;]
+[4] pry(main)&gt; person.attribute_aliases
+=&gt; {}&lt;/activemodel::attributemethods::classmethods::attributemethodmatcher:0x007f7b1a24fc88&gt;&lt;/activemodel::attributemethods::classmethods::attributemethodmatcher:0x007f7b1a45d520&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>此外，因为ActiveModel::AttributeMethods是有concern的，所以Person会获得以下类方法</div>
+<div><br /></div>
+<pre><code>[9] pry(main)&gt; ActiveModel::AttributeMethods::ClassMethods.instance_methods
+=&gt; [:alias_attribute,
+ :define_attribute_methods,
+ :generated_attribute_methods,
+ :undefine_attribute_methods,
+ :attribute_method_prefix,
+ :attribute_method_suffix,
+ :attribute_method_affix,
+ :attribute_alias?,
+ :attribute_alias,
+ :define_attribute_method]</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>接着来看Person用到的attribute_method_suffix和define_attribute_method。首先是attribute_method_suffix，它所做的就是两件事：新建一个AttributeMethodMatcher，然后undefine_attribute_methods</div>
+<div><br /></div>
+<pre><code>def attribute_method_suffix(*suffixes)
+  self.attribute_method_matchers += suffixes.map! { |suffix| AttributeMethodMatcher.new suffix: suffix }
+  undefine_attribute_methods
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>AttributeMethodMatcher的作用，从其内部的一些命名来看，似乎是用于method_missing时，检查是否能调用有所call的带有prefix/suffix的方法</div>
+<div><br /></div>
+<pre><code>class AttributeMethodMatcher
+  attr_reader :prefix, :suffix, :method_missing_target
+
+  AttributeMethodMatch = Struct.new(:target, :attr_name, :method_name)
+
+  def initialize(options = {})
+    @prefix, @suffix = options.fetch(:prefix, &#34;&#34;), options.fetch(:suffix, &#34;&#34;)
+    @regex = /^(?:#{Regexp.escape(@prefix)})(.*)(?:#{Regexp.escape(@suffix)})$/
+    @method_missing_target = &#34;#{@prefix}attribute#{@suffix}&#34;
+    @method_name = &#34;#{prefix}%s#{suffix}&#34;
+  end
+
+  def match(method_name)
+    if @regex =~ method_name
+      AttributeMethodMatch.new(method_missing_target, $1, method_name)
+    end
+  end
+
+  def method_name(attr_name)
+    @method_name % attr_name
+  end
+
+  def plain?
+    prefix.empty? &amp;&amp; suffix.empty?
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而undefine_attribute_methods则是……比较复杂，目前只看出它使用到一个匿名module，这个匿名module会被include到当前类中，估计用于定义方法并归纳它们，但instance_methods.each { |m| undef_method(m) }和attribute_method_matchers_cache又是为什么呢？暂时先不管</div>
+<div><br /></div>
+<pre><code>def undefine_attribute_methods
+  generated_attribute_methods.module_eval do
+    instance_methods.each { |m| undef_method(m) }
+  end
+  attribute_method_matchers_cache.clear
+end
+
+def generated_attribute_methods
+  @generated_attribute_methods ||= Module.new {
+    extend Mutex_m
+  }.tap { |mod| include mod }
+end
+
+private
+
+  # The methods +method_missing+ and +respond_to?+ of this module are
+  # invoked often in a typical rails, both of which invoke the method
+  # +matched_attribute_method+. The latter method iterates through an
+  # array doing regular expression matches, which results in a lot of
+  # object creations. Most of the time it returns a +nil+ match. As the
+  # match result is always the same given a +method_name+, this cache is
+  # used to alleviate the GC, which ultimately also speeds up the app
+  # significantly (in our case our test suite finishes 10% faster with
+  # this cache).
+  def attribute_method_matchers_cache
+    @attribute_method_matchers_cache ||= Concurrent::Map.new(initial_capacity: 4)
+  end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>于是，便轮到示例所说的只能（还是必须？）在attribute_method_prefix、attribute_method_suffix、attribute_method_affix之后使用的define_attribute_method，其相关代码如下</div>
+<div><br /></div>
+<pre><code>def define_attribute_method(attr_name)
+  attribute_method_matchers.each do |matcher|
+    method_name = matcher.method_name(attr_name)
+
+    unless instance_method_already_implemented?(method_name)
+      generate_method = &#34;define_method_#{matcher.method_missing_target}&#34;
+
+      if respond_to?(generate_method, true)
+        send(generate_method, attr_name.to_s)
+      else
+        define_proxy_call true, generated_attribute_methods, method_name, matcher.method_missing_target, attr_name.to_s
+      end
+    end
+  end
+  attribute_method_matchers_cache.clear
+end
+
+private
+  def define_proxy_call(include_private, mod, name, send, *extra)
+    defn = if NAME_COMPILABLE_REGEXP.match?(name)
+      &#34;def #{name}(*args)&#34;
+    else
+      &#34;define_method(:&#39;#{name}&#39;) do |*args|&#34;
+    end
+
+    extra = (extra.map!(&amp;:inspect) &lt;&lt; &#34;*args&#34;).join(&#34;, &#34;.freeze)
+
+    target = if CALL_COMPILABLE_REGEXP.match?(send)
+      &#34;#{&#34;self.&#34; unless include_private}#{send}(#{extra})&#34;
+    else
+      &#34;send(:&#39;#{send}&#39;, #{extra})&#34;
+    end
+
+    mod.module_eval &lt;&lt;-RUBY, __FILE__, __LINE__ + 1
+      #{defn}
+        #{target}
+      end
+    RUBY
+  end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>简单来说，就是遍历已定义的prefix/suffix/affix（attribute_method_matchers），拼接出最终想要的方法名，即prefix + attr_name + suffix，然后define到匿名module（generated_attribute_methods）中，对于本例，就是def一个name_short?方法。</div>
+<div><br /></div>
+<div>而unless instance_method_already_implemented?的作用，估计是为了避免调用define_attribute_method时给了重复的属性名，导致重复定义prefix + attr_name + suffix方法</div>
+<div><br /></div>
+<div>而prefix + attr_name + suffix的方法体，即target部分，可以推导出，是send matcher.method_missing_target, attr_name.to_s，其中method_missing_target是AttributeMethodMatcher 约定的&#34;#{@prefix}attribute#{@suffix}&#34;，attr_name.to_s则是属性名，对于本例，大概就是send attribute_short?(:name)。因此，如示例所述，如果你指定了suffix方法_short?，则你需要定义一个attribute_short?(attr)方法，以便在匿名module调用时，能查找到子类（当前类）的这个方法。所以，name_short?的调用栈非常简单</div>
+<div><br /></div>
+<pre><code>[29] pry(main)&gt; person.name = &#39;ken&#39;
+=&gt; &#34;ken&#34;
+[30] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/call_attribute_method&#39;){person.name_short?}
+=&gt; true</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>如下</div>
+<div><br /></div>
+<div><a href="/assets/files/c5867b1f3f59ad90ce6b0f9c2e78dc30/5bd3a3b40cd971e5b001c094425429d4.html"><img src="/assets/files/c5867b1f3f59ad90ce6b0f9c2e78dc30/a03da2f8df48bcd94e13e179c5dbaddb.png" alt="20170715_232024_575_call_attribute_method.html" /></a><br /></div>
+<div><br /></div>
+<div>至此，ActiveModel::AttributeMethods的机制基本已明了。若想看复杂一点的用例，源码开头也是有给的。或者，也可看看dirty.rb</div>
+<div><br /></div>
+<pre><code>class Person
+  include ActiveModel::AttributeMethods
+
+  attribute_method_affix  prefix: &#39;reset_&#39;, suffix: &#39;_to_default!&#39;
+  attribute_method_suffix &#39;_contrived?&#39;
+  attribute_method_prefix &#39;clear_&#39;
+  define_attribute_methods :name
+
+  attr_accessor :name
+
+  def attributes
+    { &#39;name&#39; =&gt; @name }
+  end
+
+  private
+
+  def attribute_contrived?(attr)
+    true
+  end
+
+  def clear_attribute(attr)
+    send(&#34;#{attr}=&#34;, nil)
+  end
+
+  def reset_attribute_to_default!(attr)
+    send(&#34;#{attr}=&#34;, &#39;Default Name&#39;)
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>至于undefine_attribute_methods，它规定了你所有attribute_method_xxx必须定在所有define_attribute_method(s)之前，否则，后来的一个attribute_method_xxx中的undefine_attribute_methods就会抹掉之前在匿名module中动态定义的方法。可以认为它是为了规范代码结构，令你的pre/suf方法定义凑在一起，而非分散到文件的头部尾部。当然，也可以认为它是一个坑</div>
+<div><br /></div>
+<pre><code>[35] pry(main)&gt; class Person
+[35] pry(main)*   attribute_method_suffix &#39;_long?&#39;
+[35] pry(main)* end
+=&gt; #<concurrent::map:0x007f7b1891f628 entries="0" default_proc="nil">
+[36] pry(main)&gt; person.name_short?
+NoMethodError: undefined method `name_short?&#39; for #&lt;person:0x007f7b1a15e9f0 @name="ken"&gt;
+from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activemodel-5.1.2/lib/active_model/attribute_methods.rb:432:in `method_missing&#39;&lt;/person:0x007f7b1a15e9f0&gt;</concurrent::map:0x007f7b1891f628></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>此外，也因为这种undef机制，以及匿名module被归为当前类的实例变量，而每次def/undef都从当前类的取出该实例变量来作用域该匿名module，所以，如果想为不同的属性添加不同的pre/suf，则需要将不同的“attribute_method_xxx和define_attribute_method(s)”写在不同的module中，例如dirty.rb就单独开来一个module。这同样也达到了归类pre/suf的目的</div>
+<div><br /></div>
+<div>而attribute_method_matchers_cache，暂不深究……</div>
+
+  </div><a class="u-url" href="/2017/07/15/c5867b1f3f59ad90ce6b0f9c2e78dc30.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

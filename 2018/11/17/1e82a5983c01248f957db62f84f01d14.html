@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>ruby的i18n</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="ruby的i18n" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="跟踪一下I18n.t的流程…" />
+<meta property="og:description" content="跟踪一下I18n.t的流程…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2018-11-17T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"跟踪一下I18n.t的流程…","@type":"BlogPosting","headline":"ruby的i18n","dateModified":"2018-11-17T00:00:00+00:00","url":"/2018/11/17/1e82a5983c01248f957db62f84f01d14.html","datePublished":"2018-11-17T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2018/11/17/1e82a5983c01248f957db62f84f01d14.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">ruby的i18n</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2018-11-17T00:00:00+00:00" itemprop="datePublished">Nov 17, 2018
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>跟踪一下I18n.t的流程</div>
+<div><br /></div>
+<pre><code>[13] pry(main)&gt; I18n;binding.trace_tree(htmp: &#39;i18n_t_key&#39;, return: false){ I18n.t(&#39;helpers.links.show&#39;) }
+=&gt; &#34;查看&#34;</code></pre>
+<div><br /></div>
+<div>完整调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/1e82a5983c01248f957db62f84f01d14/e505a461d9175a4d1d275d48df8a41a9.html"><img src="/assets/files/1e82a5983c01248f957db62f84f01d14/c36ef380842794ba1477241497e656e0.png" alt="20181117_211247_900_i18n_t_key.html" /></a></div>
+<div><br /></div>
+<div><b>一般流程</b></div>
+<div><br /></div>
+<div>大概流程如下</div>
+<div><br /></div>
+<div><img src="/assets/files/1e82a5983c01248f957db62f84f01d14/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div>一般来说，默认就是使用Simple这个backend来翻译，它集成了Base的一些通用功能</div>
+<div><br /></div>
+<div>查找翻译值主要是从lookup方法开始，它首先将翻译文件读入，构造成translations这个nested Hash，然后用normalize_keys把待翻译的字符串分解成查找路径，到Hash中挖掘</div>
+<div><br /></div>
+<pre><code>def lookup(locale, key, scope = [], options = EMPTY_HASH)
+  init_translations unless initialized?
+  keys = I18n.normalize_keys(locale, key, scope, options[:separator])
+
+  keys.inject(translations) do |result, _key|
+    _key = _key.to_sym
+    return nil unless result.is_a?(Hash) &amp;&amp; result.has_key?(_key)
+    result = result[_key]
+    result = resolve(locale, _key, result, options.merge(:scope =&gt; nil)) if result.is_a?(Symbol)
+    result
+  end
+end</code></pre>
+<div><br /></div>
+<div>normalize_keys就是将将传入的待翻译值的路径，分解成数组形式。此数组会用local起头，以分辨出要用哪个语言集合来翻译，然后，如果有scope选项，则加入scope，最后才是待翻译值的查找路径</div>
+<div><br /></div>
+<div>scope的效果，就是会使I18n.t(&#39;helpers.links.show&#39;) 和 I18n.t(&#39;links.show&#39;, scope: :helpers) 等同</div>
+<div><br /></div>
+<pre><code>def normalize_keys(locale, key, scope, separator = nil)
+  separator ||= I18n.default_separator
+
+  keys = []
+  keys.concat normalize_key(locale, separator)
+  keys.concat normalize_key(scope, separator)
+  keys.concat normalize_key(key, separator)
+  keys
+end
+
+def normalize_key(key, separator)
+  @@normalized_key_cache[separator][key] ||=
+    case key
+    when Array
+      key.map { |k| normalize_key(k, separator) }.flatten
+    else
+      keys = key.to_s.split(separator)
+      keys.delete(&#39;&#39;)
+      keys.map! { |k| k.to_sym }
+      keys
+    end
+end</code></pre>
+<div><br /></div>
+<div>而interpolate主要是为了应付此种情况</div>
+<div><br /></div>
+<pre><code># app/views/products/show.html.erb
+&lt;%= t(&#39;product_price&#39;, price: @product.price) %&gt;
+
+# config/locales/en.yml
+en:
+  product_price: &#34;$%{price}&#34;
+# config/locales/es.yml
+es:
+  product_price: &#34;%{price} €&#34;</code></pre>
+<div><br /></div>
+<div><b>在请求中指定翻译语言</b></div>
+<div><br /></div>
+<div>可以根据每个请求传来的要求语言来设置翻译语言，并且不影响其他并发的请求，原因在于，设置是一个线程级变量</div>
+<div><br /></div>
+<pre><code>module I18n
+  module Base
+    # Gets I18n configuration object.
+    def config
+      Thread.current[:i18n_config] ||= I18n::Config.new
+    end
+
+    # Sets I18n configuration object.
+    def config=(value)
+      Thread.current[:i18n_config] = value
+    end
+
+    # Write methods which delegates to the configuration object
+    %w(locale backend default_locale available_locales default_separator
+      exception_handler load_path enforce_available_locales).each do |method|
+      module_eval &lt;&lt;-DELEGATORS, __FILE__, __LINE__ + 1
+        def #{method}
+          config.#{method}
+        end
+
+        def #{method}=(value)
+          config.#{method} = (value)
+        end
+      DELEGATORS
+    end</code></pre>
+<div><br /></div>
+<div><b>获取整个翻译嵌套Hash</b></div>
+<div><br /></div>
+<div>只需I18n.t(&#39;.&#39;)。因根据lookup的原理，&#39;.&#39;的路径为[locale]，这就直接取得指定语言的整个翻译集了</div>
+<div><br /></div>
+<div>同时，如果想即时加载翻译集，也可使用此法，因为lookup是总会先检查翻译集是否已加载，否则加载</div>
+<div><br /></div>
+<div><b>翻译文件是如何加载的</b></div>
+<div><br /></div>
+<div>为检查load_path是怎样包含了这么多翻译文件的地址的，对其修改一下，以打印出哪里有调用过</div>
+<div><br /></div>
+<pre><code>def load_path
+  #@@load_path ||= []
+  @@load_path ||= (
+    arr = []
+    def arr.&lt;&lt;(*obj)
+      pp [__method__, caller[0], obj]
+      super
+    end
+    arr
+  )
+end
+
+# Sets the load path instance. Custom implementations are expected to
+# behave like a Ruby Array.
+def load_path=(load_path)
+  pp [__method__, caller[1], load_path]
+  @@load_path = load_path
+  @@available_locales_set = nil
+  backend.reload!
+end</code></pre>
+<div><br /></div>
+<div>启动一下rails c，就打印出来了</div>
+<div><br /></div>
+<pre><code>[:&lt;&lt;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/activesupport-5.2.1/lib/active_support/i18n.rb:15:in `&lt;top (required)=""&gt;&#39;&#34;,
+[&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/activesupport-5.2.1/lib/active_support/locale/en.yml&#34;]]
+[:&lt;&lt;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/activemodel-5.2.1/lib/active_model.rb:76:in `block in &lt;/top&gt;</code><main><code>&#39;&#34;,
+[&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/activemodel-5.2.1/lib/active_model/locale/en.yml&#34;]]
+[:&lt;&lt;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/actionview-5.2.1/lib/action_view.rb:96:in `block in </code><main><code>&#39;&#34;,
+[&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/actionview-5.2.1/lib/action_view/locale/en.yml&#34;]]
+[:&lt;&lt;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/activerecord-5.2.1/lib/active_record.rb:183:in `block in </code><main><code>&#39;&#34;,
+[&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/activerecord-5.2.1/lib/active_record/locale/en.yml&#34;]]
+[:&lt;&lt;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid.rb:33:in `</code><main><code>&#39;&#34;,
+[&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/config/locales/en.yml&#34;]]
+[:&lt;&lt;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid_orderable-5.2.0/lib/mongoid_orderable.rb:4:in `</code><main><code>&#39;&#34;,
+[&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid_orderable-5.2.0/lib/config/locales/en.yml&#34;]]
+[:&lt;&lt;,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/duck_record-0.0.26/lib/duck_record.rb:64:in `block in </code><main><code>&#39;&#34;,
+[&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/duck_record-0.0.26/lib/duck_record/locale/en.yml&#34;]]
+/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/pry-rails-0.3.6/lib/pry-rails/prompt.rb:36: warning: constant Pry::Prompt::MAP is deprecated
+[:load_path=,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/activesupport-5.2.1/lib/active_support/i18n_railtie.rb:49:in `block in initialize_i18n&#39;&#34;,
+[&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/activesupport-5.2.1/lib/active_support/locale/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/activemodel-5.2.1/lib/active_model/locale/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/actionview-5.2.1/lib/action_view/locale/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/activerecord-5.2.1/lib/active_record/locale/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/config/locales/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid_orderable-5.2.0/lib/config/locales/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/duck_record-0.0.26/lib/duck_record/locale/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/de.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/es.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/fr.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/it.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/ja.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/pl.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/pt-BR.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/ru.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/tr.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/zh-CN.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/zh-TW.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/bootstrap.en.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/bootstrap.zh-CN.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/compare_methods.zh-CN.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/dictionary.zh-CN.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/duck_record.zh-CN.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/en.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/models.zh-CN.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/mongo_errors.zh-CN.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/zh-CN.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/web-console-3.7.0/lib/web_console/locales/en.yml&#34;]]
+[:load_path=,
+&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/activesupport-5.2.1/lib/active_support/i18n_railtie.rb:63:in `block in initialize_i18n&#39;&#34;,
+[&#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/activesupport-5.2.1/lib/active_support/locale/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/activemodel-5.2.1/lib/active_model/locale/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/actionview-5.2.1/lib/action_view/locale/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/activerecord-5.2.1/lib/active_record/locale/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/config/locales/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid_orderable-5.2.0/lib/config/locales/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/duck_record-0.0.26/lib/duck_record/locale/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/de.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/en.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/es.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/fr.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/it.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/ja.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/pl.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/pt-BR.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/ru.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/tr.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/zh-CN.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/apipie-rails-0.5.13/config/locales/zh-TW.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/bootstrap.en.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/bootstrap.zh-CN.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/compare_methods.zh-CN.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/dictionary.zh-CN.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/duck_record.zh-CN.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/en.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/models.zh-CN.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/mongo_errors.zh-CN.yml&#34;,
+  &#34;/home/z/test_rails/reocar_reimbursement/config/locales/zh-CN.yml&#34;,
+  &#34;/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/web-console-3.7.0/lib/web_console/locales/en.yml&#34;]]</code></main></main></main></main></main></main></pre>
+<div><br /></div>
+<div>从以上可知，某些gem是会用I18n.load_path数组的:&lt;&lt;方法来塞入自带的翻译文件的</div>
+<div><br /></div>
+<div>而rails项目中的多语言yml则是用以下的I18n.load_path += 来加载</div>
+<div><br /></div>
+<div>此处的代码比较绕。I18n.load_path += value的value来自于app.config.i18n.load_path，而app.config.i18n.load_path则来自于config.i18n.railties_load_path。这里app.config.i18n是一个ActiveSupport::OrderedOptions。在集合的迭代中修改集合应该是不太推荐的，尽管这里修改的是集合的子集合</div>
+<div><br /></div>
+<pre><code># activesupport-5.2.1/lib/active_support/i18n_railtie.rb
+def self.initialize_i18n(app)
+  return if @i18n_inited
+
+  fallbacks = app.config.i18n.delete(:fallbacks)
+
+  # Avoid issues with setting the default_locale by disabling available locales
+  # check while configuring.
+  enforce_available_locales = app.config.i18n.delete(:enforce_available_locales)
+  enforce_available_locales = I18n.enforce_available_locales if enforce_available_locales.nil?
+  I18n.enforce_available_locales = false
+
+  reloadable_paths = []
+  app.config.i18n.each do |setting, value|
+    case setting
+    when :railties_load_path
+      reloadable_paths = value
+      app.config.i18n.load_path.unshift(*value.flat_map(&amp;:existent))
+    when :load_path
+      I18n.load_path += value
+    else
+      I18n.send(&#34;#{setting}=&#34;, value)
+    end
+  end</code></pre>
+<div><br /></div>
+<div>为查出config.i18n.railties_load_path的内容是怎样填充进去，把它freeze</div>
+<div><br /></div>
+<pre><code># activesupport-5.2.1/lib/active_support/i18n_railtie.rb
+module I18n
+  class Railtie &lt; Rails::Railtie
+    config.i18n = ActiveSupport::OrderedOptions.new
+    config.i18n.railties_load_path = [].freeze</code></pre>
+<div><br /></div>
+<div>使其报错并显示出调用栈</div>
+<div><br /></div>
+<pre><code>/home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/railties-5.2.1/lib/rails/engine.rb:589:in `block in <class:engine>&#39;: can&#39;t modify frozen Array (FrozenError)
+    from /home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/railties-5.2.1/lib/rails/initializable.rb:32:in `instance_exec&#39;
+    from /home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/railties-5.2.1/lib/rails/initializable.rb:32:in `run&#39;
+    from /home/z/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/railties-5.2.1/lib/rails/initializable.rb:61:in `block in run_initializers&#39;
+...</class:engine></code></pre>
+<div><br /></div>
+<div>可见它是rails初始化时塞入的</div>
+<div><br /></div>
+<pre><code># railties-5.2.1/lib/rails/engine.rb
+initializer :add_locales do
+  config.i18n.railties_load_path &lt;&lt; paths[&#34;config/locales&#34;]
+end</code></pre>
+<div><br /></div>
+<div>paths方法是委托到railties-5.2.1/lib/rails/engine/configuration.rb的。Rails::Paths::Root的用途看上去比较好懂，就不分析了</div>
+<div><br /></div>
+<pre><code>def paths
+  @paths ||= begin
+    paths = Rails::Paths::Root.new(@root)
+
+    paths.add &#34;app&#34;,                 eager_load: true, glob: &#34;{*,*/concerns}&#34;
+    paths.add &#34;app/assets&#34;,          glob: &#34;*&#34;
+    paths.add &#34;app/controllers&#34;,     eager_load: true
+    paths.add &#34;app/channels&#34;,        eager_load: true, glob: &#34;**/*_channel.rb&#34;
+    paths.add &#34;app/helpers&#34;,         eager_load: true
+    paths.add &#34;app/models&#34;,          eager_load: true
+    paths.add &#34;app/mailers&#34;,         eager_load: true
+    paths.add &#34;app/views&#34;
+
+    paths.add &#34;lib&#34;,                 load_path: true
+    paths.add &#34;lib/assets&#34;,          glob: &#34;*&#34;
+    paths.add &#34;lib/tasks&#34;,           glob: &#34;**/*.rake&#34;
+
+    paths.add &#34;config&#34;
+    paths.add &#34;config/environments&#34;, glob: &#34;#{Rails.env}.rb&#34;
+    paths.add &#34;config/initializers&#34;, glob: &#34;**/*.rb&#34;
+    paths.add &#34;config/locales&#34;,      glob: &#34;*.{rb,yml}&#34;
+    paths.add &#34;config/routes.rb&#34;
+
+    paths.add &#34;db&#34;
+    paths.add &#34;db/migrate&#34;
+    paths.add &#34;db/seeds.rb&#34;
+
+    paths.add &#34;vendor&#34;,              load_path: true
+    paths.add &#34;vendor/assets&#34;,       glob: &#34;*&#34;
+
+    paths
+  end
+end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2018/11/17/1e82a5983c01248f957db62f84f01d14.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

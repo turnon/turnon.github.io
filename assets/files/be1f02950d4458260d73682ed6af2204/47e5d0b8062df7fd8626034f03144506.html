@@ -1,0 +1,500 @@
+<!DOCTYPE HTML><html><head><meta charset='utf-8'/><style>body {
+    font-family: 'Dejavu Sans Mono', 'Arial', sans-serif;
+    font-size: 13px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.tree-html ul {
+    margin-left: 15px;
+}
+
+.tree-html li {
+    list-style-type: none;
+    margin: 10px;
+    position: relative;
+}
+
+.tree-html li::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc;
+    width: 15px;
+    height: 15px;
+}
+
+.tree-html li::after {
+    position: absolute;
+    content: "";
+    top: 8px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    width: 15px;
+    height: 100%;
+}
+
+.tree-html li:last-child::after {
+    display: none;
+}
+
+ul.tree-html>li:first-child::before {
+    display: none;
+}
+
+.tree-html li a {
+    padding: 2px 5px;
+}
+
+.tree-html li a:hover, .tree-html li a:hover+ul li a,
+.tree-html li a:focus, .tree-html li a:focus+ul li a {
+    background-color: #d3d3d3;
+}
+
+.tree-html a.twinkle,
+.tree-html li a.twinkle:hover, .tree-html li a:hover+ul li a.twinkle,
+.tree-html li a.twinkle:focus, .tree-html li a:focus+ul li a.twinkle {
+  background-color: #00bcd4;
+}
+
+.tree-html label {
+  margin: .2em 0 0 -.6em;
+  position: absolute;
+  border: 1px solid #ccc;
+  background: white;
+  width: .6em;
+  height: .6em;
+  display: inline-block;
+  line-height: .65;
+}
+
+.tree-html label.placeholder {
+  visibility: hidden;
+}
+
+.tree-html label::before {
+  color: #ccc;
+  font-family: serif;
+  margin-left: 0.02em;
+}
+
+input[type='checkbox'] {
+  margin-left: 5px;
+  display: none
+}
+
+input[type='checkbox']:checked ~ ul {
+  display: none
+}
+
+input[type="checkbox"] + label::before {
+  content: '-';
+}
+
+input[type="checkbox"]:checked + label::before {
+  content: '+';
+}
+.highlight{color: #a50000;}</style></head><body><ul class='tree-html'><li><input type='checkbox' id='70148475400120'><label for='70148475400120'></label><a data-return='[UniformNotifier::RailsLogger]'><span class='highlight'>Bullet::Rack#block in call</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/rack.rb:31</a><ul><li><input type='checkbox' id='70148475369660'><label for='70148475369660'></label><a data-return='[UniformNotifier::RailsLogger]'><span class='highlight'>Bullet.perform_out_of_channel_notifications</span> $GemPath0/gems/bullet-6.0.0/lib/bullet.rb:182</a><ul><li><label class='placeholder'></label><a data-return='GET /licence_appointments'><span class='highlight'>Bullet.build_request_uri</span> $GemPath0/gems/bullet-6.0.0/lib/bullet.rb:248</a></li><li><input type='checkbox' id='70148381839780'><label for='70148381839780'></label><a data-return='[UniformNotifier::RailsLogger]'><span class='highlight'>Bullet.for_each_active_notifier_with_notification</span> $GemPath0/gems/bullet-6.0.0/lib/bullet.rb:239</a><ul><li><input type='checkbox' id='70148381808940'><label for='70148381808940'></label><a data-return='[UniformNotifier::RailsLogger]'><span class='highlight'>UniformNotifier.active_notifiers</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier.rb:34</a><ul><li><input type='checkbox' id='70148381803000'><label for='70148381803000'></label><a data-return='[UniformNotifier::RailsLogger]'><span class='highlight'>Array#select</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier.rb:35</a><ul><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>UniformNotifier::JavascriptAlert.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/javascript_alert.rb:5</a></li><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>UniformNotifier::JavascriptConsole.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/javascript_console.rb:5</a></li><li><label class='placeholder'></label><a data-return='nil'><span class='highlight'>UniformNotifier::Growl.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/growl.rb:7</a></li><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>UniformNotifier::HoneybadgerNotifier.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/honeybadger.rb:5</a></li><li><label class='placeholder'></label><a data-return='nil'><span class='highlight'>UniformNotifier::Xmpp.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/xmpp.rb:9</a></li><li><label class='placeholder'></label><a data-return='true'><span class='highlight'>UniformNotifier::RailsLogger.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/rails_logger.rb:5</a></li><li><label class='placeholder'></label><a data-return='nil'><span class='highlight'>UniformNotifier::CustomizedLogger.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/customized_logger.rb:7</a></li><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>UniformNotifier::AirbrakeNotifier.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/airbrake.rb:5</a></li><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>UniformNotifier::RollbarNotifier.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/rollbar.rb:5</a></li><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>UniformNotifier::BugsnagNotifier.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/bugsnag.rb:5</a></li><li><label class='placeholder'></label><a data-return='nil'><span class='highlight'>UniformNotifier::Raise.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/raise.rb:5</a></li><li><label class='placeholder'></label><a data-return='nil'><span class='highlight'>UniformNotifier::Slack.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/slack.rb:10</a></li><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>UniformNotifier::SentryNotifier.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/sentry.rb:5</a></li><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>UniformNotifier::TerminalNotifier.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/terminal_notifier.rb:5</a></li></ul></li></ul></li><li><input type='checkbox' id='70148466591240'><label for='70148466591240'></label><a data-return='[UniformNotifier::RailsLogger]'><span class='highlight'>Array#each</span> $GemPath0/gems/bullet-6.0.0/lib/bullet.rb:240</a><ul><li><input type='checkbox' id='70148466560640'><label for='70148466560640'></label><a data-return='#&lt;Set:0x00007f9962bb9c90&gt;'><span class='highlight'>Bullet.block in for_each_active_notifier_with_notification</span> $GemPath0/gems/bullet-6.0.0/lib/bullet.rb:240</a><ul><li><input type='checkbox' id='70148466529360'><label for='70148466529360'></label><a data-return='#&lt;Bullet::NotificationCollector:0x00007f9962bb9cb8&gt;'><span class='highlight'>Bullet.notification_collector</span> $GemPath0/gems/bullet-6.0.0/lib/bullet.rb:163</a><ul><li><label class='placeholder'></label><a data-return='#&lt;Thread:0x00007f99521067e0&gt;'><span class='highlight'>#&lt;Class:Thread&gt;#current</span> $GemPath0/gems/bullet-6.0.0/lib/bullet.rb:164</a></li><li><label class='placeholder'></label><a data-return='#&lt;Bullet::NotificationCollector:0x00007f9962bb9cb8&gt;'><span class='highlight'>Thread#[]</span> $GemPath0/gems/bullet-6.0.0/lib/bullet.rb:164</a></li></ul></li><li><input type='checkbox' id='70148466393340'><label for='70148466393340'></label><a data-return='#&lt;Set:0x00007f9962bb9c90&gt;'><span class='highlight'>Set#each</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/set.rb:304</a><ul><li><input type='checkbox' id='70148466362160'><label for='70148466362160'></label><a data-return='{#&lt;Bullet::Notification::NPlusOneQuery:0x00007f9967dc6650&gt;=&gt;true}'><span class='highlight'>Hash#each_key</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/set.rb:306</a><ul><li><input type='checkbox' id='70148466331440'><label for='70148466331440'></label><a data-return='true'><span class='highlight'>Bullet.block (2 levels) in for_each_active_notifier_with_notification</span> $GemPath0/gems/bullet-6.0.0/lib/bullet.rb:241</a><ul><li><input type='checkbox' id='70148475302640'><label for='70148475302640'></label><a data-return='true'><span class='highlight'>Bullet.block in perform_out_of_channel_notifications</span> $GemPath0/gems/bullet-6.0.0/lib/bullet.rb:184</a><ul><li><input type='checkbox' id='70148475271440'><label for='70148475271440'></label><a data-return='true'><span class='highlight'>Bullet::Notification::NPlusOneQuery#notify_out_of_channel</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:48</a><ul><li><input type='checkbox' id='70148475265340'><label for='70148475265340'></label><a data-return='{:user=&gt;user: yuanzhipeng, :url=&gt;GET /licence_appointments, :title=&gt;USE eager loading detected, :body=&gt;  LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+, :backtrace=&gt;[]}'><span class='highlight'>Bullet::Notification::NPlusOneQuery#notification_data</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/n_plus_one_query.rb:20</a><ul><li><input type='checkbox' id='70148475233780'><label for='70148475233780'></label><a data-return='{:user=&gt;user: yuanzhipeng, :url=&gt;GET /licence_appointments, :title=&gt;USE eager loading detected, :body=&gt;  LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+}'><span class='highlight'>Bullet::Notification::NPlusOneQuery#notification_data</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:56</a><ul><li><input type='checkbox' id='70148475202620'><label for='70148475202620'></label><a data-return='user: yuanzhipeng'><span class='highlight'>Bullet::Notification::NPlusOneQuery#whoami</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:27</a><ul><li><input type='checkbox' id='70148475170540'><label for='70148475170540'></label><a data-return='true'><span class='highlight'>String#present?</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/core_ext/object/blank.rb:23</a><ul><li><input type='checkbox' id='70148475139320'><label for='70148475139320'></label><a data-return='false'><span class='highlight'>String#blank?</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/core_ext/object/blank.rb:116</a><ul><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>Regexp#===</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/core_ext/object/blank.rb:117</a></li></ul></li></ul></li></ul></li><li><label class='placeholder'></label><a data-return='USE eager loading detected'><span class='highlight'>Bullet::Notification::NPlusOneQuery#title</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/n_plus_one_query.rb:16</a></li><li><input type='checkbox' id='70148475042120'><label for='70148475042120'></label><a data-return='  LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+'><span class='highlight'>Bullet::Notification::NPlusOneQuery#body_with_caller</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:40</a><ul><li><input type='checkbox' id='70148475010120'><label for='70148475010120'></label><a data-return='  LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]'><span class='highlight'>Bullet::Notification::NPlusOneQuery#body</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/n_plus_one_query.rb:12</a><ul><li><input type='checkbox' id='70148474977900'><label for='70148474977900'></label><a data-return='  LicenceAppointment =&gt; [:store]'><span class='highlight'>Bullet::Notification::NPlusOneQuery#klazz_associations_str</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:75</a><ul><li><input type='checkbox' id='70148474970700'><label for='70148474970700'></label><a data-return='[:store]'><span class='highlight'>Array#map</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:76</a><ul><li><label class='placeholder'></label><a data-return=':store'><span class='highlight'>Symbol#inspect</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:76</a></li></ul></li><li><label class='placeholder'></label><a data-return=':store'><span class='highlight'>Array#join</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:76</a></li></ul></li><li><input type='checkbox' id='70148466268580'><label for='70148466268580'></label><a data-return=':includes =&gt; [:store]'><span class='highlight'>Bullet::Notification::NPlusOneQuery#associations_str</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:79</a><ul><li><input type='checkbox' id='70148466235920'><label for='70148466235920'></label><a data-return='[:store]'><span class='highlight'>Array#map</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:80</a><ul><li><input type='checkbox' id='70148474781080'><label for='70148474781080'></label><a data-return=':store'><span class='highlight'>Bullet::Notification::NPlusOneQuery#block in associations_str</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:80</a><ul><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:80</a></li><li><label class='placeholder'></label><a data-return='store'><span class='highlight'>Symbol#to_s</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:80</a></li><li><label class='placeholder'></label><a data-return=':store'><span class='highlight'>String#to_sym</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:80</a></li></ul></li></ul></li><li><input type='checkbox' id='70148466101980'><label for='70148466101980'></label><a data-return='[:store]'><span class='highlight'>Array#inspect</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:80</a><ul><li><label class='placeholder'></label><a data-return=':store'><span class='highlight'>Symbol#inspect</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/base.rb:80</a></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70148424066060'><label for='70148424066060'></label><a data-return='Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;'><span class='highlight'>Bullet::Notification::NPlusOneQuery#call_stack_messages</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/n_plus_one_query.rb:28</a><ul><li><input type='checkbox' id='70148474694300'><label for='70148474694300'></label><a data-return='Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;'><span class='highlight'>Array#join</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/n_plus_one_query.rb:29</a><ul><li><label class='placeholder'></label><a data-return='/Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;'><span class='highlight'>Thread::Backtrace::Location#to_s</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/n_plus_one_query.rb:29</a></li><li><label class='placeholder'></label><a data-return='/Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;'><span class='highlight'>Thread::Backtrace::Location#to_s</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/n_plus_one_query.rb:29</a></li><li><label class='placeholder'></label><a data-return='/Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;'><span class='highlight'>Thread::Backtrace::Location#to_s</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/n_plus_one_query.rb:29</a></li><li><label class='placeholder'></label><a data-return='/Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;'><span class='highlight'>Thread::Backtrace::Location#to_s</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/n_plus_one_query.rb:29</a></li></ul></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70148473031700'><label for='70148473031700'></label><a data-return='{:user=&gt;user: yuanzhipeng, :url=&gt;GET /licence_appointments, :title=&gt;USE eager loading detected, :body=&gt;  LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+, :backtrace=&gt;[]}'><span class='highlight'>Hash#merge</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/n_plus_one_query.rb:21</a><ul><li><input type='checkbox' id='70148472898360'><label for='70148472898360'></label><a data-return='{:user=&gt;user: yuanzhipeng, :url=&gt;GET /licence_appointments, :title=&gt;USE eager loading detected, :body=&gt;  LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+, :backtrace=&gt;[]}'><span class='highlight'>Kernel#initialize_dup</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/n_plus_one_query.rb:21</a><ul><li><label class='placeholder'></label><a data-return='{:user=&gt;user: yuanzhipeng, :url=&gt;GET /licence_appointments, :title=&gt;USE eager loading detected, :body=&gt;  LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+, :backtrace=&gt;[]}'><span class='highlight'>Hash#initialize_copy</span> $GemPath0/gems/bullet-6.0.0/lib/bullet/notification/n_plus_one_query.rb:21</a></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70148474534020'><label for='70148474534020'></label><a data-return='true'><span class='highlight'>UniformNotifier::RailsLogger.out_of_channel_notify</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/base.rb:18</a><ul><li><label class='placeholder'></label><a data-return='true'><span class='highlight'>UniformNotifier::RailsLogger.active?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/rails_logger.rb:5</a></li><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/base.rb:22</a></li><li><input type='checkbox' id='70148474385940'><label for='70148474385940'></label><a data-return='true'><span class='highlight'>UniformNotifier::RailsLogger._out_of_channel_notify</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/rails_logger.rb:11</a><ul><li><label class='placeholder'></label><a data-return='[user: yuanzhipeng, GET /licence_appointments, USE eager loading detected,   LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+, []]'><span class='highlight'>Hash#values</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/rails_logger.rb:12</a></li><li><label class='placeholder'></label><a data-return='[user: yuanzhipeng, GET /licence_appointments, USE eager loading detected,   LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+, []]'><span class='highlight'>Array#compact</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/rails_logger.rb:12</a></li><li><label class='placeholder'></label><a data-return='user: yuanzhipeng
+GET /licence_appointments
+USE eager loading detected
+  LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+
+'><span class='highlight'>Array#join</span> $GemPath0/gems/uniform_notifier-1.12.1/lib/uniform_notifier/rails_logger.rb:12</a></li><li><input type='checkbox' id='70148474158900'><label for='70148474158900'></label><a data-return='true'><span class='highlight'>ActiveSupport::Logger#warn</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:497</a><ul><li><input type='checkbox' id='70148474151080'><label for='70148474151080'></label><a data-return='true'><span class='highlight'>ActiveSupport::Logger#add -&gt; block (2 levels) in broadcast</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger.rb:12</a><ul><li><input type='checkbox' id='70148474118480'><label for='70148474118480'></label><a data-return='true'><span class='highlight'>ActiveSupport::Logger#block (2 levels) in broadcast</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger.rb:12</a><ul><li><input type='checkbox' id='70148474085840'><label for='70148474085840'></label><a data-return='true'><span class='highlight'>ActiveSupport::Logger#add</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger.rb:50</a><ul><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>Kernel#nil?</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger.rb:51</a></li><li><input type='checkbox' id='70148473987700'><label for='70148473987700'></label><a data-return='0'><span class='highlight'>ActiveSupport::Logger#level</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger_silence.rb:22</a><ul><li><input type='checkbox' id='70148473955920'><label for='70148473955920'></label><a data-return='70148241765360'><span class='highlight'>ActiveSupport::Logger#local_log_id</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger_silence.rb:18</a><ul><li><label class='placeholder'></label><a data-return='#&lt;Thread:0x00007f99521067e0&gt;'><span class='highlight'>#&lt;Class:Thread&gt;#current</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger_silence.rb:19</a></li><li><label class='placeholder'></label><a data-return='70148241765360'><span class='highlight'>BasicObject#__id__</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger_silence.rb:19</a></li></ul></li><li><input type='checkbox' id='70148465855200'><label for='70148465855200'></label><a data-return='nil'><span class='highlight'>ThreadSafe::Cache#[]</span> $GemPath0/gems/thread_safe-0.3.6/lib/thread_safe/cache.rb:35</a><ul><li><label class='placeholder'></label><a data-return='nil'><span class='highlight'>ThreadSafe::Cache#[]</span> $GemPath0/gems/thread_safe-0.3.6/lib/thread_safe/non_concurrent_cache_backend.rb:11</a></li></ul></li></ul></li><li><input type='checkbox' id='70148473730560'><label for='70148473730560'></label><a data-return='true'><span class='highlight'>ActiveSupport::Logger#add</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:419</a><ul><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>Kernel#nil?</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:421</a></li><li><label class='placeholder'></label><a data-return='true'><span class='highlight'>NilClass#nil?</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:425</a></li><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>Kernel#block_given?</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:426</a></li><li><label class='placeholder'></label><a data-return='WARN'><span class='highlight'>ActiveSupport::Logger#format_severity</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:541</a></li><li><input type='checkbox' id='70148473298960'><label for='70148473298960'></label><a data-return='2019-06-11 17:13:22 +0800'><span class='highlight'>#&lt;Class:Time&gt;#now</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:434</a><ul><li><input type='checkbox' id='70148465822920'><label for='70148465822920'></label><a data-return='2019-06-11 17:13:22 +0800'><span class='highlight'>Time#initialize</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:434</a><ul><li><label class='placeholder'></label><a data-return='1560244402855751000'><span class='highlight'>Fixnum#+</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:434</a></li></ul></li></ul></li><li><input type='checkbox' id='70148472897240'><label for='70148472897240'></label><a data-return='user: yuanzhipeng
+GET /licence_appointments
+USE eager loading detected
+  LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+
+
+'><span class='highlight'>ActiveSupport::Logger#format_message</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:545</a><ul><li><input type='checkbox' id='70148472984460'><label for='70148472984460'></label><a data-return='user: yuanzhipeng
+GET /licence_appointments
+USE eager loading detected
+  LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+
+
+'><span class='highlight'>ActiveSupport::Logger::SimpleFormatter#call</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/tagged_logging.rb:20</a><ul><li><input type='checkbox' id='70148472929000'><label for='70148472929000'></label><a data-return='nil'><span class='highlight'>ActiveSupport::Logger::SimpleFormatter#tags_text</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/tagged_logging.rb:50</a><ul><li><input type='checkbox' id='70148472179500'><label for='70148472179500'></label><a data-return='[]'><span class='highlight'>ActiveSupport::Logger::SimpleFormatter#current_tags</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/tagged_logging.rb:45</a><ul><li><label class='placeholder'></label><a data-return='#&lt;Thread:0x00007f99521067e0&gt;'><span class='highlight'>#&lt;Class:Thread&gt;#current</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/tagged_logging.rb:46</a></li><li><label class='placeholder'></label><a data-return='[]'><span class='highlight'>Thread#[]</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/tagged_logging.rb:46</a></li></ul></li><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>Array#any?</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/tagged_logging.rb:52</a></li></ul></li><li><label class='placeholder'></label><a data-return=''><span class='highlight'>NilClass#to_s</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/tagged_logging.rb:21</a></li><li><input type='checkbox' id='70148472402660'><label for='70148472402660'></label><a data-return='user: yuanzhipeng
+GET /licence_appointments
+USE eager loading detected
+  LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+
+
+'><span class='highlight'>ActiveSupport::Logger::SimpleFormatter#call</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger.rb:66</a><ul><li><label class='placeholder'></label><a data-return='true'><span class='highlight'>Module#===</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger.rb:67</a></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70148389367880'><label for='70148389367880'></label><a data-return='859'><span class='highlight'>Logger::LogDevice#write</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:643</a><ul><li><input type='checkbox' id='70148389334000'><label for='70148389334000'></label><a data-return='859'><span class='highlight'>Logger::LogDevice#mon_synchronize</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:211</a><ul><li><input type='checkbox' id='70148389267640'><label for='70148389267640'></label><a data-return='1'><span class='highlight'>Logger::LogDevice#mon_enter</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:185</a><ul><li><label class='placeholder'></label><a data-return='#&lt;Thread:0x00007f99521067e0&gt;'><span class='highlight'>#&lt;Class:Thread&gt;#current</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:186</a></li><li><label class='placeholder'></label><a data-return='#&lt;Thread::Mutex:0x00007f99521a2528&gt;'><span class='highlight'>Thread::Mutex#lock</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:187</a></li><li><label class='placeholder'></label><a data-return='#&lt;Thread:0x00007f99521067e0&gt;'><span class='highlight'>#&lt;Class:Thread&gt;#current</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:188</a></li></ul></li><li><input type='checkbox' id='70148465245860'><label for='70148465245860'></label><a data-return='859'><span class='highlight'>Logger::LogDevice#block in write</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:645</a><ul><li><label class='placeholder'></label><a data-return='859'><span class='highlight'>IO#write</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:654</a></li></ul></li><li><input type='checkbox' id='70148465108080'><label for='70148465108080'></label><a data-return='#&lt;Thread::Mutex:0x00007f99521a2528&gt;'><span class='highlight'>Logger::LogDevice#mon_exit</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:197</a><ul><li><input type='checkbox' id='70148465074300'><label for='70148465074300'></label><a data-return='nil'><span class='highlight'>Logger::LogDevice#mon_check_owner</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:247</a><ul><li><label class='placeholder'></label><a data-return='#&lt;Thread:0x00007f99521067e0&gt;'><span class='highlight'>#&lt;Class:Thread&gt;#current</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:248</a></li></ul></li><li><label class='placeholder'></label><a data-return='#&lt;Thread::Mutex:0x00007f99521a2528&gt;'><span class='highlight'>Thread::Mutex#unlock</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:202</a></li></ul></li></ul></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70148464649580'><label for='70148464649580'></label><a data-return='true'><span class='highlight'>ActiveSupport::Logger#add</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger.rb:50</a><ul><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>Kernel#nil?</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger.rb:51</a></li><li><input type='checkbox' id='70148464524100'><label for='70148464524100'></label><a data-return='0'><span class='highlight'>ActiveSupport::Logger#level</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger_silence.rb:22</a><ul><li><input type='checkbox' id='70148464490200'><label for='70148464490200'></label><a data-return='70148241765360'><span class='highlight'>ActiveSupport::Logger#local_log_id</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger_silence.rb:18</a><ul><li><label class='placeholder'></label><a data-return='#&lt;Thread:0x00007f99521067e0&gt;'><span class='highlight'>#&lt;Class:Thread&gt;#current</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger_silence.rb:19</a></li><li><label class='placeholder'></label><a data-return='70148241765360'><span class='highlight'>BasicObject#__id__</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger_silence.rb:19</a></li></ul></li><li><input type='checkbox' id='70148464260780'><label for='70148464260780'></label><a data-return='nil'><span class='highlight'>ThreadSafe::Cache#[]</span> $GemPath0/gems/thread_safe-0.3.6/lib/thread_safe/cache.rb:35</a><ul><li><label class='placeholder'></label><a data-return='nil'><span class='highlight'>ThreadSafe::Cache#[]</span> $GemPath0/gems/thread_safe-0.3.6/lib/thread_safe/non_concurrent_cache_backend.rb:11</a></li></ul></li></ul></li><li><input type='checkbox' id='70148464048560'><label for='70148464048560'></label><a data-return='true'><span class='highlight'>ActiveSupport::Logger#add</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:419</a><ul><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>Kernel#nil?</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:421</a></li><li><label class='placeholder'></label><a data-return='true'><span class='highlight'>NilClass#nil?</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:425</a></li><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>Kernel#block_given?</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:426</a></li><li><label class='placeholder'></label><a data-return='WARN'><span class='highlight'>ActiveSupport::Logger#format_severity</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:541</a></li><li><input type='checkbox' id='70148381511820'><label for='70148381511820'></label><a data-return='2019-06-11 17:13:22 +0800'><span class='highlight'>#&lt;Class:Time&gt;#now</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:434</a><ul><li><input type='checkbox' id='70148381478160'><label for='70148381478160'></label><a data-return='2019-06-11 17:13:22 +0800'><span class='highlight'>Time#initialize</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:434</a><ul><li><label class='placeholder'></label><a data-return='1560244402880089000'><span class='highlight'>Fixnum#+</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:434</a></li></ul></li></ul></li><li><input type='checkbox' id='70148424086000'><label for='70148424086000'></label><a data-return='user: yuanzhipeng
+GET /licence_appointments
+USE eager loading detected
+  LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+
+
+'><span class='highlight'>ActiveSupport::Logger#format_message</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:545</a><ul><li><input type='checkbox' id='70148471920520'><label for='70148471920520'></label><a data-return='user: yuanzhipeng
+GET /licence_appointments
+USE eager loading detected
+  LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+
+
+'><span class='highlight'>ActiveSupport::Logger::SimpleFormatter#call</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/tagged_logging.rb:20</a><ul><li><input type='checkbox' id='70148454951800'><label for='70148454951800'></label><a data-return='nil'><span class='highlight'>ActiveSupport::Logger::SimpleFormatter#tags_text</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/tagged_logging.rb:50</a><ul><li><input type='checkbox' id='70148454995320'><label for='70148454995320'></label><a data-return='[]'><span class='highlight'>ActiveSupport::Logger::SimpleFormatter#current_tags</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/tagged_logging.rb:45</a><ul><li><label class='placeholder'></label><a data-return='#&lt;Thread:0x00007f99521067e0&gt;'><span class='highlight'>#&lt;Class:Thread&gt;#current</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/tagged_logging.rb:46</a></li><li><label class='placeholder'></label><a data-return='[]'><span class='highlight'>Thread#[]</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/tagged_logging.rb:46</a></li></ul></li><li><label class='placeholder'></label><a data-return='false'><span class='highlight'>Array#any?</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/tagged_logging.rb:52</a></li></ul></li><li><label class='placeholder'></label><a data-return=''><span class='highlight'>NilClass#to_s</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/tagged_logging.rb:21</a></li><li><input type='checkbox' id='70148463845100'><label for='70148463845100'></label><a data-return='user: yuanzhipeng
+GET /licence_appointments
+USE eager loading detected
+  LicenceAppointment =&gt; [:store]
+  Add to your finder: :includes =&gt; [:store]
+Call stack
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/models/licence_appointment.rb:31:in `store_name&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:69:in `block (2 levels) in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:64:in `block in _app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+  /Users/yuanzhipeng/Projects/rebasing/reocar_store/app/views/licence_appointments/index.html.erb:44:in `_app_views_licence_appointments_index_html_erb__847559354813488268_70148242260660&#39;
+
+
+'><span class='highlight'>ActiveSupport::Logger::SimpleFormatter#call</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger.rb:66</a><ul><li><label class='placeholder'></label><a data-return='true'><span class='highlight'>Module#===</span> $GemPath0/gems/activesupport-4.1.16/lib/active_support/logger.rb:67</a></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='70148454213620'><label for='70148454213620'></label><a data-return='859'><span class='highlight'>Logger::LogDevice#write</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:643</a><ul><li><input type='checkbox' id='70148454144480'><label for='70148454144480'></label><a data-return='859'><span class='highlight'>Logger::LogDevice#mon_synchronize</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:211</a><ul><li><input type='checkbox' id='70148454068320'><label for='70148454068320'></label><a data-return='1'><span class='highlight'>Logger::LogDevice#mon_enter</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:185</a><ul><li><label class='placeholder'></label><a data-return='#&lt;Thread:0x00007f99521067e0&gt;'><span class='highlight'>#&lt;Class:Thread&gt;#current</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:186</a></li><li><label class='placeholder'></label><a data-return='#&lt;Thread::Mutex:0x00007f9962b54c78&gt;'><span class='highlight'>Thread::Mutex#lock</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:187</a></li><li><label class='placeholder'></label><a data-return='#&lt;Thread:0x00007f99521067e0&gt;'><span class='highlight'>#&lt;Class:Thread&gt;#current</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:188</a></li></ul></li><li><input type='checkbox' id='70148453968120'><label for='70148453968120'></label><a data-return='859'><span class='highlight'>Logger::LogDevice#block in write</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:645</a><ul><li><label class='placeholder'></label><a data-return='859'><span class='highlight'>IO#write</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/logger.rb:654</a></li></ul></li><li><input type='checkbox' id='70148453725900'><label for='70148453725900'></label><a data-return='#&lt;Thread::Mutex:0x00007f9962b54c78&gt;'><span class='highlight'>Logger::LogDevice#mon_exit</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:197</a><ul><li><input type='checkbox' id='70148453750120'><label for='70148453750120'></label><a data-return='nil'><span class='highlight'>Logger::LogDevice#mon_check_owner</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:247</a><ul><li><label class='placeholder'></label><a data-return='#&lt;Thread:0x00007f99521067e0&gt;'><span class='highlight'>#&lt;Class:Thread&gt;#current</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:248</a></li></ul></li><li><label class='placeholder'></label><a data-return='#&lt;Thread::Mutex:0x00007f9962b54c78&gt;'><span class='highlight'>Thread::Mutex#unlock</span> /Users/yuanzhipeng/.rbenv/versions/2.3.8/lib/ruby/2.3.0/monitor.rb:202</a></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul></li></ul><script>var TreeHtml = (function(){
+  var cmd, node, action;
+  var id = 0;
+
+  function hovering() {
+    var hover = document.querySelector('a:hover');
+    return hover && hover.parentNode;
+  }
+
+  function match_key(e) {
+    var char_code = (typeof e.which == "number") ? e.which : e.keyCode;
+    return char_code > 0 && key_cmds[String.fromCharCode(char_code)];
+  }
+
+  function check_if_not(li, tf) {
+    var checkbox = li.children[0];
+    (checkbox.nodeName === 'INPUT') &&
+      (checkbox.checked === tf || (checkbox.checked = tf));
+  }
+
+  function check_all(lis, tf) {
+    for(var i = 0; i < lis.length; i++) {
+      check_if_not(lis[i], tf);
+    }
+  }
+
+  function check_children(node, tf) {
+    var ul, lis;
+    (ul = node.querySelector('ul')) &&
+      (lis = ul.children) &&
+      check_all(lis, tf);
+  }
+
+  function id_of(li) {
+    return li.id || (li.id = 'i' + id++);
+  }
+
+  function twinkle(a, num) {
+    a.className = 'twinkle';
+    setTimeout(function(){_twinkle(a, num);}, 200);
+  }
+
+  function _twinkle(a, num) {
+    a.className = '';
+    (num > 0) && setTimeout(function(){twinkle(a, num - 1);}, 200);
+  }
+
+  Element.prototype.documentOffsetTop = function () {
+    return this.offsetTop + (this.offsetParent ? this.offsetParent.documentOffsetTop() : 0);
+  };
+
+  function go(start, end, duration, interval, fun) {
+    (function _go(from, step, to){
+      setTimeout(function(){
+        fun(from);
+        if(from === to) return;
+        next_target = from + step;
+        if ((step < 0) ? (next_target < to) : (next_target > to)){ return _go(to, step, to); }
+        _go(from + step, step, to);
+      }, interval);
+    })(start, (end-start)/(duration/interval), end);
+  }
+
+  function jump_and_twinkle(li) {
+    if(!li) return;
+    var to = li.documentOffsetTop() - (window.innerHeight / 2);
+    if(Math.abs(to - window.scrollY) < (window.innerHeight * 5)){
+      window.scroll({
+        top: to,
+        left: 0,
+        behavior: 'smooth'
+      });
+    }else{
+      go(window.scrollY, to, 200, 20, function(y){window.scroll(0, y)});
+    }
+    twinkle(li.querySelector('a'), 6);
+  }
+
+  var actions = {
+    fold: function(node) {
+      check_children(node, true);
+    },
+    unfold: function(node) {
+      check_children(node, false);
+    },
+    prev: function(node) {
+      twinkle(node.querySelector('a'), 6);
+      jump_and_twinkle(node.previousSibling);
+    },
+    next: function(node) {
+      twinkle(node.querySelector('a'), 6);
+      jump_and_twinkle(node.nextSibling);
+    }
+  };
+
+  var key_cmds = {f: 'fold', u: 'unfold', p: 'prev', n: 'next'};
+
+  var resp_keypress = [function(e) {
+    e = e || window.event;
+    (cmd = match_key(e)) &&
+      (action = actions[cmd]) &&
+      (node = hovering()) &&
+      action(node);
+  }];
+
+  document.onkeypress = function(e) {
+    for(var i = 0; i < resp_keypress.length; i++) {
+      resp_keypress[i](e);
+    }
+  };
+
+  return {
+    debug: function() {
+      debugger;
+    },
+    more_onkeypress: function(f) {
+      resp_keypress.push(f);
+    },
+    hover_press: function(key, fun) {
+      var conn = Math.random().toString();
+      key_cmds[key] = conn;
+      actions[conn] = fun;
+    },
+    no_hover_press: function(key) {
+      delete actions[key_cmds[key]];
+      delete key_cmds[key];
+    },
+    sub_hover_press: function(old, neo) {
+      key_cmds[neo] = key_cmds[old];
+      delete key_cmds[old];
+    },
+  };
+})();
+;var TreeHtmlGroup = (function () {
+  var tree = document.querySelector('ul')
+  var group_id = 0
+  var tree_id_prefix = 0
+
+  function group_by_key(ul, key_func) {
+    var last_key = null
+    var lis_groups = []
+
+    function last_group() {
+      return lis_groups[lis_groups.length - 1]
+    }
+
+    var children_count = ul.children.length
+    for (var i = 0; i < children_count; i++) {
+      var li = ul.children[i]
+      callee_path = key_func(li)
+      if (last_key !== callee_path) {
+        last_key = callee_path
+        lis_groups.push([])
+      }
+      last_group().push(li)
+    }
+
+    if (lis_groups.length == 1 && key_func(lis_groups[0][0]) == key_func(ul.parentElement)) {
+      return
+    }
+
+    lis_groups.forEach(function (group) {
+      var key = key_func(group[0])
+      wrap_into_group(group, key)
+    })
+  }
+
+  function wrap_into_group(lis, key) {
+    var id = 'g' + group_id++
+    var html = '<li>' +
+      '<input type="checkbox" id="' + id + '">' +
+      '<label for="' + id + '"></label>' +
+      '<a>' + key + '</a>' +
+      '<ul></ul>' +
+      '</li>'
+
+    lis[0].insertAdjacentHTML('beforebegin', html)
+    var ul = document.querySelector('#' + id + ' ~ ul')
+    lis.forEach(function (li) {
+      ul.insertAdjacentElement('beforeend', li)
+    })
+  }
+
+  function switch_tree(name) {
+    var id = name === '' ? name : name_to_id(name)
+    document.querySelectorAll('.tree-html').forEach(function (tree) {
+      if (tree.id !== id) {
+        tree.style = 'display:none'
+      } else {
+        tree.style = ''
+      }
+    })
+  }
+
+  function name_to_id(name) {
+    return 'tree-html-group-' + name
+  }
+
+  return function (opt) {
+    var id = name_to_id(opt['name'])
+    if (document.getElementById(id)) {
+      return switch_tree
+    }
+
+    var id_pattern = '$1p-' + tree_id_prefix++ + '$2$3'
+    var li_ids_changed = tree.innerHTML
+      .replace(/(<input type="checkbox" id=")(.+?)(">)/, id_pattern)
+      .replace(/(<label for=")(.+?)(">)/, id_pattern)
+
+    tree.insertAdjacentHTML('beforebegin', '<ul id="' + id + '" class="tree-html" style="display:none">' + li_ids_changed + '</ul>')
+
+    var uls = document.querySelectorAll('#' + id + ',#' + id + ' ul')
+    var key_func = opt['key']
+    for (var i = uls.length - 1; i > 0; i--) {
+      var ul = uls[i]
+      group_by_key(ul, key_func)
+    }
+
+    return switch_tree
+  }
+})();
+</script><script >var group_by_file = (function(){
+  var grouped_by_file = false
+
+  return function(){
+    var sw = TreeHtmlGroup({
+      name: 'by_file',
+      key: function get_path(li) {
+        var p = li.querySelector('a').innerText.replace(/.*\s(.*):\d+/, '$1')
+        if (p === '') {
+          var callees = li.querySelector('ul')
+          if (callees !== null) {
+            return get_path(callees.children[0])
+          }
+        }
+        return '<b>' + p + '</b>'
+      }
+    })
+
+    sw(grouped_by_file ? '' : 'by_file')
+    grouped_by_file = !grouped_by_file
+  }
+})()
+</script><script >(function(){
+  TreeHtml.hover_press('r', function(n){
+    var a = n.querySelector('a');
+    var repl = '> ' + a.querySelector('span').innerText + "\n" + a.getAttribute('data-return');
+    console.log(repl);
+  });
+})();
+</script></body></html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>zipkin-tracer的运作</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="zipkin-tracer的运作" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="为研究zipkin以及zipkin-trace这个gem，对 https://github.com/openzipkin/zipkin-ruby-example 的代码稍作修改，并复制成4个不同端口的服务（8081、9000、9001、9002），使其调用链如下…" />
+<meta property="og:description" content="为研究zipkin以及zipkin-trace这个gem，对 https://github.com/openzipkin/zipkin-ruby-example 的代码稍作修改，并复制成4个不同端口的服务（8081、9000、9001、9002），使其调用链如下…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-10-20T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"为研究zipkin以及zipkin-trace这个gem，对 https://github.com/openzipkin/zipkin-ruby-example 的代码稍作修改，并复制成4个不同端口的服务（8081、9000、9001、9002），使其调用链如下…","@type":"BlogPosting","headline":"zipkin-tracer的运作","dateModified":"2019-10-20T00:00:00+00:00","url":"/2019/10/20/589723fa4ca5e34cf08d53a8eaf781de.html","datePublished":"2019-10-20T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2019/10/20/589723fa4ca5e34cf08d53a8eaf781de.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">zipkin-tracer的运作</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-10-20T00:00:00+00:00" itemprop="datePublished">Oct 20, 2019
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>为研究zipkin以及zipkin-trace这个gem，对 <a href="https://github.com/openzipkin/zipkin-ruby-example">https://github.com/openzipkin/zipkin-ruby-example</a> 的代码稍作修改，并复制成4个不同端口的服务（8081、9000、9001、9002），使其调用链如下</div>
+<div><br /></div>
+<pre><code>8081 frontend
+|_ 9000 backend
+|   |_ 9001 deep_backend
+\_ 9002 another_backend</code></pre>
+<div><br /></div>
+<div>并对zipkin-tracer这个gem的代码作如下改动，只跟踪zipkin-tracer本层的rack运动，排除底层：</div>
+<div><br /></div>
+<pre><code># zipkin-tracer-0.40.0/lib/zipkin-tracer/rack/zipkin-tracer.rb
+module ZipkinTracer
+  class RackHandler
+    def call(env)
+      port = env[&#39;SERVER_PORT&#39;]
+      binding.trace_tree(htmp: &#34;zip-#{port}&#34;, no_methods: /pass_to_under/, warm: port) do
+        _call(env)
+      end
+    end
+
+    def _call(env)
+      zipkin_env = ZipkinEnv.new(env, @config)
+      trace_id = zipkin_env.trace_id
+      TraceContainer.with_trace_id(trace_id) do
+        if !trace_id.sampled?
+          pass_to_under(env)
+        else
+          @tracer.with_new_span(trace_id, span_name(env)) do |span|
+            trace!(span, zipkin_env) { pass_to_under(env) }
+          end
+        end
+      end
+    end
+
+    def pass_to_under(env)
+      @app.call(env)
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div>然后启动zipkin的docker和这4个服务，对8081进行访问，使zipkin记录整个链路如下</div>
+<div><br /></div>
+<div><img src="/assets/files/589723fa4ca5e34cf08d53a8eaf781de/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /><br /></div>
+<div><br /></div>
+<div>并获得4份zipkin-tracer的调用轨迹：</div>
+<div><br /></div>
+<div><a href="/assets/files/589723fa4ca5e34cf08d53a8eaf781de/15fbef7e5a86e32cbd9ecc683997c0b6.html"><img src="/assets/files/589723fa4ca5e34cf08d53a8eaf781de/edf893b431d508d3b104b0eaa171da3d.png" alt="20191020_153300_187_zip-8081.html" /></a></div>
+<div><br /></div>
+<div><a href="/assets/files/589723fa4ca5e34cf08d53a8eaf781de/614d6b5e68cf2726fb84bb2dd467521f.html"><img src="/assets/files/589723fa4ca5e34cf08d53a8eaf781de/10bea98c295deebb1a25fe903c37c79f.png" alt="20191020_153301_025_zip-9000.html" /></a></div>
+<div><br /></div>
+<div><a href="/assets/files/589723fa4ca5e34cf08d53a8eaf781de/8a21272eddb727ea27efd8abbf81f8c7.html"><img src="/assets/files/589723fa4ca5e34cf08d53a8eaf781de/4d49d753361308084c076182c62f1dec.png" alt="20191020_153301_856_zip-9001.html" /></a></div>
+<div><br /></div>
+<div><a href="/assets/files/589723fa4ca5e34cf08d53a8eaf781de/b05f5a8c940f37e89df9aa052168b506.html"><img src="/assets/files/589723fa4ca5e34cf08d53a8eaf781de/6aba9c299020097cd54cace4d98f9e6a.png" alt="20191020_153305_638_zip-9002.html" /></a></div>
+<div><br /></div>
+<div>对照zipkin的图和源码的调用栈，可见顶层调用方8081从env生成的trace_id对象如下，其span_id被当做了整个调用链的trace_id，其parent_id是没有的</div>
+<div><br /></div>
+<div><img src="/assets/files/589723fa4ca5e34cf08d53a8eaf781de/91eee3f8d75dbb327ede474944726554.png" type="image/png" data-filename="Image.png" /><br /></div>
+<div><br /></div>
+<div>而最深的被调用方9001的trace_id对象中，parent_id为9000的span_id</div>
+<div><br /></div>
+<div><img src="/assets/files/589723fa4ca5e34cf08d53a8eaf781de/f7cb588f62bc16ba6c8ac0b4956bd711.png" type="image/png" data-filename="Image.png" /><br /></div>
+<div><br /></div>
+<div>这些xxx_id的生成逻辑如下源码所示，整个链路的trace_id、调用方的parent_span_id、调用方分配给被调用方的span_id，都可从header里取出。如果header没带有这些键，则代表这是链路的开头，需要生成</div>
+<div><br /></div>
+<pre><code># zipkin-tracer-0.40.0/lib/zipkin-tracer/rack/zipkin_env.rb
+B3_SINGLE_HEADER = &#39;HTTP_B3&#39;.freeze
+B3_REQUIRED_HEADERS = %w[HTTP_X_B3_TRACEID HTTP_X_B3_SPANID].freeze
+B3_OPT_HEADERS = %w[HTTP_X_B3_PARENTSPANID HTTP_X_B3_SAMPLED HTTP_X_B3_FLAGS].freeze
+
+def retrieve_or_generate_ids
+  if called_with_zipkin_b3_single_header?
+    trace_id, span_id, parent_span_id, sampled, flags =
+      B3SingleHeaderFormat.parse_from_header(@env[B3_SINGLE_HEADER])
+    shared = true
+  elsif called_with_zipkin_headers?
+    trace_id, span_id, parent_span_id, sampled, flags = @env.values_at(*B3_REQUIRED_HEADERS, *B3_OPT_HEADERS)
+    shared = true
+  end
+
+  unless trace_id
+    span_id = TraceGenerator.new.generate_id
+    trace_id = TraceGenerator.new.generate_id_from_span_id(span_id)
+    parent_span_id = nil
+    shared = false
+  end
+
+  [trace_id, span_id, parent_span_id, sampled, flags, shared]
+end</code></pre>
+<div><br /></div>
+<div>然后就是发送span到zipkin服务器的过程，调用栈如下</div>
+<div><br /></div>
+<div><img src="/assets/files/589723fa4ca5e34cf08d53a8eaf781de/caebd5802a502287b56167f6208b00f3.png" type="image/png" data-filename="Image.png" /><br /></div>
+<div><br /></div>
+<div>源码如下，实际对于底层app的call，被包裹成block由with_new_span来调用，并在调用前后记录trace_id和调用时长，调用后还要flush!到接收zipkin数据的端点，而端点都是继承ZipkinSenderBase然后重写flush!方法的</div>
+<div><br /></div>
+<pre><code># zipkin-tracer-0.40.0/lib/zipkin-tracer/zipkin_sender_base.rb
+module Trace
+  class ZipkinSenderBase
+
+    def initialize(options={})
+      @options = options
+      reset
+    end
+
+    def with_new_span(trace_id, name)
+      span = start_span(trace_id, name)
+      result = yield span
+      end_span(span)
+      result
+    end
+
+    def end_span(span, timestamp = Time.now)
+      span.close(timestamp)
+      # If in a thread not handling incoming http requests, it will not have Kind::SERVER, so the span
+      # will never be flushed and will cause memory leak.
+      # If no parent span, then current span needs to flush when it ends.
+      if !span.has_parent_span? || span.kind == Trace::Span::Kind::SERVER
+        flush!
+        reset
+      end
+    end
+
+    def start_span(trace_id, name, timestamp = Time.now)
+      span = Span.new(name, trace_id, timestamp)
+      span.local_endpoint = Trace.default_endpoint
+      store_span(trace_id, span)
+      span
+    end
+
+    def flush!
+      raise &#34;not implemented&#34;
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div>而被调用方的span_id则是由调用方生成的，从FaradayHandler代码就可知，在发起调用前，会生成新的span_id塞入env中，之后才真正的去请求</div>
+<div><br /></div>
+<pre><code># zipkin-tracer-0.40.0/lib/zipkin-tracer/faraday/zipkin-tracer.rb
+module ZipkinTracer
+  class FaradayHandler &lt; ::Faraday::Middleware
+
+    def call(env)
+      trace_id = TraceGenerator.new.next_trace_id
+      TraceContainer.with_trace_id(trace_id) do
+        b3_headers.each do |method, header|
+          env[:request_headers][header] = trace_id.send(method).to_s
+        end
+        if Trace.tracer &amp;&amp; trace_id.sampled?
+          trace!(env, trace_id)
+        else
+          @app.call(env)
+        end
+      end
+    end
+
+    def b3_headers
+      {
+        trace_id: &#39;X-B3-TraceId&#39;,
+        parent_id: &#39;X-B3-ParentSpanId&#39;,
+        span_id: &#39;X-B3-SpanId&#39;,
+        sampled: &#39;X-B3-Sampled&#39;,
+        flags: &#39;X-B3-Flags&#39;
+      }
+    end
+
+    def trace!(env, trace_id)
+      response = nil
+      # handle either a URI object (passed by Faraday v0.8.x in testing), or something string-izable
+      method = env[:method].to_s
+      url = env[:url].respond_to?(:host) ? env[:url] : URI.parse(env[:url].to_s)
+      remote_endpoint = Trace::Endpoint.remote_endpoint(url, @service_name) # The endpoint we are calling.
+      Trace.tracer.with_new_span(trace_id, method.downcase) do |span|
+        @span = span # So we can record on exceptions
+        # annotate with method (GET/POST/etc.) and uri path
+        span.kind = Trace::Span::Kind::CLIENT
+        span.remote_endpoint = remote_endpoint
+        span.record_tag(Trace::Span::Tag::METHOD, method.upcase)
+        span.record_tag(Trace::Span::Tag::PATH, url.path)
+        response = @app.call(env).on_complete do |renv|
+          span.record_status(renv[:status])
+        end
+      end
+      response
+    rescue Net::ReadTimeout
+      record_error(@span, &#39;Request timed out.&#39;)
+      raise
+    rescue Faraday::ConnectionFailed
+      record_error(@span, &#39;Request connection failed.&#39;)
+      raise
+    rescue Faraday::ClientError
+      record_error(@span, &#39;Generic Faraday client error.&#39;)
+      raise
+    end
+  end
+end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2019/10/20/589723fa4ca5e34cf08d53a8eaf781de.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>read_attribute、write_attribute</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="read_attribute、write_attribute" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="跟踪下read_attribute干什么，顺便对比下:[]和直接调用attr_reader那样的方法…" />
+<meta property="og:description" content="跟踪下read_attribute干什么，顺便对比下:[]和直接调用attr_reader那样的方法…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-11-04T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"跟踪下read_attribute干什么，顺便对比下:[]和直接调用attr_reader那样的方法…","@type":"BlogPosting","headline":"read_attribute、write_attribute","dateModified":"2017-11-04T00:00:00+00:00","url":"/2017/11/04/29bc6f871638c7fee3b53e32d4364f0b.html","datePublished":"2017-11-04T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/11/04/29bc6f871638c7fee3b53e32d4364f0b.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">read_attribute、write_attribute</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-11-04T00:00:00+00:00" itemprop="datePublished">Nov 4, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style="line-height: 1.45;">跟踪下read_attribute干什么，顺便对比下:[]和直接调用attr_reader那样的方法</span></div>
+<div><br /></div>
+<pre><code>[11] pry(main)&gt; binding.trace_tree(htmp: &#39;ar/read_attr&#39;){ ss.read_attribute(:gender) }
+[17] pry(main)&gt; binding.trace_tree(htmp: &#39;ar/read_attr_bracket&#39;){ mary[:gender] }
+[21] pry(main)&gt; binding.trace_tree(htmp: &#39;ar/reader&#39;){ mary.gender }</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>得调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/29bc6f871638c7fee3b53e32d4364f0b/c8291d2a96d4b4aa9a19d5847d204386.html"><img src="/assets/files/29bc6f871638c7fee3b53e32d4364f0b/7cc89c3b7f80f293ce7642519c7bf0c1.png" alt="20171104_214303_741_read_attr.html" /></a></div>
+<div><br /></div>
+<div><a href="/assets/files/29bc6f871638c7fee3b53e32d4364f0b/74579686184a15971d373bf752396c09.html"><img src="/assets/files/29bc6f871638c7fee3b53e32d4364f0b/5889cb2c77d295ddef90182076148bfa.png" alt="20171104_215958_375_read_attr_bracket.html" /></a></div>
+<div><br /></div>
+<div><a href="/assets/files/29bc6f871638c7fee3b53e32d4364f0b/57ab27ae72a9d71fffbfc2a6412af593.html"><img src="/assets/files/29bc6f871638c7fee3b53e32d4364f0b/ae62eae393991cb02a72d59fff3494cc.png" alt="20171104_223106_686_reader.html" /></a></div>
+<div><br /></div>
+<div>可见最终都会调到_read_attribute。</div>
+<div><br /></div>
+<div>而:[]形式会传一个block，以使在字段名找不到时报ActiveModel::MissingAttributeError，但根据ActiveRecord::Attribute#value的做法，此block被忽略（至少rails 5.1.2是这样）</div>
+<div><br /></div>
+<div>而attr_reader形式，来自以下定义</div>
+<div><br /></div>
+<pre><code># We want to generate the methods via module_eval rather than
+# define_method, because define_method is slower on dispatch.
+# Evaluating many similar methods may use more memory as the instruction
+# sequences are duplicated and cached (in MRI).  define_method may
+# be slower on dispatch, but if you&#39;re careful about the closure
+# created, then define_method will consume much less memory.
+#
+# But sometimes the database might return columns with
+# characters that are not allowed in normal method names (like
+# &#39;my_column(omg)&#39;. So to work around this we first define with
+# the __temp__ identifier, and then use alias method to rename
+# it to what we want.
+#
+# We are also defining a constant to hold the frozen string of
+# the attribute name. Using a constant means that we do not have
+# to allocate an object on each call to the attribute method.
+# Making it frozen means that it doesn&#39;t get duped when used to
+# key the @attributes in read_attribute.
+def define_method_attribute(name)
+  safe_name = name.unpack(&#34;h*&#34;.freeze).first
+  temp_method = &#34;__temp__#{safe_name}&#34;
+
+  ActiveRecord::AttributeMethods::AttrNames.set_name_cache safe_name, name
+
+  generated_attribute_methods.module_eval &lt;&lt;-STR, __FILE__, __LINE__ + 1
+    def #{temp_method}
+      name = ::ActiveRecord::AttributeMethods::AttrNames::ATTR_#{safe_name}
+      _read_attribute(name) { |n| missing_attribute(n, caller) }
+    end
+  STR
+
+  generated_attribute_methods.module_eval do
+    alias_method name, temp_method
+    undef_method temp_method
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>此做法有以下要点：可<span style="line-height: 1.45;">能存在有些数据库字段的名字，如“my_column(omg)”，不能用def关键字来定义方法名，只能用define_method；但define_method性能不及def；为了使用def，需先将字段名转换成合适的形式（safe_name，再temp_method），然后def，再用alias_method和undef_method来重命名为原本的字段名（当然，对于</span><span style="line-height: 1.45;">“my_column(omg)”，要读写还是只能send</span><span style="line-height: 1.45;">）；为避免每次调用attr_reader形式都做safe_name转换，要把它设成constant</span></div>
+<div><br /></div>
+<div>基本上，write的也是类似，如下</div>
+<div><br /></div>
+<div><a href="/assets/files/29bc6f871638c7fee3b53e32d4364f0b/3c8c642a693376ccf65cc035a83a9dbb.html"><img src="/assets/files/29bc6f871638c7fee3b53e32d4364f0b/4302fd21449d1651c7473c7f84c754c2.png" alt="20171104_232553_053_write_attr.html" /></a></div>
+<div><br /></div>
+<div><a href="/assets/files/29bc6f871638c7fee3b53e32d4364f0b/88ce7dceb9c1b677deba587b8c2118b9.html"><img src="/assets/files/29bc6f871638c7fee3b53e32d4364f0b/055d306434ef4b4bf83188e090bf12e0.png" alt="20171104_232919_635_write_attr_bracket.html" /></a></div>
+<div><br /></div>
+<div><a href="/assets/files/29bc6f871638c7fee3b53e32d4364f0b/837cabfe138af7c86ea67f1e73139e36.html"><img src="/assets/files/29bc6f871638c7fee3b53e32d4364f0b/2477cd962e7bfd617a0d631b1225ac66.png" alt="20171104_232818_854_writer.html" /></a></div>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/11/04/29bc6f871638c7fee3b53e32d4364f0b.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

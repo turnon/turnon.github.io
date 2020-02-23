@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>rails的reload机制</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="rails的reload机制" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="根据rails guide里constant reloading一节的描述，如果修改了某些代码，想在rails console里重新加载，可输入reload!…" />
+<meta property="og:description" content="根据rails guide里constant reloading一节的描述，如果修改了某些代码，想在rails console里重新加载，可输入reload!…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-06-10T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"根据rails guide里constant reloading一节的描述，如果修改了某些代码，想在rails console里重新加载，可输入reload!…","@type":"BlogPosting","headline":"rails的reload机制","dateModified":"2019-06-10T00:00:00+00:00","url":"/2019/06/10/be99fb0e81d437717546e2c29fa28a3a.html","datePublished":"2019-06-10T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2019/06/10/be99fb0e81d437717546e2c29fa28a3a.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">rails的reload机制</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-06-10T00:00:00+00:00" itemprop="datePublished">Jun 10, 2019
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>根据rails guide里constant reloading一节的描述，如果修改了某些代码，想在rails console里重新加载，可输入reload!</div>
+<div><br /></div>
+<div>此命令其实是调用railties-5.2.1/lib/rails/console/app.rb中的Rails.application.reloader.reload!</div>
+<div><br /></div>
+<div>于是跟踪一下：</div>
+<div><br /></div>
+<pre><code>[3] pry(main)&gt; binding.trace_tree(htmp: &#39;rails_reload_bang&#39;){ Rails.application.reloader.reload! }</code></pre>
+<div><br /></div>
+<div>得调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/be99fb0e81d437717546e2c29fa28a3a/ca9222caddf360ba50fdcfcc9c30b9ee.html"><img src="/assets/files/be99fb0e81d437717546e2c29fa28a3a/55c2180b5c8a5b9d7868b529be2848e7.png" alt="20190610_141305_091_rails_reload_bang.html" /></a></div>
+<div><br /></div>
+<div>从activesupport-5.2.1/lib/active_support/reloader.rb来看，这reloader的实现比较复杂，它在实际执行run!和complete!的前后，还要执行ExecutionWrapper的run!和complete!，而这些run!和complete!其实是callback……所以调用栈来回跳跃，还包含了一大堆callback机制的调用……</div>
+<div><br /></div>
+<pre><code># activesupport-5.2.1/lib/active_support/reloader.rb
+module ActiveSupport
+  class Reloader &lt; ExecutionWrapper
+
+    def self.reload!
+      executor.wrap do
+        new.tap do |instance|
+          begin
+            instance.run!
+          ensure
+            instance.complete!
+          end
+        end
+      end
+      prepare!
+    end
+
+# activesupport-5.2.1/lib/active_support/execution_wrapper.rb
+module ActiveSupport
+  class ExecutionWrapper
+    include ActiveSupport::Callbacks
+
+    def self.wrap
+      return yield if active?
+      instance = run!
+      begin
+        yield
+      ensure
+        instance.complete!
+      end
+    end</code></pre>
+<div><br /></div>
+<div>甚至，reloader里根本没包含任何reload的逻辑，只能从该文件里的一些特别的字眼，如class_unload，去dump出的调用栈里搜索，结果还是发现一些蛛丝马迹：</div>
+<div><br /></div>
+<div><img src="/assets/files/be99fb0e81d437717546e2c29fa28a3a/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div>如上，Rails.application.reloader.reload!是会调用class_unload!的，而这个方法会转而调用railties-5.2.1/lib/rails/application/finisher.rb里定义的回调，该回调执行的就是ActiveSupport::DescendantsTracker.clear和ActiveSupport::Dependencies.clear</div>
+<div><br /></div>
+<pre><code># railties-5.2.1/lib/rails/application/finisher.rb
+module Rails
+  class Application
+    module Finisher
+      include Initializable
+
+      initializer :set_clear_dependencies_hook, group: :all do |app|
+        callback = lambda do
+          ActiveSupport::DescendantsTracker.clear
+          ActiveSupport::Dependencies.clear
+        end
+
+        if config.cache_classes
+          app.reloader.check = lambda { false }
+        elsif config.reload_classes_only_on_change
+          app.reloader.check = lambda do
+            app.reloaders.map(&amp;:updated?).any?
+          end
+        else
+          app.reloader.check = lambda { true }
+        end
+
+        if config.reload_classes_only_on_change
+          reloader = config.file_watcher.new(*watchable_args, &amp;callback)
+          reloaders &lt;&lt; reloader
+
+          # Prepend this callback to have autoloaded constants cleared before
+          # any other possible reloading, in case they need to autoload fresh
+          # constants.
+          app.reloader.to_run(prepend: true) do
+            # In addition to changes detected by the file watcher, if routes
+            # or i18n have been updated we also need to clear constants,
+            # that&#39;s why we run #execute rather than #execute_if_updated, this
+            # callback has to clear autoloaded constants after any update.
+            class_unload! do
+              reloader.execute
+            end
+          end
+        else
+          app.reloader.to_complete do
+            class_unload!(&amp;callback)
+          end
+        end
+      end</code></pre>
+<div><br /></div>
+<div>其中ActiveSupport::DescendantsTracker.clear用于对include了ActiveSupport::DescendantsTracker的类清理其对子类的跟踪信息</div>
+<div><br /></div>
+<div>而ActiveSupport::Dependencies.clear代码量就有点大了，于是另外再跟踪一次：</div>
+<div><br /></div>
+<pre><code>[7] pry(main)&gt; binding.trace_tree(htmp: &#39;dep_clear&#39;){ ActiveSupport::Dependencies.clear }</code></pre>
+<div><br /></div>
+<div>得调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/be99fb0e81d437717546e2c29fa28a3a/2dc56d6f071dc1313836133a643d0419.html"><img src="/assets/files/be99fb0e81d437717546e2c29fa28a3a/2040a73431ba7b40ab17df0cde82d794.png" alt="20190611_145854_583_dep_clear.html" /></a></div>
+<div><br /></div>
+<div>其实基本骨架还是比较清晰的</div>
+<div><br /></div>
+<pre><code>def clear
+  Dependencies.unload_interlock do
+    loaded.clear
+    loading.clear
+    remove_unloadable_constants!
+  end
+end</code></pre>
+<div><br /></div>
+<div>运行起来就是这样</div>
+<div><br /></div>
+<div><img src="/assets/files/be99fb0e81d437717546e2c29fa28a3a/91eee3f8d75dbb327ede474944726554.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div>这里面loaded和loading保存的都是文件路径，用于记录哪些代码文件已经加载过，而remove_unloadable_constants!则是调用remove_constant清除常量，其实现如下</div>
+<div><br /></div>
+<pre><code>def remove_constant(const) #:nodoc:
+  # Normalize ::Foo, ::Object::Foo, Object::Foo, Object::Object::Foo, etc. as Foo.
+  normalized = const.to_s.sub(/\A::/, &#34;&#34;)
+  normalized.sub!(/\A(Object::)+/, &#34;&#34;)
+
+  constants = normalized.split(&#34;::&#34;)
+  to_remove = constants.pop
+
+  # Remove the file path from the loaded list.
+  file_path = search_for_file(const.underscore)
+  if file_path
+    expanded = File.expand_path(file_path)
+    expanded.sub!(/\.rb\z/, &#34;&#34;)
+    loaded.delete(expanded)
+  end
+
+  if constants.empty?
+    parent = Object
+  else
+    # This method is robust to non-reachable constants.
+    #
+    # Non-reachable constants may be passed if some of the parents were
+    # autoloaded and already removed. It is easier to do a sanity check
+    # here than require the caller to be clever. We check the parent
+    # rather than the very const argument because we do not want to
+    # trigger Kernel#autoloads, see the comment below.
+    parent_name = constants.join(&#34;::&#34;)
+    return unless qualified_const_defined?(parent_name)
+    parent = constantize(parent_name)
+  end
+
+  # In an autoloaded user.rb like this
+  #
+  #   autoload :Foo, &#39;foo&#39;
+  #
+  #   class User &lt; ActiveRecord::Base
+  #   end
+  #
+  # we correctly register &#34;Foo&#34; as being autoloaded. But if the app does
+  # not use the &#34;Foo&#34; constant we need to be careful not to trigger
+  # loading &#34;foo.rb&#34; ourselves. While #const_defined? and #const_get? do
+  # require the file, #autoload? and #remove_const don&#39;t.
+  #
+  # We are going to remove the constant nonetheless ---which exists as
+  # far as Ruby is concerned--- because if the user removes the macro
+  # call from a class or module that were not autoloaded, as in the
+  # example above with Object, accessing to that constant must err.
+  unless parent.autoload?(to_remove)
+    begin
+      constantized = parent.const_get(to_remove, false)
+    rescue NameError
+      # The constant is no longer reachable, just skip it.
+      return
+    else
+      constantized.before_remove_const if constantized.respond_to?(:before_remove_const)
+    end
+  end
+
+  begin
+    parent.instance_eval { remove_const to_remove }
+  rescue NameError
+    # The constant is no longer reachable, just skip it.
+  end
+end</code></pre>
+<div><br /></div>
+<div>实际上它就是找出一个常量的父级命名空间，然后在其中调用remove_const，并顺便调用before_remove_const（如果有定义的话）</div>
+<div><br /></div>
+<div>至此，class和module什么的应该都被清掉了，当再次读到常量名字时，就又会走Dependencies里定义的const_missing回调去加载代码，实现reload</div>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2019/06/10/be99fb0e81d437717546e2c29fa28a3a.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

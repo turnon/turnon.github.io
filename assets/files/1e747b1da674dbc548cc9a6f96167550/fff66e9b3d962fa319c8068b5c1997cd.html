@@ -1,0 +1,96 @@
+<!DOCTYPE HTML><html><head><meta charset='utf-8'/><style>body {
+    font-family: 'Dejavu Sans Mono', 'Arial', sans-serif;
+    font-size: 13px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.tree-html ul {
+    margin-left: 15px;
+}
+
+.tree-html li {
+    list-style-type: none;
+    margin: 10px;
+    position: relative;
+}
+
+.tree-html li::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc;
+    width: 15px;
+    height: 15px;
+}
+
+.tree-html li::after {
+    position: absolute;
+    content: "";
+    top: 8px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    width: 15px;
+    height: 100%;
+}
+
+.tree-html li:last-child::after {
+    display: none;
+}
+
+ul.tree-html>li:first-child::before {
+    display: none;
+}
+
+.tree-html li a {
+    padding: 2px 5px;
+}
+
+.tree-html li a:hover, .tree-html li a:hover+ul li a,
+.tree-html li a:focus, .tree-html li a:focus+ul li a {
+    background-color: #d3d3d3;
+}
+
+.tree-html label {
+  margin: .2em 0 0 -.6em;
+  position: absolute;
+  border: 1px solid #ccc;
+  background: white;
+  width: .6em;
+  height: .6em;
+  display: inline-block;
+  line-height: .65;
+}
+
+.tree-html label.placeholder {
+  visibility: hidden;
+}
+
+.tree-html label::before {
+  color: #ccc;
+  font-family: serif;
+  margin-left: 0.02em;
+}
+
+input[type='checkbox'] {
+  margin-left: 5px;
+  display: none
+}
+
+input[type='checkbox']:checked ~ ul {
+  display: none
+}
+
+input[type="checkbox"] + label::before {
+  content: '-';
+}
+
+input[type="checkbox"]:checked + label::before {
+  content: '+';
+}
+.highlight{color: #a50000;}</style></head><body><ul class='tree-html'><li><input type='checkbox' id='69824623058660'><label for='69824623058660'></label><a><span class='highlight'>CreateProducts#block in change</span> /home/z/test_rails/depot/db/migrate/20170405081554_create_products.rb:3</a><ul><li><input type='checkbox' id='69824625225000'><label for='69824625225000'></label><a><span class='highlight'>CreateProducts#method_missing</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:832</a><ul><li><input type='checkbox' id='69824616516300'><label for='69824616516300'></label><a><span class='highlight'>Array#map</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:833</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Symbol#inspect</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:833</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Array#*</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:833</a></li><li><label class='placeholder'></label><a><span class='highlight'>Symbol#to_s</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:835</a></li><li><input type='checkbox' id='69824622977980'><label for='69824622977980'></label><a><span class='highlight'>CreateProducts#say_with_time</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:812</a><ul><li><input type='checkbox' id='69824624809140'><label for='69824624809140'></label><a><span class='highlight'>CreateProducts#say</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:808</a><ul><li><input type='checkbox' id='69824615262540'><label for='69824615262540'></label><a><span class='highlight'>CreateProducts#write</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:798</a><ul><li><label class='placeholder'></label><a><span class='highlight'>CreateProducts#verbose</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/module/attribute_accessors.rb:67</a></li></ul></li></ul></li><li><input type='checkbox' id='69824625115520'><label for='69824625115520'></label><a><span class='highlight'>Benchmark.measure</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:291</a><ul><li><input type='checkbox' id='69824615913800'><label for='69824615913800'></label><a><span class='highlight'>#&lt;Class:Process&gt;#times</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:292</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Struct#initialize</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:292</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>#&lt;Class:Process&gt;#clock_gettime</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:292</a></li><li><input type='checkbox' id='69824622522400'><label for='69824622522400'></label><a><span class='highlight'>CreateProducts#block in say_with_time</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:815</a><ul><li><input type='checkbox' id='69824624350600'><label for='69824624350600'></label><a><span class='highlight'>CreateProducts#block in method_missing</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:835</a><ul><li><label class='placeholder'></label><a><span class='highlight'>CreateProducts#connection</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:828</a></li><li><input type='checkbox' id='69824623909240'><label for='69824623909240'></label><a><span class='highlight'>ActiveRecord::Migration::CommandRecorder#respond_to?</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration/command_recorder.rb:95</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#respond_to?</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration/command_recorder.rb:96</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>CreateProducts#connection</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:828</a></li><li><input type='checkbox' id='69824622980920'><label for='69824622980920'></label><a><span class='highlight'>ActiveRecord::Migration::CommandRecorder#respond_to?</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration/command_recorder.rb:95</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#respond_to?</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration/command_recorder.rb:96</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>CreateProducts#connection</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:828</a></li><li><input type='checkbox' id='69824616323380'><label for='69824616323380'></label><a><span class='highlight'>ActiveRecord::Migration::CommandRecorder#create_table</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration/command_recorder.rb:101</a><ul><li><input type='checkbox' id='69824623487680'><label for='69824623487680'></label><a><span class='highlight'>ActiveRecord::Migration::CommandRecorder#record</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration/command_recorder.rb:69</a><ul><li><input type='checkbox' id='69824624896100'><label for='69824624896100'></label><a><span class='highlight'>ActiveRecord::Migration::CommandRecorder#inverse_of</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration/command_recorder.rb:84</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Symbol#to_s</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration/command_recorder.rb:85</a></li><li><label class='placeholder'></label><a><span class='highlight'>String#intern</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration/command_recorder.rb:85</a></li><li><input type='checkbox' id='69824614928460'><label for='69824614928460'></label><a><span class='highlight'>ActiveRecord::Migration::CommandRecorder#respond_to?</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration/command_recorder.rb:95</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Kernel#respond_to?</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration/command_recorder.rb:96</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>ActiveRecord::Migration::CommandRecorder#invert_create_table</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration/command_recorder.rb:128</a></li></ul></li></ul></li></ul></li></ul></li></ul></li><li><input type='checkbox' id='69824610811460'><label for='69824610811460'></label><a><span class='highlight'>#&lt;Class:Process&gt;#times</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:294</a><ul><li><label class='placeholder'></label><a><span class='highlight'>Struct#initialize</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:294</a></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>#&lt;Class:Process&gt;#clock_gettime</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:294</a></li><li><label class='placeholder'></label><a><span class='highlight'>Process::Tms#utime</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:295</a></li><li><label class='placeholder'></label><a><span class='highlight'>Process::Tms#utime</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:295</a></li><li><label class='placeholder'></label><a><span class='highlight'>Process::Tms#stime</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:296</a></li><li><label class='placeholder'></label><a><span class='highlight'>Process::Tms#stime</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:296</a></li><li><label class='placeholder'></label><a><span class='highlight'>Process::Tms#cutime</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:297</a></li><li><label class='placeholder'></label><a><span class='highlight'>Process::Tms#cutime</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:297</a></li><li><label class='placeholder'></label><a><span class='highlight'>Process::Tms#cstime</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:298</a></li><li><label class='placeholder'></label><a><span class='highlight'>Process::Tms#cstime</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:298</a></li><li><input type='checkbox' id='69824625434540'><label for='69824625434540'></label><a><span class='highlight'>Class#new</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:295</a><ul><li><input type='checkbox' id='69824616520720'><label for='69824616520720'></label><a><span class='highlight'>Benchmark::Tms#initialize</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:427</a><ul><li><label class='placeholder'></label><a><span class='highlight'>String#to_s</span> /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/benchmark.rb:428</a></li></ul></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>String#%</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:816</a></li><li><input type='checkbox' id='69824610285380'><label for='69824610285380'></label><a><span class='highlight'>CreateProducts#say</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:808</a><ul><li><input type='checkbox' id='69824622875120'><label for='69824622875120'></label><a><span class='highlight'>CreateProducts#write</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:798</a><ul><li><label class='placeholder'></label><a><span class='highlight'>CreateProducts#verbose</span> $GemPath0/gems/activesupport-5.0.2/lib/active_support/core_ext/module/attribute_accessors.rb:67</a></li></ul></li></ul></li><li><label class='placeholder'></label><a><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/activerecord-5.0.2/lib/active_record/migration.rb:817</a></li></ul></li></ul></li></ul></li></ul></body></html>

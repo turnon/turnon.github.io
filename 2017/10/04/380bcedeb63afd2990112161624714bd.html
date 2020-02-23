@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>view_context</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="view_context" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="有时想在controller中调用一些view的helper，如raw、j、t之类，可通过view_context来调…" />
+<meta property="og:description" content="有时想在controller中调用一些view的helper，如raw、j、t之类，可通过view_context来调…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-10-04T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"有时想在controller中调用一些view的helper，如raw、j、t之类，可通过view_context来调…","@type":"BlogPosting","headline":"view_context","dateModified":"2017-10-04T00:00:00+00:00","url":"/2017/10/04/380bcedeb63afd2990112161624714bd.html","datePublished":"2017-10-04T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/10/04/380bcedeb63afd2990112161624714bd.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">view_context</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-10-04T00:00:00+00:00" itemprop="datePublished">Oct 4, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>有时想在controller中调用一些view的helper，如raw、j、t之类，可通过view_context来调</div>
+<div><br /></div>
+<div>看看这个方法来自哪里</div>
+<div><br /></div>
+<pre><code>[1] pry(main)&gt; ctrl = StudentsController.new
+=&gt; #&lt;studentscontroller:0x007f5bfc4a5240 @_action_has_layout="true," @_request="nil," @_response="nil," @_routes="nil"&gt;
+[2] pry(main)&gt; binding.trace_tree(htmp: &#39;view_context/vc&#39;){ ctrl.view_context }
+=&gt; #&lt;#<class:0x007f5bf94def48>:0x007f5bfae45bf8
+@_assigns={},
+@_config={},
+@_controller=
+  #&lt;studentscontroller:0x007f5bfc4a5240   #="" ...&lt;="" code=""&gt;&lt;/studentscontroller:0x007f5bfc4a5240&gt;</class:0x007f5bf94def48>&lt;/studentscontroller:0x007f5bfc4a5240&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/380bcedeb63afd2990112161624714bd/ed8313316259725fa911adbd38f8f924.html"><img src="/assets/files/380bcedeb63afd2990112161624714bd/193d806cee664292b2dc8eca18b0289f.png" alt="20171005_105106_807_vc.html" /></a></div>
+<div><br /></div>
+<div>想知道view_context上有什么方法可用，当然可以直接view_context.methods.sort打印出来，但为了有个系统一点概念，还是看看源码它是怎样定义这些方法的。简单来说，这些方法是分布在actionpack、actionview的各个功能module中的，然后通过继承和mixin而加进来，脉络如下</div>
+<div><br /></div>
+<div><img src="/assets/files/380bcedeb63afd2990112161624714bd/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div>源码如下</div>
+<div><br /></div>
+<pre><code>module ActionView
+  module Rendering
+
+    module ClassMethods
+      def view_context_class
+        @view_context_class ||= begin
+          supports_path = supports_path?
+          routes  = respond_to?(:_routes)  &amp;&amp; _routes
+          helpers = respond_to?(:_helpers) &amp;&amp; _helpers
+
+          Class.new(ActionView::Base) do
+            if routes
+              include routes.url_helpers(supports_path)
+              include routes.mounted_helpers
+            end
+
+            if helpers
+              include helpers
+            end
+          end
+        end
+      end
+    end
+
+    attr_internal_writer :view_context_class
+
+    def view_context_class
+      @_view_context_class ||= self.class.view_context_class
+    end
+
+    def view_context
+      view_context_class.new(view_renderer, view_assigns, self)
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>不过一般来说，像url_helpers这些其实controller中本来就有了（mixin到了controller的ancestors的匿名module中），在controller中使用view_context主要还是为了获得ActionView::Base所mixin的那些页面helper（如果真的有必要在controller里干view的活……）</div>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/10/04/380bcedeb63afd2990112161624714bd.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

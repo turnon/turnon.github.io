@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>minitest的assertions和expectations分析</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="minitest的assertions和expectations分析" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="跟踪一下must_equal是干啥的…" />
+<meta property="og:description" content="跟踪一下must_equal是干啥的…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-02-23T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"跟踪一下must_equal是干啥的…","@type":"BlogPosting","headline":"minitest的assertions和expectations分析","dateModified":"2017-02-23T00:00:00+00:00","url":"/2017/02/23/a923cbd7d160f71ff37e0759d1fb6d36.html","datePublished":"2017-02-23T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/02/23/a923cbd7d160f71ff37e0759d1fb6d36.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">minitest的assertions和expectations分析</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-02-23T00:00:00+00:00" itemprop="datePublished">Feb 23, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style="font-family: Consolas;">跟踪一下must_equal是干啥的</span></div>
+<div><br /></div>
+<pre><code>require &#39;minitest/spec&#39;
+require &#39;minitest/autorun&#39;
+require &#39;trace_tree&#39;
+
+describe Numeric do
+  it &#39;is ok&#39; do
+    binding.trace_tree do
+      1.must_equal 1
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">调用栈如下</span></div>
+<div><br /></div>
+<pre><code>Numeric#block (3 levels) in </code><main><code> it.rb:7
+└─Fixnum#must_equal $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:10
+  ├─Minitest::Spec.current $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:97
+  └─Minitest::Expectation#must_equal $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:16
+    └─Numeric#assert_equal $GemPath0/gems/minitest-5.10.1/lib/minitest/assertions.rb:172
+      ├─Numeric#message $GemPath0/gems/minitest-5.10.1/lib/minitest/assertions.rb:512
+      └─Numeric#assert $GemPath0/gems/minitest-5.10.1/lib/minitest/assertions.rb:134</code></main></pre>
+<div><br /></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">如minitest-5.10.1/lib/minitest/spec.rb:10所示，数字1的must_equal方法是通过Module#infect_an_assertion动态定义的，它所做的就是调用Minitest::Expectation#must_equal（也是动态定义）</span></div>
+<div><br /></div>
+<pre><code>require &#34;minitest/test&#34;
+
+class Module # :nodoc:
+  def infect_an_assertion meth, new_name, dont_flip = false # :nodoc:
+    block = dont_flip == :block
+    dont_flip = false if block
+
+    # warn &#34;%-22p -&gt; %p %p&#34; % [meth, new_name, dont_flip]
+    self.class_eval &lt;&lt;-EOM, __FILE__, __LINE__ + 1
+      def #{new_name} *args
+        Minitest::Expectation.new(self, Minitest::Spec.current).#{new_name}(*args)
+      end
+    EOM
+
+    # 这里ctx就是Minitest::Spec.current，即Minitest::Spec &lt; Test，继承了assert_xxx方法
+    # target就是上例的数字1，来自于self
+    # 1.must_equal 1相当于在TestCase中调用assert_equal 1, 1
+
+    Minitest::Expectation.class_eval &lt;&lt;-EOM, __FILE__, __LINE__ + 1
+      def #{new_name} *args
+        case
+        when #{!!dont_flip} then
+          ctx.#{meth}(target, *args)
+        when #{block} &amp;&amp; Proc === target then
+          ctx.#{meth}(*args, &amp;target)
+        else
+          ctx.#{meth}(args.first, target, *args[1..-1])
+        end
+      end
+    EOM
+  end
+end
+
+Minitest::Expectation = Struct.new :target, :ctx # :nodoc:</code></pre>
+<div><br /></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">为什么数字1会有must_equal呢，答案在Minitest::Expectations。当然它是module，所以获取到了Module#infect_an_assertion，并用此方法来为自己增加了must_equal、must_be_empty等实例方法（minitest-5.10.1/lib/minitest/spec.rb:10）</span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">然后Object.include Minitest::Expectations，因而所有Object都有了must_equal、must_be_empty等实例方法</span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">（注意Minitest::Expectations不同Minitest::Expectation）</span></div>
+<div><br /></div>
+<pre><code>require &#34;minitest/expectations&#34;
+
+class Object # :nodoc:
+  include Minitest::Expectations unless ENV[&#34;MT_NO_EXPECTATIONS&#34;]
+end</code></pre>
+<div><br /></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">所有infect_an_assertion如下，有点像在做alias_method</span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">第三个参数有四种可能：:unary、:reverse、:block、nil，前两个走第一个when，block走第二个，nil走else</span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">:reverse的意思是原本assert_xxx的语义是反的，例如assert_respond_to String.new, :to_s</span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">:unary的意思是原本assert_xxx不接收expect对象做参数，只接收actual</span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">刚好这两种assert_xxx都符合ctx.#{meth}(target, *args)的形式</span></div>
+<div><br /></div>
+<pre><code>$ lib git:(master) grep -v &#39;#&#39; minitest/expectations.rb | grep -v &#39;^$&#39;
+module Minitest::Expectations
+  infect_an_assertion :assert_empty, :must_be_empty, :unary
+  infect_an_assertion :assert_equal, :must_equal
+  infect_an_assertion :assert_in_delta, :must_be_close_to
+  infect_an_assertion :assert_in_epsilon, :must_be_within_epsilon
+  infect_an_assertion :assert_includes, :must_include, :reverse
+  infect_an_assertion :assert_instance_of, :must_be_instance_of
+  infect_an_assertion :assert_kind_of, :must_be_kind_of
+  infect_an_assertion :assert_match, :must_match
+  infect_an_assertion :assert_nil, :must_be_nil, :unary
+  infect_an_assertion :assert_operator, :must_be, :reverse
+  infect_an_assertion :assert_output, :must_output, :block
+  infect_an_assertion :assert_raises, :must_raise, :block
+  infect_an_assertion :assert_respond_to, :must_respond_to, :reverse
+  infect_an_assertion :assert_same, :must_be_same_as
+  infect_an_assertion :assert_silent, :must_be_silent, :block
+  infect_an_assertion :assert_throws, :must_throw, :block
+  infect_an_assertion :refute_empty, :wont_be_empty, :unary
+  infect_an_assertion :refute_equal, :wont_equal
+  infect_an_assertion :refute_in_delta, :wont_be_close_to
+  infect_an_assertion :refute_in_epsilon, :wont_be_within_epsilon
+  infect_an_assertion :refute_includes, :wont_include, :reverse
+  infect_an_assertion :refute_instance_of, :wont_be_instance_of
+  infect_an_assertion :refute_kind_of, :wont_be_kind_of
+  infect_an_assertion :refute_match, :wont_match
+  infect_an_assertion :refute_nil, :wont_be_nil, :unary
+  infect_an_assertion :refute_operator, :wont_be, :reverse
+  infect_an_assertion :refute_respond_to, :wont_respond_to, :reverse
+  infect_an_assertion :refute_same, :wont_be_same_as
+end</code></pre>
+<div><br /></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">各种assertions就定义在Minitest::Assertions中，然后Minitest::Test会include它</span></div>
+
+  </div><a class="u-url" href="/2017/02/23/a923cbd7d160f71ff37e0759d1fb6d36.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

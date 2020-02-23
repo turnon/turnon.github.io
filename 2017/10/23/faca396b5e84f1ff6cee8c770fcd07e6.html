@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>rake middleware</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="rake middleware" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="想知道当前的Rails应用塞入了些什么middleware，可用rake middleware打印出来，用rake -W middleware找到其任务定义如下…" />
+<meta property="og:description" content="想知道当前的Rails应用塞入了些什么middleware，可用rake middleware打印出来，用rake -W middleware找到其任务定义如下…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-10-23T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"想知道当前的Rails应用塞入了些什么middleware，可用rake middleware打印出来，用rake -W middleware找到其任务定义如下…","@type":"BlogPosting","headline":"rake middleware","dateModified":"2017-10-23T00:00:00+00:00","url":"/2017/10/23/faca396b5e84f1ff6cee8c770fcd07e6.html","datePublished":"2017-10-23T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/10/23/faca396b5e84f1ff6cee8c770fcd07e6.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">rake middleware</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-10-23T00:00:00+00:00" itemprop="datePublished">Oct 23, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>想知道当前的Rails应用塞入了些什么middleware，可用rake middleware打印出来，用rake -W middleware找到其任务定义如下</div>
+<div><br /></div>
+<pre><code># lib/rails/tasks/middleware.rake
+desc &#34;Prints out your Rack middleware stack&#34;                                                                                                                                                                                            
+task middleware: :environment do
+  Rails.configuration.middleware.each do |middleware|
+    puts &#34;use #{middleware.inspect}&#34;
+  end
+  puts &#34;run #{Rails.application.class.name}.routes&#34;
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>那么这些middleware是何时塞入的呢？先检查下middleware对象是怎么定义的</div>
+<div><br /></div>
+<pre><code>[9] pry(main)&gt; Rails.configuration.middleware.method(:each).source_location
+=&gt; [&#34;/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/middleware/stack.rb&#34;, 48]</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>找到其源码，加上pry跟踪一下</div>
+<div><br /></div>
+<pre><code>module ActionDispatch
+  class MiddlewareStack
+
+    def initialize(*args)
+      require &#39;pry&#39;
+      binding.pry
+      @middlewares = []
+      yield(self) if block_given?
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>再一次rake middleware</div>
+<div>    </div>
+<pre><code>From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/middleware/stack.rb @ line 46 ActionDispatch::MiddlewareStack#initialize:
+
+   43: def initialize(*args)
+   44:   require &#39;pry&#39;
+   45:   binding.pry
+=&gt; 46:   @middlewares = []
+   47:   yield(self) if block_given?
+   48: end
+
+[1] pry(#<actiondispatch::middlewarestack>)&gt; backtrace
+--&gt; #0  ActionDispatch::MiddlewareStack.initialize(*args#Array) at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/middleware/stack.rb:46
+    ͱ-- #1  Class.new(*args) at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/application/default_middleware_stack.rb:13
+    #2  Rails::Application::DefaultMiddlewareStack.build_stack at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/application/default_middleware_stack.rb:13
+    #3  Rails::Application.default_middleware_stack at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/application.rb:501
+    #4  block in Rails::Application.block in app at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/engine.rb:506
+    ͱ-- #5  Thread::Mutex.synchronize at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/engine.rb:504
+    #6  Rails::Application.app at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/engine.rb:504
+    #7  block in block in <module:finisher> at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/application/finisher.rb:45
+    ͱ-- #8  BasicObject.instance_exec(*args) at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/initializable.rb:30
+    #9  Rails::Initializable::Initializer.run(*args#Array) at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/initializable.rb:30
+    #10 block in Rails::Initializable.block in run_initializers(group#Symbol, *args#Array) at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/initializable.rb:59
+    #11 block in #<class:tsort>.block in tsort_each(each_node#Method, each_child#Method) at /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/tsort.rb:228
+    #12 block (2 levels) in #<class:tsort>.block (2 levels) in each_strongly_connected_component(each_node#Method, each_child#Method) at /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/tsort.rb:350
+    #13 #<class:tsort>.each_strongly_connected_component_from(node#Rails::Initializable::Initializer, each_child#Method, id_map#Hash, stack#Array) at /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/tsort.rb:431
+    #14 block in #<class:tsort>.block in each_strongly_connected_component(each_node#Method, each_child#Method) at /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/tsort.rb:349
+    ͱ-- #15 Rails::Initializable::Collection.each at /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/tsort.rb:347
+    ͱ-- #16 Method.call(*args) at /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/tsort.rb:347
+    #17 #<class:tsort>.each_strongly_connected_component(each_node#Method, each_child#Method) at /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/tsort.rb:347
+    #18 #<class:tsort>.tsort_each(each_node#Method, each_child#Method) at /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/tsort.rb:226
+    #19 TSort.tsort_each(&amp;block#Proc) at /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/tsort.rb:205
+    #20 Rails::Initializable.run_initializers(group#Symbol, *args#Array) at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/initializable.rb:58
+    #21 Rails::Application.initialize!(group#Symbol) at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/application.rb:353
+    #22 &lt;top (required)=""&gt; at /home/z/test_rails/school/config/environment.rb:5
+    ͱ-- #23 Kernel.require(file) at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/application.rb:329
+    #24 Rails::Application.require_environment! at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/application.rb:329
+    #25 block in Rails::Application.block in run_tasks_blocks(app#School::Application) at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/application.rb:445
+    #26 block in Rake::Task.block in execute(args#Rake::TaskArguments) at /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb:250
+    # ...&lt;/top&gt;</class:tsort></class:tsort></class:tsort></class:tsort></class:tsort></class:tsort></module:finisher></actiondispatch::middlewarestack></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>railsI相关的源头可追溯至如下代码</div>
+<div><br /></div>
+<pre><code># railties-5.1.2/lib/rails/application.rb
+module Rails
+  class Application &lt; Engine
+
+    def run_tasks_blocks(app)
+      railties.each { |r| r.run_tasks_blocks(app) }
+      super
+      require &#34;rails/tasks&#34;
+      task :environment do
+        ActiveSupport.on_load(:before_initialize) { config.eager_load = false }
+
+        require_environment!                                                                                                                                                                                                            
+      end
+    end
+
+    def require_environment!
+      environment = paths[&#34;config/environment&#34;].existent.first
+      require environment if environment
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>不过本次的目的还是看middleware的具体加载，如下</div>
+<div><br /></div>
+<pre><code># railties-5.1.2/lib/rails/application/default_middleware_stack.rb
+def build_stack
+  ActionDispatch::MiddlewareStack.new.tap do |middleware|
+    if config.force_ssl
+      middleware.use ::ActionDispatch::SSL, config.ssl_options
+    end
+
+    middleware.use ::Rack::Sendfile, config.action_dispatch.x_sendfile_header
+
+    if config.public_file_server.enabled
+      headers = config.public_file_server.headers || {}
+
+      middleware.use ::ActionDispatch::Static, paths[&#34;public&#34;].first, index: config.public_file_server.index_name, headers: headers
+    end
+
+    if rack_cache = load_rack_cache
+      require &#34;action_dispatch/http/rack_cache&#34;
+      middleware.use ::Rack::Cache, rack_cache
+    end
+
+    if config.allow_concurrency == false
+      # User has explicitly opted out of concurrent request
+      # handling: presumably their code is not threadsafe
+
+      middleware.use ::Rack::Lock
+    end
+
+    middleware.use ::ActionDispatch::Executor, app.executor
+
+    middleware.use ::Rack::Runtime
+    middleware.use ::Rack::MethodOverride unless config.api_only
+    middleware.use ::ActionDispatch::RequestId
+    middleware.use ::ActionDispatch::RemoteIp, config.action_dispatch.ip_spoofing_check, config.action_dispatch.trusted_proxies
+
+    middleware.use ::Rails::Rack::Logger, config.log_tags
+    middleware.use ::ActionDispatch::ShowExceptions, show_exceptions_app
+    middleware.use ::ActionDispatch::DebugExceptions, app, config.debug_exception_response_format
+
+    unless config.cache_classes
+      middleware.use ::ActionDispatch::Reloader, app.reloader
+    end
+
+    middleware.use ::ActionDispatch::Callbacks
+    middleware.use ::ActionDispatch::Cookies unless config.api_only
+
+    if !config.api_only &amp;&amp; config.session_store
+      if config.force_ssl &amp;&amp; config.ssl_options.fetch(:secure_cookies, true) &amp;&amp; !config.session_options.key?(:secure)
+        config.session_options[:secure] = true
+      end
+      middleware.use config.session_store, config.session_options
+      middleware.use ::ActionDispatch::Flash
+    end                                                                                                                                                                                                                           
+
+    middleware.use ::Rack::Head
+    middleware.use ::Rack::ConditionalGet
+    middleware.use ::Rack::ETag, &#34;no-cache&#34;
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而如果要加入自己的middleware，可以自己调用以下方法</div>
+<div><br /></div>
+<pre><code># actionpack-5.1.2/lib/action_dispatch/middleware/stack.rb
+module ActionDispatch
+  class MiddlewareStack
+
+    def insert(index, klass, *args, &amp;block)
+      index = assert_index(index, :before)
+      middlewares.insert(index, build_middleware(klass, args, block))
+    end
+
+    alias_method :insert_before, :insert
+
+    def insert_after(index, *args, &amp;block)
+      index = assert_index(index, :after)
+      insert(index + 1, *args, &amp;block)
+    end
+
+    def swap(target, *args, &amp;block)
+      index = assert_index(target, :before)
+      insert(index, *args, &amp;block)
+      middlewares.delete_at(index + 1)
+    end
+
+    def delete(target)
+      middlewares.delete_if { |m| m.klass == target }
+    end
+
+    def use(klass, *args, &amp;block)
+      middlewares.push(build_middleware(klass, args, block))
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>配置可加在config/application.rb文件，或参考其注释的建议</div>
+<div><br /></div>
+<pre><code>module School
+  class Application &lt; Rails::Application
+    # Settings in config/environments/* take precedence over those specified here.
+    # Application configuration should go into files in config/initializers
+    # -- all .rb files in that directory are automatically loaded.
+    config.middleware.use Rack::ShowStatus
+  end
+end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/10/23/faca396b5e84f1ff6cee8c770fcd07e6.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

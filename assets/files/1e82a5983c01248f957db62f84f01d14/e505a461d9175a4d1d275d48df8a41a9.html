@@ -1,0 +1,235 @@
+<!DOCTYPE HTML><html><head><meta charset='utf-8'/><style>body {
+    font-family: 'Dejavu Sans Mono', 'Arial', sans-serif;
+    font-size: 13px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.tree-html ul {
+    margin-left: 15px;
+}
+
+.tree-html li {
+    list-style-type: none;
+    margin: 10px;
+    position: relative;
+}
+
+.tree-html li::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc;
+    width: 15px;
+    height: 15px;
+}
+
+.tree-html li::after {
+    position: absolute;
+    content: "";
+    top: 8px;
+    left: -28px;
+    border-left: 1px dotted #ccc;
+    width: 15px;
+    height: 100%;
+}
+
+.tree-html li:last-child::after {
+    display: none;
+}
+
+ul.tree-html>li:first-child::before {
+    display: none;
+}
+
+.tree-html li a {
+    padding: 2px 5px;
+}
+
+.tree-html li a:hover, .tree-html li a:hover+ul li a,
+.tree-html li a:focus, .tree-html li a:focus+ul li a {
+    background-color: #d3d3d3;
+}
+
+.tree-html a.twinkle,
+.tree-html li a.twinkle:hover, .tree-html li a:hover+ul li a.twinkle,
+.tree-html li a.twinkle:focus, .tree-html li a:focus+ul li a.twinkle {
+  background-color: #00bcd4;
+}
+
+.tree-html label {
+  margin: .2em 0 0 -.6em;
+  position: absolute;
+  border: 1px solid #ccc;
+  background: white;
+  width: .6em;
+  height: .6em;
+  display: inline-block;
+  line-height: .65;
+}
+
+.tree-html label.placeholder {
+  visibility: hidden;
+}
+
+.tree-html label::before {
+  color: #ccc;
+  font-family: serif;
+  margin-left: 0.02em;
+}
+
+input[type='checkbox'] {
+  margin-left: 5px;
+  display: none
+}
+
+input[type='checkbox']:checked ~ ul {
+  display: none
+}
+
+input[type="checkbox"] + label::before {
+  content: '-';
+}
+
+input[type="checkbox"]:checked + label::before {
+  content: '+';
+}
+.highlight{color: #a50000;}</style></head><body><ul class='tree-html'><li><input type='checkbox' id='47347152337340'><label for='47347152337340'></label><a ><span class='highlight'>Object#block in &lt;main&gt;</span> (pry):5</a><ul><li><input type='checkbox' id='47347152572940'><label for='47347152572940'></label><a ><span class='highlight'>I18n.translate</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:172</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Array#last</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:173</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:173</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Array#shift</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:174</a></li><li><input type='checkbox' id='47347157126860'><label for='47347157126860'></label><a ><span class='highlight'>I18n.config</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:41</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>#&lt;Class:Thread&gt;#current</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:42</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Thread#[]</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:42</a></li></ul></li><li><label class='placeholder'></label><a ><span class='highlight'>I18n::Config#backend</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/config.rb:20</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:176</a></li><li><input type='checkbox' id='47347155344780'><label for='47347155344780'></label><a ><span class='highlight'>I18n.config</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:41</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>#&lt;Class:Thread&gt;#current</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:42</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Thread#[]</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:42</a></li></ul></li><li><input type='checkbox' id='47347159168420'><label for='47347159168420'></label><a ><span class='highlight'>I18n::Config#locale</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/config.rb:9</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>I18n::Config#default_locale</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/config.rb:30</a></li></ul></li><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:177</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:177</a></li><li><input type='checkbox' id='47347160371220'><label for='47347160371220'></label><a ><span class='highlight'>I18n.enforce_available_locales!</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:309</a><ul><li><input type='checkbox' id='47347160536400'><label for='47347160536400'></label><a ><span class='highlight'>I18n.config</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:41</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>#&lt;Class:Thread&gt;#current</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:42</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Thread#[]</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:42</a></li></ul></li><li><label class='placeholder'></label><a ><span class='highlight'>I18n::Config#enforce_available_locales</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/config.rb:141</a></li></ul></li><li><input type='checkbox' id='47347161872960'><label for='47347161872960'></label><a ><span class='highlight'>Kernel#catch</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:181</a><ul><li><input type='checkbox' id='47347161981600'><label for='47347161981600'></label><a ><span class='highlight'>I18n.block in translate</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:181</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:182</a></li><li><input type='checkbox' id='47347162479200'><label for='47347162479200'></label><a ><span class='highlight'>I18n::Backend::Simple#translate</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:25</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:26</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#nil?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:28</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#nil?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:30</a></li><li><input type='checkbox' id='47347163550320'><label for='47347163550320'></label><a ><span class='highlight'>I18n::Backend::Simple#lookup</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:82</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>I18n::Backend::Simple#initialized?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:25</a></li><li><input type='checkbox' id='47347163975340'><label for='47347163975340'></label><a ><span class='highlight'>I18n.normalize_keys</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:292</a><ul><li><input type='checkbox' id='47347164133980'><label for='47347164133980'></label><a ><span class='highlight'>I18n.default_separator</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:54</a><ul><li><input type='checkbox' id='47347164242440'><label for='47347164242440'></label><a ><span class='highlight'>I18n.config</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:41</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>#&lt;Class:Thread&gt;#current</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:42</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Thread#[]</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:42</a></li></ul></li><li><label class='placeholder'></label><a ><span class='highlight'>I18n::Config#default_separator</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/config.rb:75</a></li></ul></li><li><input type='checkbox' id='47347165690840'><label for='47347165690840'></label><a ><span class='highlight'>I18n.normalize_key</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:357</a><ul><li><input type='checkbox' id='47347165808280'><label for='47347165808280'></label><a ><span class='highlight'>Concurrent::Map#[]</span> $GemPath0/gems/concurrent-ruby-1.0.5/lib/concurrent/map.rb:92</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Concurrent::Map#[]</span> $GemPath0/gems/concurrent-ruby-1.0.5/lib/concurrent/collection/map/non_concurrent_map_backend.rb:19</a></li></ul></li><li><input type='checkbox' id='47347166453120'><label for='47347166453120'></label><a ><span class='highlight'>Concurrent::Map#[]</span> $GemPath0/gems/concurrent-ruby-1.0.5/lib/concurrent/map.rb:92</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Concurrent::Map#[]</span> $GemPath0/gems/concurrent-ruby-1.0.5/lib/concurrent/collection/map/non_concurrent_map_backend.rb:19</a></li></ul></li></ul></li><li><label class='placeholder'></label><a ><span class='highlight'>Array#concat</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:296</a></li><li><input type='checkbox' id='47347158516580'><label for='47347158516580'></label><a ><span class='highlight'>I18n.normalize_key</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:357</a><ul><li><input type='checkbox' id='47347167497220'><label for='47347167497220'></label><a ><span class='highlight'>Concurrent::Map#[]</span> $GemPath0/gems/concurrent-ruby-1.0.5/lib/concurrent/map.rb:92</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Concurrent::Map#[]</span> $GemPath0/gems/concurrent-ruby-1.0.5/lib/concurrent/collection/map/non_concurrent_map_backend.rb:19</a></li></ul></li><li><input type='checkbox' id='47347167708780'><label for='47347167708780'></label><a ><span class='highlight'>Concurrent::Map#[]</span> $GemPath0/gems/concurrent-ruby-1.0.5/lib/concurrent/map.rb:92</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Concurrent::Map#[]</span> $GemPath0/gems/concurrent-ruby-1.0.5/lib/concurrent/collection/map/non_concurrent_map_backend.rb:19</a></li></ul></li></ul></li><li><label class='placeholder'></label><a ><span class='highlight'>Array#concat</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:297</a></li><li><input type='checkbox' id='47347168068000'><label for='47347168068000'></label><a ><span class='highlight'>I18n.normalize_key</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:357</a><ul><li><input type='checkbox' id='47347168104120'><label for='47347168104120'></label><a ><span class='highlight'>Concurrent::Map#[]</span> $GemPath0/gems/concurrent-ruby-1.0.5/lib/concurrent/map.rb:92</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Concurrent::Map#[]</span> $GemPath0/gems/concurrent-ruby-1.0.5/lib/concurrent/collection/map/non_concurrent_map_backend.rb:19</a></li></ul></li><li><input type='checkbox' id='47347168222140'><label for='47347168222140'></label><a ><span class='highlight'>Concurrent::Map#[]</span> $GemPath0/gems/concurrent-ruby-1.0.5/lib/concurrent/map.rb:92</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Concurrent::Map#[]</span> $GemPath0/gems/concurrent-ruby-1.0.5/lib/concurrent/collection/map/non_concurrent_map_backend.rb:19</a></li></ul></li></ul></li><li><label class='placeholder'></label><a ><span class='highlight'>Array#concat</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:298</a></li></ul></li><li><label class='placeholder'></label><a ><span class='highlight'>I18n::Backend::Simple#translations</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:62</a></li><li><input type='checkbox' id='47347168591060'><label for='47347168591060'></label><a ><span class='highlight'>Enumerable#inject</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:86</a><ul><li><input type='checkbox' id='47347168627480'><label for='47347168627480'></label><a ><span class='highlight'>Array#each</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:86</a><ul><li><input type='checkbox' id='47347168713140'><label for='47347168713140'></label><a ><span class='highlight'>I18n::Backend::Simple#block in lookup</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:86</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Symbol#to_sym</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:87</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:88</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Hash#has_key?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:88</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:90</a></li></ul></li><li><input type='checkbox' id='47347169344600'><label for='47347169344600'></label><a ><span class='highlight'>I18n::Backend::Simple#block in lookup</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:86</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Symbol#to_sym</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:87</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:88</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Hash#has_key?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:88</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Hash#[]</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:89</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:90</a></li></ul></li><li><input type='checkbox' id='47347170097400'><label for='47347170097400'></label><a ><span class='highlight'>I18n::Backend::Simple#block in lookup</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:86</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Symbol#to_sym</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:87</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:88</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Hash#has_key?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:88</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Hash#[]</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:89</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:90</a></li></ul></li><li><input type='checkbox' id='47347170845020'><label for='47347170845020'></label><a ><span class='highlight'>I18n::Backend::Simple#block in lookup</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:86</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Symbol#to_sym</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:87</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:88</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Hash#has_key?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:88</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/simple.rb:90</a></li></ul></li></ul></li></ul></li></ul></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#nil?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:32</a></li><li><input type='checkbox' id='47347171833700'><label for='47347171833700'></label><a ><span class='highlight'>I18n::Backend::Simple#resolve</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:130</a><ul><li><input type='checkbox' id='47347171869000'><label for='47347171869000'></label><a ><span class='highlight'>NilClass#==</span> $GemPath0/gems/bson-4.3.0/lib/bson/specialized.rb:35</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#class</span> $GemPath0/gems/bson-4.3.0/lib/bson/specialized.rb:36</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#class</span> $GemPath0/gems/bson-4.3.0/lib/bson/specialized.rb:36</a></li></ul></li><li><input type='checkbox' id='47347172272060'><label for='47347172272060'></label><a ><span class='highlight'>Kernel#catch</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:132</a><ul><li><input type='checkbox' id='47347172348140'><label for='47347172348140'></label><a ><span class='highlight'>I18n::Backend::Simple#block in resolve</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:132</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Module#===</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:134</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Module#===</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:136</a></li></ul></li></ul></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:143</a></li></ul></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#nil?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:40</a></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:46</a></li><li><input type='checkbox' id='47347173298100'><label for='47347173298100'></label><a ><span class='highlight'>Kernel#dup</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:46</a><ul><li><input type='checkbox' id='47347173374360'><label for='47347173374360'></label><a ><span class='highlight'>Kernel#initialize_dup</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:46</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>String#initialize_copy</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:46</a></li></ul></li></ul></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#nil?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:49</a></li><li><input type='checkbox' id='47347173858820'><label for='47347173858820'></label><a ><span class='highlight'>Hash#except</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:12</a><ul><li><input type='checkbox' id='47347173894280'><label for='47347173894280'></label><a ><span class='highlight'>Kernel#dup</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:13</a><ul><li><input type='checkbox' id='47347173970620'><label for='47347173970620'></label><a ><span class='highlight'>Kernel#initialize_dup</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:13</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Hash#initialize_copy</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:13</a></li></ul></li></ul></li><li><input type='checkbox' id='47347174286140'><label for='47347174286140'></label><a ><span class='highlight'>Hash#except!</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:20</a><ul><li><input type='checkbox' id='47347174370300'><label for='47347174370300'></label><a ><span class='highlight'>Array#each</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a><ul><li><input type='checkbox' id='47347174446180'><label for='47347174446180'></label><a ><span class='highlight'>Hash#block in except!</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a></li></ul></li><li><input type='checkbox' id='47347174725120'><label for='47347174725120'></label><a ><span class='highlight'>Hash#block in except!</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a></li></ul></li><li><input type='checkbox' id='47347175003520'><label for='47347175003520'></label><a ><span class='highlight'>Hash#block in except!</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a></li></ul></li><li><input type='checkbox' id='47347175274040'><label for='47347175274040'></label><a ><span class='highlight'>Hash#block in except!</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a></li></ul></li><li><input type='checkbox' id='47347175553540'><label for='47347175553540'></label><a ><span class='highlight'>Hash#block in except!</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a></li></ul></li><li><input type='checkbox' id='47347175831720'><label for='47347175831720'></label><a ><span class='highlight'>Hash#block in except!</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a></li></ul></li><li><input type='checkbox' id='47347176109200'><label for='47347176109200'></label><a ><span class='highlight'>Hash#block in except!</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a></li></ul></li><li><input type='checkbox' id='47347176386800'><label for='47347176386800'></label><a ><span class='highlight'>Hash#block in except!</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a></li></ul></li><li><input type='checkbox' id='47347176663660'><label for='47347176663660'></label><a ><span class='highlight'>Hash#block in except!</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a></li></ul></li><li><input type='checkbox' id='47347176978640'><label for='47347176978640'></label><a ><span class='highlight'>Hash#block in except!</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a></li></ul></li><li><input type='checkbox' id='47347177252940'><label for='47347177252940'></label><a ><span class='highlight'>Hash#block in except!</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a></li></ul></li><li><input type='checkbox' id='47347177575980'><label for='47347177575980'></label><a ><span class='highlight'>Hash#block in except!</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a></li></ul></li><li><input type='checkbox' id='47347177841160'><label for='47347177841160'></label><a ><span class='highlight'>Hash#block in except!</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a><ul><li><label class='placeholder'></label><a ><span class='highlight'>Hash#delete</span> $GemPath0/gems/activesupport-5.2.1/lib/active_support/core_ext/hash/except.rb:21</a></li></ul></li></ul></li></ul></li></ul></li><li><label class='placeholder'></label><a ><span class='highlight'>I18n::Backend::Simple#interpolate</span> $GemPath0/gems/i18n-1.1.1/lib/i18n/backend/base.rb:172</a></li></ul></li></ul></li></ul></li><li><label class='placeholder'></label><a ><span class='highlight'>Kernel#is_a?</span> $GemPath0/gems/i18n-1.1.1/lib/i18n.rb:188</a></li></ul></li></ul></li></ul><script>var TreeHtml = (function(){
+  var cmd, node, action;
+  var id = 0;
+
+  function hovering() {
+    var hover = document.querySelector('a:hover');
+    return hover && hover.parentNode;
+  }
+
+  function match_key(e) {
+    var char_code = (typeof e.which == "number") ? e.which : e.keyCode;
+    return char_code > 0 && key_cmds[String.fromCharCode(char_code)];
+  }
+
+  function check_if_not(li, tf) {
+    var checkbox = li.children[0];
+    (checkbox.nodeName === 'INPUT') &&
+      (checkbox.checked === tf || (checkbox.checked = tf));
+  }
+
+  function check_all(lis, tf) {
+    for(var i = 0; i < lis.length; i++) {
+      check_if_not(lis[i], tf);
+    }
+  }
+
+  function check_children(node, tf) {
+    var ul, lis;
+    (ul = node.querySelector('ul')) &&
+      (lis = ul.children) &&
+      check_all(lis, tf);
+  }
+
+  function id_of(li) {
+    return li.id || (li.id = 'i' + id++);
+  }
+
+  function twinkle(a, num) {
+    a.className = 'twinkle';
+    setTimeout(function(){_twinkle(a, num);}, 200);
+  }
+
+  function _twinkle(a, num) {
+    a.className = '';
+    (num > 0) && setTimeout(function(){twinkle(a, num - 1);}, 200);
+  }
+
+  Element.prototype.documentOffsetTop = function () {
+    return this.offsetTop + (this.offsetParent ? this.offsetParent.documentOffsetTop() : 0);
+  };
+
+  function go(start, end, duration, interval, fun) {
+    (function _go(from, step, to){
+      setTimeout(function(){
+        fun(from);
+        if(from === to) return;
+        next_target = from + step;
+        if ((step < 0) ? (next_target < to) : (next_target > to)){ return _go(to, step, to); }
+        _go(from + step, step, to);
+      }, interval);
+    })(start, (end-start)/(duration/interval), end);
+  }
+
+  function jump_and_twinkle(li) {
+    if(!li) return;
+    var to = li.documentOffsetTop() - (window.innerHeight / 2);
+    if(Math.abs(to - window.scrollY) < (window.innerHeight * 5)){
+      window.scroll({
+        top: to,
+        left: 0,
+        behavior: 'smooth'
+      });
+    }else{
+      go(window.scrollY, to, 200, 20, function(y){window.scroll(0, y)});
+    }
+    twinkle(li.querySelector('a'), 6);
+  }
+
+  var actions = {
+    fold: function(node) {
+      check_children(node, true);
+    },
+    unfold: function(node) {
+      check_children(node, false);
+    },
+    prev: function(node) {
+      twinkle(node.querySelector('a'), 6);
+      jump_and_twinkle(node.previousSibling);
+    },
+    next: function(node) {
+      twinkle(node.querySelector('a'), 6);
+      jump_and_twinkle(node.nextSibling);
+    }
+  };
+
+  var key_cmds = {f: 'fold', u: 'unfold', p: 'prev', n: 'next'};
+
+  var resp_keypress = [function(e) {
+    e = e || window.event;
+    (cmd = match_key(e)) &&
+      (action = actions[cmd]) &&
+      (node = hovering()) &&
+      action(node);
+  }];
+
+  document.onkeypress = function(e) {
+    for(var i = 0; i < resp_keypress.length; i++) {
+      resp_keypress[i](e);
+    }
+  };
+
+  return {
+    debug: function() {
+      debugger;
+    },
+    more_onkeypress: function(f) {
+      resp_keypress.push(f);
+    },
+    hover_press: function(key, fun) {
+      var conn = Math.random().toString();
+      key_cmds[key] = conn;
+      actions[conn] = fun;
+    },
+    no_hover_press: function(key) {
+      delete actions[key_cmds[key]];
+      delete key_cmds[key];
+    },
+    sub_hover_press: function(old, neo) {
+      key_cmds[neo] = key_cmds[old];
+      delete key_cmds[old];
+    },
+  };
+})();
+</script></body></html>

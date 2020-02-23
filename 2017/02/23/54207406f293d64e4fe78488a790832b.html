@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Minitest::Spec浅析</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="Minitest::Spec浅析" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="设有如下minitest spec…" />
+<meta property="og:description" content="设有如下minitest spec…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-02-23T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"设有如下minitest spec…","@type":"BlogPosting","headline":"Minitest::Spec浅析","dateModified":"2017-02-23T00:00:00+00:00","url":"/2017/02/23/54207406f293d64e4fe78488a790832b.html","datePublished":"2017-02-23T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/02/23/54207406f293d64e4fe78488a790832b.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Minitest::Spec浅析</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-02-23T00:00:00+00:00" itemprop="datePublished">Feb 23, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style="font-family: Consolas;">设有如下minitest spec</span></div>
+<div><br /></div>
+<pre><code>require &#39;minitest/spec&#39;
+require &#39;minitest/autorun&#39;
+require &#39;trace_tree&#39;
+
+binding.trace_tree do
+  describe Numeric do
+    it &#39;is ok&#39; do
+      1.must_equal 1
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">输出调用栈如下</span></div>
+<div><br /></div>
+<pre><code>Object#block in </code><main><code> it.rb:5
+└─Object#describe $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:71
+  ├─Minitest::Spec.describe_stack $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:159
+  ├─Minitest::Spec.spec_type $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:149
+  │ └─Minitest::Spec.block in spec_type $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:150
+  ├─Minitest::Spec.create $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:259
+  │ ├─Minitest::Spec.inherited $GemPath0/gems/minitest-5.10.1/lib/minitest.rb:268
+  │ │ └─Minitest::Spec.runnables $GemPath0/gems/minitest-5.10.1/lib/minitest.rb:365
+  │ ├─Numeric.block in create $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:260
+  │ │ └─Numeric.nuke_test_methods! $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:167
+  │ └─Minitest::Spec.children $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:163
+  └─Numeric.block (2 levels) in </code><main><code> it.rb:6
+    └─Numeric.it $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:212
+      └─Numeric.children $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:163</code></main></main></pre>
+<div><br /></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">describe方法分析如下</span></div>
+<div><br /></div>
+<pre><code>module Kernel
+  def describe desc, *additional_desc, &amp;block # :doc:
+
+    # 从当前线程取出一个“含有多个describe”的栈
+    # 原本以为“含有多个”是指并列定义多个describe
+    # 但看到最后的push和pop，才发现说的是嵌套定义多个describe
+    stack = Minitest::Spec.describe_stack
+    name  = [stack.last, desc, *additional_desc].compact.join(&#34;::&#34;)
+
+    # 1.如果当前describe是嵌套在另一describe中的，则stack.last有值，为上一级的describe
+    # 2.因为顶级的describe还可以写在class MySpec &lt; Minitest::Spec中，所以这种情况直接返回当前类
+    # 3.如果顶级的describe是写在main object或其它类中，则调Minitest::Spec.spec_type返回Minitest::Spec
+    sclas = stack.last || if Class === self &amp;&amp; kind_of?(Minitest::Spec::DSL) then
+                            self
+                          else
+                            Minitest::Spec.spec_type desc, *additional_desc
+                          end
+
+    cls = sclas.create name, desc
+
+    # 入栈，执行block
+    # 以使下级describe能基于本类来作子类化（block中有describe），或定义feature（使用it）
+    # 出栈，以便同级的describe进来
+    stack.push cls
+    cls.class_eval(&amp;block)
+    stack.pop
+    cls
+  end
+end</code></pre>
+<div><br /></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">spec_type方法如下，似乎无论如何都会返回Minitest::Spec。虽然有register_spec_type可增加Spec类，但似乎没人提</span></div>
+<div><br /></div>
+<pre><code>TYPES = [[//, Minitest::Spec]]
+
+def spec_type desc, *additional
+  TYPES.find { |matcher, _klass|
+    if matcher.respond_to? :call then
+      matcher.call desc, *additional
+    else
+      matcher === desc.to_s
+    end
+  }.last
+end</code></pre>
+<div><br /></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">create如下，虽然感觉更应直接放在Minitest::Spec中</span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">另外，从刚才调用栈可看出，新建子类是为了配合minitest“在included中将新类加入到runnables，以便at_exit时调用test_xxx”的规则</span></div>
+<div><br /></div>
+<pre><code>class Minitest::Spec
+  module DSL
+    def create name, desc # :nodoc:
+      cls = Class.new(self) do
+        @name = name
+        @desc = desc
+
+        # 删除public_instance_methods是为了避免重复运行test_xxx
+        # 一方面，你可以在class MySpec &lt; Minitest::Spec中，混合使用test_xxx和describe
+        # 因Minitest::Spec &lt; Test &lt; Runnable，任何Runnable子类都会被included加入到runnables以便at_exit时调用test_xxx
+        # 而describe会如上Class.new(self)产生子类，加入到runnables
+        # 另一方面，每次嵌套describe，都会基于上级describe来产生子类
+        # 如果上级describe已经用it来生成了test_xxx，那这些test_xxx又会被继承
+        # 所以必须在生成子类之后，屏蔽子类获得的test_xxx，以免再被at_exit调用
+        nuke_test_methods!
+      end
+
+      children &lt;&lt; cls
+
+      cls
+    end
+  end
+
+  extend DSL
+
+end</code></pre>
+<div><br /></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">it所做的就是生成test_xxx方法，并找出children中非明确定义it或test_xxx的哪些子类，屏蔽它们对本次it所生成的test_xxx的继承</span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">注意这里屏蔽方法的做法和nuke_test_methods!一样，都是undef_method，它甚至阻止对父类继承方法的调用，有别于remove_method</span></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">同时，还发现方法名可有空格，这是def无法做到的。当然调用时也没法直接调用，必须send</span></div>
+<div><br /></div>
+<pre><code>def it desc = &#34;anonymous&#34;, &amp;block
+  block ||= proc { skip &#34;(no tests defined)&#34; }
+
+  @specs ||= 0
+  @specs += 1
+
+  name = &#34;test_%04d_%s&#34; % [ @specs, desc ]
+
+  undef_klasses = self.children.reject { |c| c.public_method_defined? name }
+
+  define_method name, &amp;block
+
+  undef_klasses.each do |undef_klass|
+    undef_klass.send :undef_method, name
+  end
+
+  name
+end</code></pre>
+<div><br /></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">再测试一下嵌套describe</span></div>
+<div><br /></div>
+<pre><code>require &#39;minitest/spec&#39;
+require &#39;minitest/autorun&#39;
+require &#39;trace_tree&#39;
+
+binding.trace_tree do
+  describe Numeric do
+    it &#39;is ok&#39; do
+      1.must_equal 1
+    end
+
+    describe Fixnum do
+      it &#39;is fine&#39; do
+        (1 + 1).must_equal 2
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">调用栈如下，符合预期</span></div>
+<div><br /></div>
+<pre><code>Object#block in </code><main><code> it.rb:5
+└─Object#describe $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:71
+  ├─Minitest::Spec.describe_stack $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:159
+  ├─Minitest::Spec.spec_type $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:149
+  │ └─Minitest::Spec.block in spec_type $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:150
+  ├─Minitest::Spec.create $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:259
+  │ ├─Minitest::Spec.inherited $GemPath0/gems/minitest-5.10.1/lib/minitest.rb:268
+  │ │ └─Minitest::Spec.runnables $GemPath0/gems/minitest-5.10.1/lib/minitest.rb:365
+  │ ├─Numeric.block in create $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:260
+  │ │ └─Numeric.nuke_test_methods! $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:167
+  │ └─Minitest::Spec.children $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:163
+  └─Numeric.block (2 levels) in </code><main><code> it.rb:6
+    ├─Numeric.it $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:212
+    │ └─Numeric.children $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:163
+    └─Numeric.describe $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:71
+      ├─Minitest::Spec.describe_stack $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:159
+      ├─Numeric.to_s $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:276
+      │ └─Numeric.name $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:272
+      ├─Numeric.create $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:259
+      │ ├─Numeric.inherited $GemPath0/gems/minitest-5.10.1/lib/minitest.rb:268
+      │ │ └─Numeric.runnables $GemPath0/gems/minitest-5.10.1/lib/minitest.rb:365
+      │ ├─Numeric::Fixnum.block in create $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:260
+      │ │ └─Numeric::Fixnum.nuke_test_methods! $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:167
+      │ │   └─Numeric::Fixnum.block in nuke_test_methods! $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:168
+      │ └─Numeric.children $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:163
+      └─Numeric::Fixnum.block (3 levels) in </code><main><code> it.rb:11
+        └─Numeric::Fixnum.it $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:212
+          └─Numeric::Fixnum.children $GemPath0/gems/minitest-5.10.1/lib/minitest/spec.rb:163</code></main></main></main></pre>
+<div><br /></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">下层的describe的类名，Numeric::Fixnum，是这样得出的</span></div>
+<div><br /></div>
+<pre><code>name  = [stack.last, desc, *additional_desc].compact.join(&#34;::&#34;)</code></pre>
+<div><br /></div>
+<div><span style="font-family: Consolas;"><br /></span></div>
+<div><span style="font-family: Consolas;">然后所有describe类写死调@name或返回父describe的name</span></div>
+<div><br /></div>
+<pre><code>def create name, desc # :nodoc:
+  cls = Class.new(self) do
+    @name = name
+    @desc = desc
+
+    nuke_test_methods!
+  end
+
+  children &lt;&lt; cls
+
+  cls
+end
+
+def name # :nodoc:
+  defined?(@name) ? @name : super
+end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/02/23/54207406f293d64e4fe78488a790832b.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

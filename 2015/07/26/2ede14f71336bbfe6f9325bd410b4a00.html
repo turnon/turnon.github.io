@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>_path与_url的由来</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="_path与_url的由来" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="区别path是相对路径，url是绝对路径*_path are for views because ahrefs are implicitly linked to the current URL. So it’d be a waste of bytes to repeat it o…" />
+<meta property="og:description" content="区别path是相对路径，url是绝对路径*_path are for views because ahrefs are implicitly linked to the current URL. So it’d be a waste of bytes to repeat it o…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2015-07-26T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"区别path是相对路径，url是绝对路径*_path are for views because ahrefs are implicitly linked to the current URL. So it’d be a waste of bytes to repeat it o…","@type":"BlogPosting","headline":"_path与_url的由来","dateModified":"2015-07-26T00:00:00+00:00","url":"/2015/07/26/2ede14f71336bbfe6f9325bd410b4a00.html","datePublished":"2015-07-26T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2015/07/26/2ede14f71336bbfe6f9325bd410b4a00.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">*_path与*_url的由来</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2015-07-26T00:00:00+00:00" itemprop="datePublished">Jul 26, 2015
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style="font-weight: bold;">区别</span></div>
+<div><br /></div>
+<div>path是相对路径，url是绝对路径</div>
+<div><br /></div>
+<div>*_path are for views because ahrefs are implicitly linked to the current URL. So it&#39;d be a waste of bytes to repeat it over and over.</div>
+<div><br /></div>
+<div>In the controller, though, *_url is needed for redirect_to because the HTTP specification mandates that the Location: header in 3xx redirects is a complete URL.</div>
+<div><br /></div>
+<div>model为复数的会对应到action=&gt;index, 为单数时需要传递id参数并对应到action=&gt;show</div>
+<div><br /></div>
+<div>例如，如对于user而言：</div>
+<div><br /></div>
+<div>users_url # =&gt; http://localhost:3000/users</div>
+<div>users_path # =&gt; /users</div>
+<div>user_url(1) # =&gt; http://localhost:3000/users/1</div>
+<div>user_path(1) # =&gt; /users/1</div>
+<div><br /></div>
+<pre><code>url 的名字        REST方法    对应的url的表达式              对应的controller#action
+----------------------------------------------------------------------------------
+travels_path      GET         /travels(.:format)            travels#index
+new_travel_path   GET         /travels/new(.:format)        travels#new
+edit_travel_path  GET         /travels/:id/edit(.:format)   travels#edit
+travel_path       GET         /travels/:id(.:format)        travels#show
+travel_path       PATCH/PUT   /travels/:id(.:format)        travels#update
+travel_path       POST        /travels/:id(.:format)        travels#create
+travel_path       DELETE      /travels/:id(.:format)        travels#destroy</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>在route_set中被初始化，然后在view或controller中才能被调用。（是method）</div>
+<div><br /></div>
+<div><span style="font-weight: bold;">何时生成</span></div>
+<div><br /></div>
+<div>在WelcomeController的index方法中检查:welcome_index_path的source_location，得：</div>
+<div><br /></div>
+<pre><code>[3] pry(#<welcomecontroller>)&gt; method(:welcome_index_path).source_location
+=&gt; [&#34;/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.0.1/lib/action_dispatch/routing/route_set.rb&#34;, 283]</welcomecontroller></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>查看如下：</div>
+<div><br /></div>
+<pre><code>def define_url_helper(mod, route, name, opts, route_key, url_strategy)
+  helper = UrlHelper.create(route, opts, route_key, url_strategy)
+  mod.module_eval do
+    define_method(name) do |*args|
+      last = args.last
+      options = case last
+                when Hash
+                  args.pop
+                when ActionController::Parameters
+                  if last.permitted?
+                    args.pop.to_h
+                  else
+                    raise ArgumentError, ActionDispatch::Routing::INSECURE_URL_PARAMETERS_MESSAGE
+                  end
+                end
+      helper.call self, args, options
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>在define_method前加入调试语句</div>
+<div><br /></div>
+<pre><code>binding.pry if /welcome_index_path/ =~ name</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>重新rails server，结果就立即进入了pry。查看调用栈</div>
+<div><br /></div>
+<pre><code>[7] pry(#<module>)&gt; _bs_
+=&gt; [#&lt;binding:70310498294340 #&lt;module:0x007fe4dfcbf3b0=""&gt;.block in define_url_helper /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.0.1/lib/action_dispatch/routing/route_set.rb:283&gt;,
+ #&lt;binding:70310498342680 actiondispatch::routing::routeset::namedroutecollection#define_url_helper="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.1="" lib="" action_dispatch="" routing="" route_set.rb:282=""&gt;,
+ #&lt;binding:70310498390220 actiondispatch::routing::routeset::namedroutecollection#add="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.1="" lib="" action_dispatch="" routing="" route_set.rb:114=""&gt;,
+ #&lt;binding:70310498454920 actiondispatch::routing::routeset#add_route="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.1="" lib="" action_dispatch="" routing="" route_set.rb:516=""&gt;,
+ #&lt;binding:70310498501300 actiondispatch::routing::mapper#add_route="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.1="" lib="" action_dispatch="" routing="" mapper.rb:1657=""&gt;,
+ #&lt;binding:70310498550160 actiondispatch::routing::mapper#decomposed_match="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.1="" lib="" action_dispatch="" routing="" mapper.rb:1628=""&gt;,
+ #&lt;binding:70310498607320 actiondispatch::routing::mapper#block="" in="" map_match="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.1="" lib="" action_dispatch="" routing="" mapper.rb:1927=""&gt;,
+ #&lt;binding:70310498704400 actiondispatch::routing::mapper#map_match="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.1="" lib="" action_dispatch="" routing="" mapper.rb:1910=""&gt;,
+ #&lt;binding:70310498753600 actiondispatch::routing::mapper#match="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.1="" lib="" action_dispatch="" routing="" mapper.rb:1599=""&gt;,
+ #&lt;binding:70310498810300 actiondispatch::routing::mapper#map_method="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.1="" lib="" action_dispatch="" routing="" mapper.rb:719=""&gt;,
+ #&lt;binding:70310498859480 actiondispatch::routing::mapper#get="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.1="" lib="" action_dispatch="" routing="" mapper.rb:680=""&gt;,
+ #&lt;binding:70310498907560 actiondispatch::routing::mapper#block="" in="" &lt;top="" (required)=""&gt; /home/z/test_rails/dapo/config/routes.rb:4&gt;,
+ #&lt;binding:70310498964660 actiondispatch::routing::routeset#eval_block="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.1="" lib="" action_dispatch="" routing="" route_set.rb:390=""&gt;,
+ #&lt;binding:70310499014220 actiondispatch::routing::routeset#draw="" home="" z="" .rbenv="" versions="" 2.4.0="" lib="" ruby="" gems="" 2.4.0="" gems="" actionpack-5.0.1="" lib="" action_dispatch="" routing="" route_set.rb:372=""&gt;,
+ #&lt;binding:70310499094380 object#&lt;top="" (required)=""&gt; /home/z/test_rails/dapo/config/routes.rb:1&gt;,
+#...&lt;/binding:70310499094380&gt;&lt;/binding:70310499014220&gt;&lt;/binding:70310498964660&gt;&lt;/binding:70310498907560&gt;&lt;/binding:70310498859480&gt;&lt;/binding:70310498810300&gt;&lt;/binding:70310498753600&gt;&lt;/binding:70310498704400&gt;&lt;/binding:70310498607320&gt;&lt;/binding:70310498550160&gt;&lt;/binding:70310498501300&gt;&lt;/binding:70310498454920&gt;&lt;/binding:70310498390220&gt;&lt;/binding:70310498342680&gt;&lt;/binding:70310498294340&gt;</module></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>可见源自在config/routes.rb</div>
+<div><br /></div>
+<div><span style="font-weight: bold;">怎样返回url</span></div>
+<div><br /></div>
+<div>对*_url进行trace</div>
+<div><br /></div>
+<pre><code>[2] pry(#<welcomecontroller>)&gt; binding.trace_tree{welcome_index_url}
+WelcomeController#block in index (pry):2
+└─WelcomeController#block (2 levels) in define_url_helper $GemPath0/gems/actionpack-5.0.1/lib/action_dispatch/routing/route_set.rb:286
+  └─ActionDispatch::Routing::RouteSet::NamedRouteCollection::UrlHelper::OptimizedUrlHelper#call $GemPath0/gems/actionpack-5.0.1/lib/action_dispatch/routing/route_set.rb:171
+    ├─ActionDispatch::Routing::RouteSet::NamedRouteCollection::UrlHelper::OptimizedUrlHelper#optimize_routes_generation? $GemPath0/gems/actionpack-5.0.1/lib/action_dispatch/routing/route_set.rb:191
+    │ └─#..
+    ├─WelcomeController#url_options $GemPath0/gems/actionpack-5.0.1/lib/action_controller/metal/url_for.rb:28
+    │ └─#...
+    ├─ActionDispatch::Routing::RouteSet::NamedRouteCollection::UrlHelper::OptimizedUrlHelper#optimized_helper $GemPath0/gems/actionpack-5.0.1/lib/action_dispatch/routing/route_set.rb:183
+    │ └─#...
+    └─ActionDispatch::Routing::RouteSet.block in <class:routeset> $GemPath0/gems/actionpack-5.0.1/lib/action_dispatch/routing/route_set.rb:306
+      └─ActionDispatch::Http::URL.url_for $GemPath0/gems/actionpack-5.0.1/lib/action_dispatch/http/url.rb:48
+        └─#...</class:routeset></welcomecontroller></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>可见使用的是OptimizedUrlHelper（未研究），最后用route_set.rb:306的block，里面调了个url_for来返回url</div>
+<div><br /></div>
+<div>而*_path也类似，用的是route_set.rb:305的block，里面调了个path_for</div>
+<div><br /></div>
+<pre><code>[5] pry(#<welcomecontroller>)&gt; binding.trace_tree{welcome_index_path}
+WelcomeController#block in index (pry):5
+├─WelcomeController#block (2 levels) in define_url_helper $GemPath0/gems/actionpack-5.0.1/lib/action_dispatch/routing/route_set.rb:286
+└─WelcomeController#block (2 levels) in define_url_helper $GemPath0/gems/actionpack-5.0.1/lib/action_dispatch/routing/route_set.rb:286
+  └─ActionDispatch::Routing::RouteSet::NamedRouteCollection::UrlHelper::OptimizedUrlHelper#call $GemPath0/gems/actionpack-5.0.1/lib/action_dispatch/routing/route_set.rb:171
+    ├─ActionDispatch::Routing::RouteSet::NamedRouteCollection::UrlHelper::OptimizedUrlHelper#optimize_routes_generation? $GemPath0/gems/actionpack-5.0.1/lib/action_dispatch/routing/route_set.rb:191
+    │ └─#...
+    ├─WelcomeController#url_options $GemPath0/gems/actionpack-5.0.1/lib/action_controller/metal/url_for.rb:28
+    │ └─#...
+    ├─ActionDispatch::Routing::RouteSet::NamedRouteCollection::UrlHelper::OptimizedUrlHelper#optimized_helper $GemPath0/gems/actionpack-5.0.1/lib/action_dispatch/routing/route_set.rb:183
+    │ └─#...
+    └─ActionDispatch::Routing::RouteSet.block in <class:routeset> $GemPath0/gems/actionpack-5.0.1/lib/action_dispatch/routing/route_set.rb:305
+      └─ActionDispatch::Http::URL.path_for $GemPath0/gems/actionpack-5.0.1/lib/action_dispatch/http/url.rb:68</class:routeset></welcomecontroller></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>这两个block就是</div>
+<div><br /></div>
+<pre><code>PATH    = -&gt;(options) { ActionDispatch::Http::URL.path_for(options) }
+UNKNOWN = -&gt;(options) { ActionDispatch::Http::URL.url_for(options) }</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>*_url那个叫做UNKNOWN，看上去有点奇怪，搜一下哪里用到或是否有其他名字指向他</div>
+<div><br /></div>
+<pre><code>$ actionpack-5.0.1 git:(master) grep UNKNOWN -rn *
+lib/action_dispatch/routing/route_set.rb:115:          define_url_helper @url_helpers_module,  route, url_name,  route.defaults, name, UNKNOWN
+lib/action_dispatch/routing/route_set.rb:303:      UNKNOWN = -&gt;(options) { ActionDispatch::Http::URL.url_for(options) }
+lib/action_dispatch/routing/route_set.rb:685:      def url_for(options, route_name = nil, url_strategy = UNKNOWN)</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>唯一与config/routes.rb调用栈能联系起来的，就是ActionDispatch::Routing::RouteSet::NamedRouteCollection#add了</div>
+<div><br /></div>
+<pre><code>def add(name, route)
+  key       = name.to_sym
+  path_name = :&#34;#{name}_path&#34;
+  url_name  = :&#34;#{name}_url&#34;
+
+  if routes.key? key
+    @path_helpers_module.send :undef_method, path_name
+    @url_helpers_module.send  :undef_method, url_name
+  end
+  routes[key] = route
+  define_url_helper @path_helpers_module, route, path_name, route.defaults, name, PATH
+  define_url_helper @url_helpers_module,  route, url_name,  route.defaults, name, UNKNOWN
+
+  @path_helpers &lt;&lt; path_name
+  @url_helpers &lt;&lt; url_name
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而这里的@path_helpers_module和@url_helpers_module，可以猜到，就是会mixin到controller的匿名module</div>
+<div><br /></div>
+<pre><code>[9] pry(#<welcomecontroller>)&gt; self.class.ancestors
+=&gt; [WelcomeController,
+ #<module:0x007fe9e4f389c0>,
+ ApplicationController,
+ #<module:0x007fe9e4f3ccc8>,
+ #<module:0x007fe9e35025d8>,
+ #<module:0x007fe9e3502600>,
+ ActionController::Base,
+ Turbolinks::Redirection,
+ Turbolinks::Controller,
+ ActiveRecord::Railties::ControllerRuntime,
+ ActionDispatch::Routing::RouteSet::MountedHelpers,
+ ActionController::ParamsWrapper,
+ #...
+[13] pry(#<welcomecontroller>)&gt; self.class.ancestors[4].instance_methods(false)
+=&gt; [:rails_info_properties_path, :rails_info_routes_path, :rails_info_path, :rails_mailers_path, :welcome_index_path, :welcome_go_to_index_path]
+[14] pry(#<welcomecontroller>)&gt; self.class.ancestors[5].instance_methods(false)
+=&gt; [:rails_info_properties_url, :rails_info_routes_url, :rails_info_url, :rails_mailers_url, :welcome_index_url, :welcome_go_to_index_url]</welcomecontroller></welcomecontroller></module:0x007fe9e3502600></module:0x007fe9e35025d8></module:0x007fe9e4f3ccc8></module:0x007fe9e4f389c0></welcomecontroller></code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2015/07/26/2ede14f71336bbfe6f9325bd410b4a00.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

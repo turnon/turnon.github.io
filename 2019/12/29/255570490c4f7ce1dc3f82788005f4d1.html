@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>chewy的同步策略</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="chewy的同步策略" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="跟踪一下Chewy.strategy(:atomic){}的运作：…" />
+<meta property="og:description" content="跟踪一下Chewy.strategy(:atomic){}的运作：…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-12-29T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"跟踪一下Chewy.strategy(:atomic){}的运作：…","@type":"BlogPosting","headline":"chewy的同步策略","dateModified":"2019-12-29T00:00:00+00:00","url":"/2019/12/29/255570490c4f7ce1dc3f82788005f4d1.html","datePublished":"2019-12-29T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2019/12/29/255570490c4f7ce1dc3f82788005f4d1.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">chewy的同步策略</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-12-29T00:00:00+00:00" itemprop="datePublished">Dec 29, 2019
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>跟踪一下Chewy.strategy(:atomic){}的运作：</div>
+<div><br /></div>
+<pre><code>[6] pry(main)&gt; binding.trace_tree(htmp: &#39;chewy_atomic&#39;, no_methods: /perform_request/){ Chewy.strategy(:atomic){ books.each{ |b| b.update(year: 1994) } } }
+Chewy strategies stack: [2] &lt;- atomic @ (pry):6
+   (36.1ms)  begin transaction
+  SQL (57.9ms)  UPDATE &#34;books&#34; SET &#34;year&#34; = ?, &#34;updated_at&#34; = ? WHERE &#34;books&#34;.&#34;id&#34; = ?  [[&#34;year&#34;, 1994], [&#34;updated_at&#34;, &#34;2019-12-29 13:43:05.099905&#34;], [&#34;id&#34;, 1]]
+   (43.2ms)  commit transaction
+   (51.0ms)  begin transaction
+  SQL (58.6ms)  UPDATE &#34;books&#34; SET &#34;year&#34; = ?, &#34;updated_at&#34; = ? WHERE &#34;books&#34;.&#34;id&#34; = ?  [[&#34;year&#34;, 1994], [&#34;updated_at&#34;, &#34;2019-12-29 13:43:08.011823&#34;], [&#34;id&#34;, 2]]
+   (43.1ms)  commit transaction
+   (48.5ms)  SELECT COUNT(*) FROM &#34;books&#34; WHERE &#34;books&#34;.&#34;id&#34; IN (1, 2)
+  Book Load (68.3ms)  SELECT &#34;books&#34;.* FROM &#34;books&#34; WHERE &#34;books&#34;.&#34;id&#34; IN (1, 2)
+  Dude Load (75.2ms)  SELECT &#34;dudes&#34;.* FROM &#34;dudes&#34; WHERE &#34;dudes&#34;.&#34;id&#34; IN (1, 2)
+  SQL (156.8ms)  SELECT &#34;taggings&#34;.*, &#34;taggings&#34;.&#34;id&#34; AS t0_r0, &#34;taggings&#34;.&#34;tag_id&#34; AS t0_r1, &#34;taggings&#34;.&#34;taggable_id&#34; AS t0_r2, &#34;taggings&#34;.&#34;taggable_type&#34; AS t0_r3, &#34;taggings&#34;.&#34;tagger_id&#34; AS t0_r4, &#34;taggings&#34;.&#34;tagger_type&#34; AS t0_r5, &#34;taggings&#34;.&#34;context&#34; AS t0_r6, &#34;taggings&#34;.&#34;created_at&#34; AS t0_r7, &#34;tags&#34;.&#34;id&#34; AS t1_r0, &#34;tags&#34;.&#34;name&#34; AS t1_r1, &#34;tags&#34;.&#34;taggings_count&#34; AS t1_r2 FROM &#34;taggings&#34; LEFT OUTER JOIN &#34;tags&#34; ON &#34;tags&#34;.&#34;id&#34; = &#34;taggings&#34;.&#34;tag_id&#34; WHERE &#34;taggings&#34;.&#34;context&#34; = ? AND &#34;taggings&#34;.&#34;taggable_type&#34; = &#39;Book&#39; AND &#34;taggings&#34;.&#34;taggable_id&#34; IN (1, 2)  [[&#34;context&#34;, &#34;tags&#34;]]
+  EntertainmentIndex::Book Import (15270.4ms) {:index=&gt;2}
+Chewy strategies stack: [2] -&gt; atomic, now urgent @ (pry):6
+[7] pry(main)&gt;</code></pre>
+<div><br /></div>
+<div>得调用栈如下：</div>
+<div><br /></div>
+<div><a href="/assets/files/255570490c4f7ce1dc3f82788005f4d1/675bf0b8b3f69597ecd4e7e13d38980f.html"><img src="/assets/files/255570490c4f7ce1dc3f82788005f4d1/c611c07bdda7f6da59a1eda8d575cbce.png" alt="20191229_134304_402_chewy_atomic.html" /></a></div>
+<div><br /></div>
+<div>而从日志可见，ES的import是在所有commit之后才执行的（其实平时这两个update还应该用transaction包起来的）。这个动作位于Chewy::Strategy#pop之中</div>
+<div><br /></div>
+<div><img src="/assets/files/255570490c4f7ce1dc3f82788005f4d1/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div>wrap中所作的push和pop实际上干的是，根据参数指定的名字找到具体策略类并实例化后将其压入栈中，出栈时调用策略对象的leave方法</div>
+<div><br /></div>
+<pre><code># chewy-5.1.0/lib/chewy/strategy.rb
+module Chewy
+  class Strategy
+    def initialize
+      @stack = [resolve(Chewy.root_strategy).new]
+    end
+
+    def current
+      @stack.last
+    end
+
+    def push(name)
+      result = @stack.push resolve(name).new
+      debug &#34;[#{@stack.size - 1}] &lt;- #{current.name}&#34; if @stack.size &gt; 2
+      result
+    end
+
+    def pop
+      raise &#34;Can&#39;t pop root strategy&#34; if @stack.one?
+      result = @stack.pop.tap(&amp;:leave)
+      debug &#34;[#{@stack.size}] -&gt; #{result.name}, now #{current.name}&#34; if @stack.size &gt; 1
+      result
+    end
+
+    def wrap(name)
+      stack = push(name)
+      yield
+    ensure
+      pop if stack
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div>而栈底固定的策略类是Urgent，源码如下</div>
+<div><br /></div>
+<pre><code># chewy-5.1.0/lib/chewy/strategy/urgent.rb
+module Chewy
+  class Strategy
+    class Urgent &lt; Base
+      def update(type, objects, _options = {})
+        type.import!(Array.wrap(objects))
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div>刚才使用的atomic则如下，其update方法只是将该更新的索引及文档id收集起来，到了leave被调用时才实际地查数据并推到ES去</div>
+<div><br /></div>
+<pre><code># chewy-5.1.0/lib/chewy/strategy/atomic.rb
+module Chewy
+  class Strategy
+    class Atomic &lt; Base
+      def initialize
+        @stash = {}
+      end
+
+      def update(type, objects, _options = {})
+        @stash[type] ||= []
+        @stash[type] |= type.root.id ? Array.wrap(objects) : type.adapter.identify(objects)
+      end
+
+      def leave
+        @stash.all? { |type, ids| type.import!(ids) }
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div>该update方法正是在activerecord的after_commit中被回调（由model的update_index所定义），如下。如果没有使用Chewy.strategy(:atomic){}的话，则after_commit中查到的Chewy::Strategy#current将会是初始化在栈底的Urgent策略，导致在没有将多个不同类型的model用一个transaction包裹，发起多次ES的import。（不过在嵌套transaction（即require_new）的情况里，还是会每个commit一次import）</div>
+<div><br /></div>
+<div><img src="/assets/files/255570490c4f7ce1dc3f82788005f4d1/91eee3f8d75dbb327ede474944726554.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div>再检查Resque、Sidekiq、Shoryuken的代码，可见它们都是继承了Atomic，然后在leave中实现对应的队列操作，所以它们都是在Chewy.strategy的block的最后才执行批量更新ES。</div>
+<div><br /></div>
+<div>而因为Chewy.strategy实质上是个栈，所以可以实现以下效果：如果希望某些数据更新要即时同步，可以通过新增一层Chewy.strategy(:urgent)来实现。不过暂时没发现什么时候会有这样的需求……</div>
+<div><br /></div>
+<pre><code>Chewy.strategy(:atomic) do
+  city1.do_update!
+  Chewy.strategy(:urgent) do
+    city2.do_update!
+    city3.do_update!
+    # there will be 2 update index requests for city2 and city3
+  end
+  city4..do_update!
+  # city1 and city4 will be grouped in one index update request
+end</code></pre>
+<div><br /></div>
+<div>另外要注意的是，因为Strategy的update方法是在after_commit回调中调用的，所以transaction的block需要放在Chewy.strategy的block中，否则，在执行Chewy.strategy后，策略栈会退回到urgent，这时transaction结束前调的after_commit回调就是urgent的update，导致ES不是批量更新。</div>
+
+  </div><a class="u-url" href="/2019/12/29/255570490c4f7ce1dc3f82788005f4d1.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

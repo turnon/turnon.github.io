@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>count vs size vs length</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="count vs size vs length" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="区别在于是否重新发起select count，以及只发起select count还是select *…" />
+<meta property="og:description" content="区别在于是否重新发起select count，以及只发起select count还是select *…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-08-01T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"区别在于是否重新发起select count，以及只发起select count还是select *…","@type":"BlogPosting","headline":"count vs size vs length","dateModified":"2017-08-01T00:00:00+00:00","url":"/2017/08/01/f384ba53c8ec125889c2867b590e12c2.html","datePublished":"2017-08-01T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/08/01/f384ba53c8ec125889c2867b590e12c2.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">count vs size vs length</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-08-01T00:00:00+00:00" itemprop="datePublished">Aug 1, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>区别在于是否重新发起select count，以及只发起select count还是select *</div>
+<div><br /></div>
+<div><b>count</b></div>
+<div><br /></div>
+<div>无论是否加载，count都会重新发起select count</div>
+<div><br /></div>
+<div>单表时</div>
+<div><br /></div>
+<pre><code>[48] pry(main)&gt; hus = Human.where(&#39;id &lt; ?&#39;, 10);
+[49] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/single_count&#39;){hus.count}
+   (25.7ms)  SELECT COUNT(*) FROM &#34;humen&#34; WHERE (id &lt; 10)
+=&gt; 2
+[50] pry(main)&gt; hus
+  Human Load (0.1ms)  SELECT &#34;humen&#34;.* FROM &#34;humen&#34; WHERE (id &lt; 10)
+=&gt; [#&lt;human:0x007fbac86a3a08 id:="" 3,="" name:="" "jack",="" created_at:="" sun,="" 30="" jul="" 2017="" 15:14:01="" utc="" +00:00,="" updated_at:="" sun,="" 30="" jul="" 2017="" 15:14:01="" utc="" +00:00=""&gt;,
+ #&lt;human:0x007fbac86a37b0 id:="" 6,="" name:="" "ken",="" created_at:="" tue,="" 01="" aug="" 2017="" 13:30:47="" utc="" +00:00,="" updated_at:="" tue,="" 01="" aug="" 2017="" 13:30:47="" utc="" +00:00=""&gt;]
+[51] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/single_count_load&#39;){hus.count}
+   (25.3ms)  SELECT COUNT(*) FROM &#34;humen&#34; WHERE (id &lt; 10)
+=&gt; 2&lt;/human:0x007fbac86a37b0&gt;&lt;/human:0x007fbac86a3a08&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>未加载的调用栈</div>
+<div><br /></div>
+<div><a href="/assets/files/f384ba53c8ec125889c2867b590e12c2/24f0092ec9a252a78839216d63e8e27f.html"><img src="/assets/files/f384ba53c8ec125889c2867b590e12c2/1fd791469a4723cb7de4dfc8c2868ec7.png" alt="20170801_214249_140_single_count.html" /></a><br /></div>
+<div><br /></div>
+<div>已加载的调用栈</div>
+<div><br /></div>
+<div><a href="/assets/files/f384ba53c8ec125889c2867b590e12c2/92e3de7df3b54401916f9d69cf02230e.html"><img src="/assets/files/f384ba53c8ec125889c2867b590e12c2/5e16ee50009aa1494c9105ef67ddbe26.png" alt="20170801_214305_116_single_count_load.html" /></a></div>
+<div><br /></div>
+<div>关联时</div>
+<div><br /></div>
+<pre><code>[6] pry(main)&gt; hu = Human.first
+  Human Load (0.1ms)  SELECT  &#34;humen&#34;.* FROM &#34;humen&#34; ORDER BY &#34;humen&#34;.&#34;id&#34; ASC LIMIT ?  [[&#34;LIMIT&#34;, 1]]
+=&gt; #&lt;human:0x007fbac7a210a0 id:="" 3,="" name:="" "jack",="" created_at:="" sun,="" 30="" jul="" 2017="" 15:14:01="" utc="" +00:00,="" updated_at:="" sun,="" 30="" jul="" 2017="" 15:14:01="" utc="" +00:00=""&gt;
+[7] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/count&#39;){hu.cells.count}
+   (33.7ms)  SELECT COUNT(*) FROM &#34;cells&#34; WHERE &#34;cells&#34;.&#34;human_id&#34; = ?  [[&#34;human_id&#34;, 3]]
+=&gt; 2
+[8] pry(main)&gt; hu = Human.first;hu.cells
+  Human Load (0.1ms)  SELECT  &#34;humen&#34;.* FROM &#34;humen&#34; ORDER BY &#34;humen&#34;.&#34;id&#34; ASC LIMIT ?  [[&#34;LIMIT&#34;, 1]]
+  Cell Load (0.1ms)  SELECT &#34;cells&#34;.* FROM &#34;cells&#34; WHERE &#34;cells&#34;.&#34;human_id&#34; = ?  [[&#34;human_id&#34;, 3]]
+=&gt; [#&lt;cell:0x007fbac8b20590 id:="" 2,="" human_id:="" 3,="" created_at:="" sun,="" 30="" jul="" 2017="" 15:14:21="" utc="" +00:00,="" updated_at:="" sun,="" 30="" jul="" 2017="" 15:14:21="" utc="" +00:00=""&gt;,
+ #&lt;cell:0x007fbac8b20068 id:="" 3,="" human_id:="" 3,="" created_at:="" sun,="" 30="" jul="" 2017="" 15:14:24="" utc="" +00:00,="" updated_at:="" sun,="" 30="" jul="" 2017="" 15:14:24="" utc="" +00:00=""&gt;]
+[9] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/count_loaded&#39;){hu.cells.count}
+   (35.4ms)  SELECT COUNT(*) FROM &#34;cells&#34; WHERE &#34;cells&#34;.&#34;human_id&#34; = ?  [[&#34;human_id&#34;, 3]]
+=&gt; 2&lt;/cell:0x007fbac8b20068&gt;&lt;/cell:0x007fbac8b20590&gt;&lt;/human:0x007fbac7a210a0&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>未加载的调用栈</div>
+<div><br /></div>
+<div><a href="/assets/files/f384ba53c8ec125889c2867b590e12c2/b25d382fa14fceacdb3f4dbb7c73aec8.html"><img src="/assets/files/f384ba53c8ec125889c2867b590e12c2/7fd96dd45f64c2e91377557c727389c4.png" alt="20170801_205008_333_count.html" /></a><br /></div>
+<div><br /></div>
+<div>已加载的调用栈</div>
+<div><br /></div>
+<div><a href="/assets/files/f384ba53c8ec125889c2867b590e12c2/d7d5bae34e5c6d8c5de9b4d336ee3752.html"><img src="/assets/files/f384ba53c8ec125889c2867b590e12c2/68e64ab7dea35fd346aab12ed178ff70.png" alt="20170801_205420_618_count_loaded.html" /></a><br /></div>
+<div><br /></div>
+<div><b>size</b></div>
+<div><br /></div>
+<div>对于size，未加载时发起select count，已加载时直接获取集合的大小</div>
+<div><br /></div>
+<div>单表时</div>
+<div><br /></div>
+<pre><code>[52] pry(main)&gt; hus = Human.where(&#39;id &lt; ?&#39;, 10);
+[53] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/single_size&#39;){hus.size}
+   (28.7ms)  SELECT COUNT(*) FROM &#34;humen&#34; WHERE (id &lt; 10)
+=&gt; 2
+[54] pry(main)&gt; hus
+  Human Load (0.2ms)  SELECT &#34;humen&#34;.* FROM &#34;humen&#34; WHERE (id &lt; 10)
+=&gt; [#&lt;human:0x007fbac8718128 id:="" 3,="" name:="" "jack",="" created_at:="" sun,="" 30="" jul="" 2017="" 15:14:01="" utc="" +00:00,="" updated_at:="" sun,="" 30="" jul="" 2017="" 15:14:01="" utc="" +00:00=""&gt;,
+ #&lt;human:0x007fbac8703f20 id:="" 6,="" name:="" "ken",="" created_at:="" tue,="" 01="" aug="" 2017="" 13:30:47="" utc="" +00:00,="" updated_at:="" tue,="" 01="" aug="" 2017="" 13:30:47="" utc="" +00:00=""&gt;]
+[55] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/single_size_load&#39;){hus.size}
+=&gt; 2&lt;/human:0x007fbac8703f20&gt;&lt;/human:0x007fbac8718128&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>未加载的调用栈</div>
+<div><br /></div>
+<div><a href="/assets/files/f384ba53c8ec125889c2867b590e12c2/5c07107e27a4304c01df531ca9b5f927.html"><img src="/assets/files/f384ba53c8ec125889c2867b590e12c2/1c93d2dfac3c6b69774df0124d8750c8.png" alt="20170801_214402_859_single_size.html" /></a></div>
+<div><br /></div>
+<div>已加载的调用栈</div>
+<div><br /></div>
+<div><a href="/assets/files/f384ba53c8ec125889c2867b590e12c2/4d0c92d3bb3ae58c69e274d8ab1e791e.html"><img src="/assets/files/f384ba53c8ec125889c2867b590e12c2/8a313fe150f52caea3a128354cfa475c.png" alt="20170801_214415_476_single_size_load.html" /></a><br /></div>
+<div><br /></div>
+<div>源码如下</div>
+<div><br /></div>
+<pre><code>def size
+  loaded? ? @records.length : count(:all)
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>关联时</div>
+<div><br /></div>
+<pre><code>[10] pry(main)&gt; hu = Human.first
+  Human Load (0.1ms)  SELECT  &#34;humen&#34;.* FROM &#34;humen&#34; ORDER BY &#34;humen&#34;.&#34;id&#34; ASC LIMIT ?  [[&#34;LIMIT&#34;, 1]]
+=&gt; #&lt;human:0x007fbac8c0e038 id:="" 3,="" name:="" "jack",="" created_at:="" sun,="" 30="" jul="" 2017="" 15:14:01="" utc="" +00:00,="" updated_at:="" sun,="" 30="" jul="" 2017="" 15:14:01="" utc="" +00:00=""&gt;
+[11] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/size&#39;){hu.cells.size}
+   (31.7ms)  SELECT COUNT(*) FROM &#34;cells&#34; WHERE &#34;cells&#34;.&#34;human_id&#34; = ?  [[&#34;human_id&#34;, 3]]
+=&gt; 2
+[12] pry(main)&gt; hu = Human.first;hu.cells
+  Human Load (0.1ms)  SELECT  &#34;humen&#34;.* FROM &#34;humen&#34; ORDER BY &#34;humen&#34;.&#34;id&#34; ASC LIMIT ?  [[&#34;LIMIT&#34;, 1]]
+  Cell Load (0.1ms)  SELECT &#34;cells&#34;.* FROM &#34;cells&#34; WHERE &#34;cells&#34;.&#34;human_id&#34; = ?  [[&#34;human_id&#34;, 3]]
+=&gt; [#&lt;cell:0x007fbac8f5c410 id:="" 2,="" human_id:="" 3,="" created_at:="" sun,="" 30="" jul="" 2017="" 15:14:21="" utc="" +00:00,="" updated_at:="" sun,="" 30="" jul="" 2017="" 15:14:21="" utc="" +00:00=""&gt;,
+ #&lt;cell:0x007fbac8f4bcf0 id:="" 3,="" human_id:="" 3,="" created_at:="" sun,="" 30="" jul="" 2017="" 15:14:24="" utc="" +00:00,="" updated_at:="" sun,="" 30="" jul="" 2017="" 15:14:24="" utc="" +00:00=""&gt;]
+[13] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/size_loaded&#39;){hu.cells.size}
+=&gt; 2&lt;/cell:0x007fbac8f4bcf0&gt;&lt;/cell:0x007fbac8f5c410&gt;&lt;/human:0x007fbac8c0e038&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>未加载的调用栈</div>
+<div><br /></div>
+<div><a href="/assets/files/f384ba53c8ec125889c2867b590e12c2/da8e88e70f94e14672e70fc5f4faf2be.html"><img src="/assets/files/f384ba53c8ec125889c2867b590e12c2/024441145431eb03e92b6082eeb6d355.png" alt="20170801_205510_259_size.html" /></a></div>
+<div><br /></div>
+<div>已加载的调用栈</div>
+<div><br /></div>
+<div><a href="/assets/files/f384ba53c8ec125889c2867b590e12c2/db34e4771014a22da52ec8593b13e662.html"><img src="/assets/files/f384ba53c8ec125889c2867b590e12c2/ae49eac5f198c160f95b3cbdfc3b3f02.png" alt="20170801_205532_722_size_loaded.html" /></a><br /></div>
+<div><br /></div>
+<div>关键源码如下</div>
+<div><br /></div>
+<pre><code># activerecord-5.1.2/lib/active_record/associations/collection_association.rb
+def size
+  if !find_target? || loaded?
+    target.size
+  elsif !association_scope.group_values.empty?
+    load_target.size
+  elsif !association_scope.distinct_value &amp;&amp; target.is_a?(Array)
+    unsaved_records = target.select(&amp;:new_record?)
+    unsaved_records.size + count_records
+  else
+    count_records
+  end
+end
+
+# activerecord-5.1.2/lib/active_record/associations/association.rb
+def find_target?
+  !loaded? &amp;&amp; (!owner.new_record? || foreign_key_present?) &amp;&amp; klass
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><b>length</b></div>
+<div><br /></div>
+<div>而length，未加载时发起select *，然后获取集合大小；已加载时直接获取集合的大小</div>
+<div><br /></div>
+<div>单表时</div>
+<div><br /></div>
+<pre><code>[56] pry(main)&gt; hus = Human.where(&#39;id &lt; ?&#39;, 10);
+[57] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/single_length&#39;){hus.length}
+  Human Load (32.5ms)  SELECT &#34;humen&#34;.* FROM &#34;humen&#34; WHERE (id &lt; 10)
+=&gt; 2
+[58] pry(main)&gt; hus
+=&gt; [#&lt;human:0x007fbac7a89588 id:="" 3,="" name:="" "jack",="" created_at:="" sun,="" 30="" jul="" 2017="" 15:14:01="" utc="" +00:00,="" updated_at:="" sun,="" 30="" jul="" 2017="" 15:14:01="" utc="" +00:00=""&gt;,
+ #&lt;human:0x007fbac90a0240 id:="" 6,="" name:="" "ken",="" created_at:="" tue,="" 01="" aug="" 2017="" 13:30:47="" utc="" +00:00,="" updated_at:="" tue,="" 01="" aug="" 2017="" 13:30:47="" utc="" +00:00=""&gt;]
+[59] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/single_length_load&#39;){hus.length}
+=&gt; 2&lt;/human:0x007fbac90a0240&gt;&lt;/human:0x007fbac7a89588&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>未加载的调用栈</div>
+<div><br /></div>
+<div><a href="/assets/files/f384ba53c8ec125889c2867b590e12c2/487cec587c7bf5d125fb10e28756e426.html"><img src="/assets/files/f384ba53c8ec125889c2867b590e12c2/830e2d4f6418bb64341afcfdac1e9c45.png" alt="20170801_214459_259_single_length.html" /></a><br /></div>
+<div><br /></div>
+<div>已加载的调用栈</div>
+<div><br /></div>
+<div><a href="/assets/files/f384ba53c8ec125889c2867b590e12c2/a99d3c9be3cd091ecced2a7940875909.html"><img src="/assets/files/f384ba53c8ec125889c2867b590e12c2/14d80d7bdfc2c064ae483ebae295ef0e.png" alt="20170801_214531_947_single_length_load.html" /></a><br /></div>
+<div><br /></div>
+<div>关键源码如下</div>
+<div><br /></div>
+<pre><code># activerecord-5.1.2/lib/active_record/relation/delegation.rb
+delegate :to_xml, :encode_with, :length, :each, :uniq, :to_ary, :join,
+         :[], :&amp;, :|, :+, :-, :sample, :reverse, :compact, :in_groups, :in_groups_of,
+         :to_sentence, :to_formatted_s, :as_json,
+         :shuffle, :split, :index, to: :records
+
+# activerecord-5.1.2/lib/active_record/relation.rb
+def records
+  load
+  @records
+end
+
+def load(&amp;block)
+  exec_queries(&amp;block) unless loaded?
+  self
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>关联时</div>
+<div><br /></div>
+<pre><code>[14] pry(main)&gt; hu = Human.first
+  Human Load (0.1ms)  SELECT  &#34;humen&#34;.* FROM &#34;humen&#34; ORDER BY &#34;humen&#34;.&#34;id&#34; ASC LIMIT ?  [[&#34;LIMIT&#34;, 1]]
+=&gt; #&lt;human:0x007fbac8912fc8 id:="" 3,="" name:="" "jack",="" created_at:="" sun,="" 30="" jul="" 2017="" 15:14:01="" utc="" +00:00,="" updated_at:="" sun,="" 30="" jul="" 2017="" 15:14:01="" utc="" +00:00=""&gt;
+[15] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/length&#39;){hu.cells.length}
+  Cell Load (31.3ms)  SELECT &#34;cells&#34;.* FROM &#34;cells&#34; WHERE &#34;cells&#34;.&#34;human_id&#34; = ?  [[&#34;human_id&#34;, 3]]
+=&gt; 2
+[16] pry(main)&gt; hu = Human.first;hu.cells
+  Human Load (0.1ms)  SELECT  &#34;humen&#34;.* FROM &#34;humen&#34; ORDER BY &#34;humen&#34;.&#34;id&#34; ASC LIMIT ?  [[&#34;LIMIT&#34;, 1]]
+  Cell Load (0.1ms)  SELECT &#34;cells&#34;.* FROM &#34;cells&#34; WHERE &#34;cells&#34;.&#34;human_id&#34; = ?  [[&#34;human_id&#34;, 3]]
+=&gt; [#&lt;cell:0x007fbac9061ea0 id:="" 2,="" human_id:="" 3,="" created_at:="" sun,="" 30="" jul="" 2017="" 15:14:21="" utc="" +00:00,="" updated_at:="" sun,="" 30="" jul="" 2017="" 15:14:21="" utc="" +00:00=""&gt;,
+ #&lt;cell:0x007fbac9061950 id:="" 3,="" human_id:="" 3,="" created_at:="" sun,="" 30="" jul="" 2017="" 15:14:24="" utc="" +00:00,="" updated_at:="" sun,="" 30="" jul="" 2017="" 15:14:24="" utc="" +00:00=""&gt;]
+[17] pry(main)&gt; binding.trace_tree(htmp: &#39;rails/length_loaded&#39;){hu.cells.length}
+=&gt; 2&lt;/cell:0x007fbac9061950&gt;&lt;/cell:0x007fbac9061ea0&gt;&lt;/human:0x007fbac8912fc8&gt;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>未加载的调用栈</div>
+<div><br /></div>
+<div><a href="/assets/files/f384ba53c8ec125889c2867b590e12c2/a24a3acec45c3f5d7bf5f199f0fbff4f.html"><img src="/assets/files/f384ba53c8ec125889c2867b590e12c2/c4890a16ae03c1156ea26d14b3e7818d.png" alt="20170801_205619_905_length.html" /></a><br /></div>
+<div><br /></div>
+<div>已加载的调用栈</div>
+<div><br /></div>
+<div><a href="/assets/files/f384ba53c8ec125889c2867b590e12c2/51deb674d8147dadc19de5367a7b25d0.html"><img src="/assets/files/f384ba53c8ec125889c2867b590e12c2/e7d0fce7130fc096fafa1474f832f2ba.png" alt="20170801_205742_640_length_loaded.html" /></a></div>
+<div><br /></div>
+<div>关键源码如下</div>
+<div><br /></div>
+<pre><code># activerecord-5.1.2/lib/active_record/relation/delegation.rb
+delegate :to_xml, :encode_with, :length, :each, :uniq, :to_ary, :join,
+         :[], :&amp;, :|, :+, :-, :sample, :reverse, :compact, :in_groups, :in_groups_of,
+         :to_sentence, :to_formatted_s, :as_json,
+         :shuffle, :split, :index, to: :records
+
+# activerecord-5.1.2/lib/active_record/associations/collection_proxy.rb
+def records
+  load_target
+end
+
+# activerecord-5.1.2/lib/active_record/associations/collection_association.rb
+def load_target
+  if find_target?
+    @target = merge_target_lists(find_target, target)
+  end
+
+  loaded!
+  target
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/08/01/f384ba53c8ec125889c2867b590e12c2.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

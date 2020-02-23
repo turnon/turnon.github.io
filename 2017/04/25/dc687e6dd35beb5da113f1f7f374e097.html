@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>bin/rails stats 来自哪里</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="bin/rails stats 来自哪里" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="想知道rails stats干什么，于是检查下ARGV会在哪里被调用，修改bin/rails如下…" />
+<meta property="og:description" content="想知道rails stats干什么，于是检查下ARGV会在哪里被调用，修改bin/rails如下…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-04-25T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"想知道rails stats干什么，于是检查下ARGV会在哪里被调用，修改bin/rails如下…","@type":"BlogPosting","headline":"bin/rails stats 来自哪里","dateModified":"2017-04-25T00:00:00+00:00","url":"/2017/04/25/dc687e6dd35beb5da113f1f7f374e097.html","datePublished":"2017-04-25T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/04/25/dc687e6dd35beb5da113f1f7f374e097.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">bin/rails stats 来自哪里</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-04-25T00:00:00+00:00" itemprop="datePublished">Apr 25, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>想知道rails stats干什么，于是检查下ARGV会在哪里被调用，<span style="line-height: 1.45;">修改bin/rails如下</span></div>
+<div><br /></div>
+<pre><code>class &lt;&lt; ARGV
+  instance_methods.each do |m|
+    old_m = instance_method m
+    define_method m do |*args, &amp;blk|
+      puts &#34;#{m} #{caller[0]}&#34;
+      old_m.bind(ARGV).call *args, &amp;blk
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>没看出什么，再检查stats这个字符在哪被调用</div>
+<div><br /></div>
+<div>（因ARGV内的字符串都被freeze了，无法重定义单例实例方法，所以另给stats字符串塞进ARGV）</div>
+<div><br /></div>
+<pre><code>ARGV[0] = &#34;stats&#34;
+
+class &lt;&lt; ARGV[0]
+  instance_methods.each do |m|
+    old_m = instance_method m
+    define_method m do |*args, &amp;blk|
+      puts &#34;#{m} #{caller[0]}&#34;
+      old_m.bind(ARGV[0]).call *args, &amp;blk
+    end
+  end
+end
+
+require &#39;rails/commands&#39;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>还是没看出什么</div>
+<div><br /></div>
+<div>但细看下stats的输出，猜测可直接在源码中查找“Code LOC”在哪里出现</div>
+<div><br /></div>
+<pre><code>+----------------------+--------+--------+---------+---------+-----+-------+
+| Name                 |  Lines |    LOC | Classes | Methods | M/C | LOC/M |
++----------------------+--------+--------+---------+---------+-----+-------+
+| Controllers          |    467 |    330 |       9 |      54 |   6 |     4 |
+| Helpers              |     21 |     21 |       0 |       1 |   0 |    19 |
+| Jobs                 |      2 |      2 |       1 |       0 |   0 |     0 |
+| Models               |     71 |     63 |       6 |       5 |   0 |    10 |
+| Mailers              |      4 |      4 |       1 |       0 |   0 |     0 |
+| Channels             |      8 |      8 |       2 |       0 |   0 |     0 |
+| Javascripts          |     54 |      4 |       0 |       1 |   0 |     2 |
+| Libraries            |      0 |      0 |       0 |       0 |   0 |     0 |
+| Tasks                |      0 |      0 |       0 |       0 |   0 |     0 |
+| Controller tests     |    331 |    256 |       8 |      43 |   5 |     3 |
+| Helper tests         |      0 |      0 |       0 |       0 |   0 |     0 |
+| Model tests          |     66 |     41 |       5 |       3 |   0 |    11 |
+| Mailer tests         |      0 |      0 |       0 |       0 |   0 |     0 |
+| Integration tests    |      0 |      0 |       0 |       0 |   0 |     0 |
++----------------------+--------+--------+---------+---------+-----+-------+
+| Total                |   1024 |    729 |      32 |     107 |   3 |     4 |
++----------------------+--------+--------+---------+---------+-----+-------+
+  Code LOC: 432     Test LOC: 297     Code to Test Ratio: 1:0.7</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>于是</div>
+<div><br /></div>
+<pre><code>$ gems git:(master) grep &#39;Code LOC&#39; -rn *
+railties-5.0.2/lib/rails/code_statistics.rb:110:      puts &#34;  Code LOC: #{code}     Test LOC: #{tests}     Code to Test Ratio: 1:#{sprintf(&#34;%.1f&#34;, tests.to_f/code)}&#34;</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>看上去应该就是这里，于是加入caller，检查哪里会生成这个CodeStatistics</div>
+<div><br /></div>
+<pre><code>class CodeStatistics
+  def initialize(*pairs)
+    puts caller
+    @pairs      = pairs
+    @statistics = calculate_statistics
+    @total      = calculate_total if pairs.length &gt; 1
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>出来的调用栈如下</div>
+<div><br /></div>
+<pre><code>/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.0.2/lib/rails/tasks/statistics.rake:28:in `new&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.0.2/lib/rails/tasks/statistics.rake:28:in `block in &lt;top (required)=""&gt;&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb:250:in `block in execute&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb:250:in `each&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb:250:in `execute&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb:194:in `block in invoke_with_call_chain&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/monitor.rb:214:in `mon_synchronize&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb:187:in `invoke_with_call_chain&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb:180:in `invoke&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:152:in `invoke_task&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:108:in `block (2 levels) in top_level&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:108:in `each&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:108:in `block in top_level&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:117:in `run_with_threads&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:102:in `top_level&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.0.2/lib/rails/commands/rake_proxy.rb:14:in `block in run_rake_task&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb:178:in `standard_exception_handling&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.0.2/lib/rails/commands/rake_proxy.rb:11:in `run_rake_task&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.0.2/lib/rails/commands/commands_tasks.rb:51:in `run_command!&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.0.2/lib/rails/commands.rb:18:in `&lt;top (required)=""&gt;&#39;
+/home/z/test_rails/depot/bin/rails:25:in `require&#39;
+/home/z/test_rails/depot/bin/rails:25:in `&lt;top (required)=""&gt;&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/spring-2.0.1/lib/spring/client/rails.rb:28:in `load&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/spring-2.0.1/lib/spring/client/rails.rb:28:in `call&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/spring-2.0.1/lib/spring/client/command.rb:7:in `call&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/spring-2.0.1/lib/spring/client.rb:30:in `run&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/spring-2.0.1/bin/spring:49:in `&lt;top (required)=""&gt;&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/spring-2.0.1/lib/spring/binstub.rb:31:in `load&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/spring-2.0.1/lib/spring/binstub.rb:31:in `&lt;top (required)=""&gt;&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/rubygems/core_ext/kernel_require.rb:68:in `require&#39;
+/home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/rubygems/core_ext/kernel_require.rb:68:in `require&#39;
+/home/z/test_rails/depot/bin/spring:15:in `&lt;top (required)=""&gt;&#39;
+bin/rails:3:in `load&#39;
+bin/rails:3:in `&lt;/top&gt;&lt;/top&gt;&lt;/top&gt;&lt;/top&gt;&lt;/top&gt;&lt;/top&gt;</code><main><code>&#39;</code></main></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而railties-5.0.2/lib/rails/tasks/statistics.rake是这样的</div>
+<div><br /></div>
+<pre><code>STATS_DIRECTORIES = [
+  %w(Controllers        app/controllers),
+  %w(Helpers            app/helpers),
+  %w(Jobs               app/jobs),
+  %w(Models             app/models),
+  %w(Mailers            app/mailers),
+  %w(Channels           app/channels),
+  %w(Javascripts        app/assets/javascripts),
+  %w(Libraries          lib/),
+  %w(Tasks              lib/tasks),
+  %w(APIs               app/apis),
+  %w(Controller\ tests  test/controllers),
+  %w(Helper\ tests      test/helpers),
+  %w(Model\ tests       test/models),
+  %w(Mailer\ tests      test/mailers),
+  %w(Job\ tests         test/jobs),
+  %w(Integration\ tests test/integration),
+].collect do |name, dir|
+  [ name, &#34;#{File.dirname(Rake.application.rakefile_location)}/#{dir}&#34; ]
+end.select { |name, dir| File.directory?(dir) }
+
+desc &#34;Report code statistics (KLOCs, etc) from the application or engine&#34;
+task :stats do
+  require &#39;rails/code_statistics&#39;
+  CodeStatistics.new(*STATS_DIRECTORIES).to_s
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>同时，可发现rails还定义了以下task</div>
+<div><br /></div>
+<pre><code>$ gems git:(master) tree railties-5.0.2/lib/rails/tasks/
+railties-5.0.2/lib/rails/tasks/
+├── annotations.rake
+├── dev.rake
+├── engine.rake
+├── framework.rake
+├── initializers.rake
+├── log.rake
+├── middleware.rake
+├── misc.rake
+├── restart.rake
+├── routes.rake
+├── statistics.rake
+└── tmp.rake</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/04/25/dc687e6dd35beb5da113f1f7f374e097.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

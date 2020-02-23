@@ -1,0 +1,429 @@
+$ rake -f rakefile01 a.yml
+WARN: Unresolved specs during Gem::Specification.reset:
+      terminal-table (>= 1.7.3, ~> 1.7)
+WARN: Clearing out unresolved specs.
+Please report a bug if this causes problems.
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb @ line 689 Rake::Application#raw_load_rakefile:
+
+    672: def raw_load_rakefile # :nodoc:
+    673:   rakefile, location = find_rakefile_location
+    674:   if (! options.ignore_system) &&
+    675:       (options.load_system || rakefile.nil?) &&
+    676:       system_dir && File.directory?(system_dir)
+    677:     print_rakefile_directory(location)
+    678:     glob("#{system_dir}/*.rake") do |name|
+    679:       add_import name
+    680:     end
+    681:   else
+    682:     fail "No Rakefile found (looking for: #{@rakefiles.join(', ')})" if
+    683:       rakefile.nil?
+    684:     @rakefile = rakefile
+    685:     Dir.chdir(location)
+    686:     print_rakefile_directory(location)
+    687:     Rake.load_rakefile(File.expand_path(@rakefile)) if
+    688:       @rakefile && @rakefile != ""
+ => 689:     options.rakelib.each do |rlib|
+    690:       glob("#{rlib}/*.rake") do |name|
+    691:         add_import name
+    692:       end
+    693:     end
+    694:   end
+    695:   load_imports
+    696: end
+
+[1] pry(#<Rake::Application>)> up
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb @ line 96 Rake::Application#load_rakefile:
+
+    94: def load_rakefile
+    95:   standard_exception_handling do
+ => 96:     raw_load_rakefile
+    97:   end
+    98: end
+
+[1] pry(#<Rake::Application>)> up
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb @ line 178 Rake::Application#standard_exception_handling:
+
+    177: def standard_exception_handling # :nodoc:
+ => 178:   yield
+    179: rescue SystemExit
+    180:   # Exit silently with current status
+    181:   raise
+    182: rescue OptionParser::InvalidOption => ex
+    183:   $stderr.puts ex.message
+    184:   exit(false)
+    185: rescue Exception => ex
+    186:   # Exit with error message
+    187:   display_error_message(ex)
+    188:   exit_because_of_exception(ex)
+    189: end
+
+[2] pry(#<Rake::Application>)> next
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb @ line 80 Rake::Application#run:
+
+    76: def run
+    77:   standard_exception_handling do
+    78:     init
+    79:     load_rakefile
+ => 80:     top_level
+    81:   end
+    82: end
+
+[2] pry(#<Rake::Application>)> step
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb @ line 102 Rake::Application#top_level:
+
+    101: def top_level
+ => 102:   run_with_threads do
+    103:     if options.show_tasks
+    104:       display_tasks_and_comments
+    105:     elsif options.show_prereqs
+    106:       display_prerequisites
+    107:     else
+    108:       top_level_tasks.each { |task_name| invoke_task(task_name) }
+    109:     end
+    110:   end
+    111: end
+
+[2] pry(#<Rake::Application>)> step
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb @ line 115 Rake::Application#run_with_threads:
+
+    114: def run_with_threads
+ => 115:   thread_pool.gather_history if options.job_stats == :history
+    116: 
+    117:   yield
+    118: 
+    119:   thread_pool.join
+    120:   if options.job_stats
+    121:     stats = thread_pool.statistics
+    122:     puts "Maximum active threads: #{stats[:max_active_threads]} + main"
+    123:     puts "Total threads in play:  #{stats[:total_threads_in_play]} + main"
+    124:   end
+    125:   ThreadHistoryDisplay.new(thread_pool.history).show if
+    126:     options.job_stats == :history
+    127: end
+
+[3] pry(#<Rake::Application>)> next
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb @ line 117 Rake::Application#run_with_threads:
+
+    114: def run_with_threads
+    115:   thread_pool.gather_history if options.job_stats == :history
+    116: 
+ => 117:   yield
+    118: 
+    119:   thread_pool.join
+    120:   if options.job_stats
+    121:     stats = thread_pool.statistics
+    122:     puts "Maximum active threads: #{stats[:max_active_threads]} + main"
+    123:     puts "Total threads in play:  #{stats[:total_threads_in_play]} + main"
+    124:   end
+    125:   ThreadHistoryDisplay.new(thread_pool.history).show if
+    126:     options.job_stats == :history
+    127: end
+
+[3] pry(#<Rake::Application>)> step
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb @ line 103 Rake::Application#top_level:
+
+    101: def top_level
+    102:   run_with_threads do
+ => 103:     if options.show_tasks
+    104:       display_tasks_and_comments
+    105:     elsif options.show_prereqs
+    106:       display_prerequisites
+    107:     else
+    108:       top_level_tasks.each { |task_name| invoke_task(task_name) }
+    109:     end
+    110:   end
+    111: end
+
+[4] pry(#<Rake::Application>)> next
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb @ line 105 Rake::Application#top_level:
+
+    101: def top_level
+    102:   run_with_threads do
+    103:     if options.show_tasks
+    104:       display_tasks_and_comments
+ => 105:     elsif options.show_prereqs
+    106:       display_prerequisites
+    107:     else
+    108:       top_level_tasks.each { |task_name| invoke_task(task_name) }
+    109:     end
+    110:   end
+    111: end
+
+[4] pry(#<Rake::Application>)> next
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb @ line 108 Rake::Application#top_level:
+
+    101: def top_level
+    102:   run_with_threads do
+    103:     if options.show_tasks
+    104:       display_tasks_and_comments
+    105:     elsif options.show_prereqs
+    106:       display_prerequisites
+    107:     else
+ => 108:       top_level_tasks.each { |task_name| invoke_task(task_name) }
+    109:     end
+    110:   end
+    111: end
+
+[4] pry(#<Rake::Application>)> step
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb @ line 108 Rake::Application#top_level:
+
+    101: def top_level
+    102:   run_with_threads do
+    103:     if options.show_tasks
+    104:       display_tasks_and_comments
+    105:     elsif options.show_prereqs
+    106:       display_prerequisites
+    107:     else
+ => 108:       top_level_tasks.each { |task_name| invoke_task(task_name) }
+    109:     end
+    110:   end
+    111: end
+
+[4] pry(#<Rake::Application>)> step
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb @ line 150 Rake::Application#invoke_task:
+
+    149: def invoke_task(task_string) # :nodoc:
+ => 150:   name, args = parse_task_string(task_string)
+    151:   t = self[name]
+    152:   t.invoke(*args)
+    153: end
+
+[4] pry(#<Rake::Application>)> next
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb @ line 151 Rake::Application#invoke_task:
+
+    149: def invoke_task(task_string) # :nodoc:
+    150:   name, args = parse_task_string(task_string)
+ => 151:   t = self[name]
+    152:   t.invoke(*args)
+    153: end
+
+[4] pry(#<Rake::Application>)> next
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/application.rb @ line 152 Rake::Application#invoke_task:
+
+    149: def invoke_task(task_string) # :nodoc:
+    150:   name, args = parse_task_string(task_string)
+    151:   t = self[name]
+ => 152:   t.invoke(*args)
+    153: end
+
+[4] pry(#<Rake::Application>)> t
+=> <Rake::FileTask a.yml => [a.yaml]>
+[5] pry(#<Rake::Application>)> step
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb @ line 179 Rake::Task#invoke:
+
+    178: def invoke(*args)
+ => 179:   task_args = TaskArguments.new(arg_names, args)
+    180:   invoke_with_call_chain(task_args, InvocationChain::EMPTY)
+    181: end
+
+[5] pry(#<Rake::FileTask>)> next
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb @ line 180 Rake::Task#invoke:
+
+    178: def invoke(*args)
+    179:   task_args = TaskArguments.new(arg_names, args)
+ => 180:   invoke_with_call_chain(task_args, InvocationChain::EMPTY)
+    181: end
+
+[5] pry(#<Rake::FileTask>)> step
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb @ line 186 Rake::Task#invoke_with_call_chain:
+
+    185: def invoke_with_call_chain(task_args, invocation_chain) # :nodoc:
+ => 186:   new_chain = InvocationChain.append(self, invocation_chain)
+    187:   @lock.synchronize do
+    188:     if application.options.trace
+    189:       application.trace "** Invoke #{name} #{format_trace_flags}"
+    190:     end
+    191:     return if @already_invoked
+    192:     @already_invoked = true
+    193:     invoke_prerequisites(task_args, new_chain)
+    194:     execute(task_args) if needed?
+    195:   end
+    196: rescue Exception => ex
+    197:   add_chain_to(ex, new_chain)
+    198:   raise ex
+    199: end
+
+[5] pry(#<Rake::FileTask>)> @already_invoked
+=> false
+[6] pry(#<Rake::FileTask>)> needed?
+=> nil
+[7] pry(#<Rake::FileTask>)> next
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb @ line 187 Rake::Task#invoke_with_call_chain:
+
+    185: def invoke_with_call_chain(task_args, invocation_chain) # :nodoc:
+    186:   new_chain = InvocationChain.append(self, invocation_chain)
+ => 187:   @lock.synchronize do
+    188:     if application.options.trace
+    189:       application.trace "** Invoke #{name} #{format_trace_flags}"
+    190:     end
+    191:     return if @already_invoked
+    192:     @already_invoked = true
+    193:     invoke_prerequisites(task_args, new_chain)
+    194:     execute(task_args) if needed?
+    195:   end
+    196: rescue Exception => ex
+    197:   add_chain_to(ex, new_chain)
+    198:   raise ex
+    199: end
+
+[7] pry(#<Rake::FileTask>)> step
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/monitor.rb @ line 212 MonitorMixin#mon_synchronize:
+
+    211: def mon_synchronize
+ => 212:   mon_enter
+    213:   begin
+    214:     yield
+    215:   ensure
+    216:     mon_exit
+    217:   end
+    218: end
+
+[7] pry(#<Monitor>)> next
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/monitor.rb @ line 213 MonitorMixin#mon_synchronize:
+
+    211: def mon_synchronize
+    212:   mon_enter
+ => 213:   begin
+    214:     yield
+    215:   ensure
+    216:     mon_exit
+    217:   end
+    218: end
+
+[7] pry(#<Monitor>)> next
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/monitor.rb @ line 214 MonitorMixin#mon_synchronize:
+
+    211: def mon_synchronize
+    212:   mon_enter
+    213:   begin
+ => 214:     yield
+    215:   ensure
+    216:     mon_exit
+    217:   end
+    218: end
+
+[7] pry(#<Monitor>)> step
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb @ line 188 Rake::Task#invoke_with_call_chain:
+
+    185: def invoke_with_call_chain(task_args, invocation_chain) # :nodoc:
+    186:   new_chain = InvocationChain.append(self, invocation_chain)
+    187:   @lock.synchronize do
+ => 188:     if application.options.trace
+    189:       application.trace "** Invoke #{name} #{format_trace_flags}"
+    190:     end
+    191:     return if @already_invoked
+    192:     @already_invoked = true
+    193:     invoke_prerequisites(task_args, new_chain)
+    194:     execute(task_args) if needed?
+    195:   end
+    196: rescue Exception => ex
+    197:   add_chain_to(ex, new_chain)
+    198:   raise ex
+    199: end
+
+[7] pry(#<Rake::FileTask>)> next
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb @ line 191 Rake::Task#invoke_with_call_chain:
+
+    185: def invoke_with_call_chain(task_args, invocation_chain) # :nodoc:
+    186:   new_chain = InvocationChain.append(self, invocation_chain)
+    187:   @lock.synchronize do
+    188:     if application.options.trace
+    189:       application.trace "** Invoke #{name} #{format_trace_flags}"
+    190:     end
+ => 191:     return if @already_invoked
+    192:     @already_invoked = true
+    193:     invoke_prerequisites(task_args, new_chain)
+    194:     execute(task_args) if needed?
+    195:   end
+    196: rescue Exception => ex
+    197:   add_chain_to(ex, new_chain)
+    198:   raise ex
+    199: end
+
+[7] pry(#<Rake::FileTask>)> @already_invoked
+=> false
+[8] pry(#<Rake::FileTask>)> next
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb @ line 192 Rake::Task#invoke_with_call_chain:
+
+    185: def invoke_with_call_chain(task_args, invocation_chain) # :nodoc:
+    186:   new_chain = InvocationChain.append(self, invocation_chain)
+    187:   @lock.synchronize do
+    188:     if application.options.trace
+    189:       application.trace "** Invoke #{name} #{format_trace_flags}"
+    190:     end
+    191:     return if @already_invoked
+ => 192:     @already_invoked = true
+    193:     invoke_prerequisites(task_args, new_chain)
+    194:     execute(task_args) if needed?
+    195:   end
+    196: rescue Exception => ex
+    197:   add_chain_to(ex, new_chain)
+    198:   raise ex
+    199: end
+
+[8] pry(#<Rake::FileTask>)> next
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb @ line 193 Rake::Task#invoke_with_call_chain:
+
+    185: def invoke_with_call_chain(task_args, invocation_chain) # :nodoc:
+    186:   new_chain = InvocationChain.append(self, invocation_chain)
+    187:   @lock.synchronize do
+    188:     if application.options.trace
+    189:       application.trace "** Invoke #{name} #{format_trace_flags}"
+    190:     end
+    191:     return if @already_invoked
+    192:     @already_invoked = true
+ => 193:     invoke_prerequisites(task_args, new_chain)
+    194:     execute(task_args) if needed?
+    195:   end
+    196: rescue Exception => ex
+    197:   add_chain_to(ex, new_chain)
+    198:   raise ex
+    199: end
+
+[8] pry(#<Rake::FileTask>)> next
+
+From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rake-12.0.0/lib/rake/task.rb @ line 194 Rake::Task#invoke_with_call_chain:
+
+    185: def invoke_with_call_chain(task_args, invocation_chain) # :nodoc:
+    186:   new_chain = InvocationChain.append(self, invocation_chain)
+    187:   @lock.synchronize do
+    188:     if application.options.trace
+    189:       application.trace "** Invoke #{name} #{format_trace_flags}"
+    190:     end
+    191:     return if @already_invoked
+    192:     @already_invoked = true
+    193:     invoke_prerequisites(task_args, new_chain)
+ => 194:     execute(task_args) if needed?
+    195:   end
+    196: rescue Exception => ex
+    197:   add_chain_to(ex, new_chain)
+    198:   raise ex
+    199: end
+
+[8] pry(#<Rake::FileTask>)> needed?
+=> nil

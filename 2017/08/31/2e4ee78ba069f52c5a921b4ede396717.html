@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>ActionDispatch::Http::UploadedFile</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="ActionDispatch::Http::UploadedFile" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="传到controller的params中的文件，会被包装成ActionDispatch::Http::UploadedFile，于是搜下它在哪里生成…" />
+<meta property="og:description" content="传到controller的params中的文件，会被包装成ActionDispatch::Http::UploadedFile，于是搜下它在哪里生成…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-08-31T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"传到controller的params中的文件，会被包装成ActionDispatch::Http::UploadedFile，于是搜下它在哪里生成…","@type":"BlogPosting","headline":"ActionDispatch::Http::UploadedFile","dateModified":"2017-08-31T00:00:00+00:00","url":"/2017/08/31/2e4ee78ba069f52c5a921b4ede396717.html","datePublished":"2017-08-31T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/08/31/2e4ee78ba069f52c5a921b4ede396717.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">ActionDispatch::Http::UploadedFile</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-08-31T00:00:00+00:00" itemprop="datePublished">Aug 31, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>传到controller的params中的文件，会被包装成ActionDispatch::Http::UploadedFile，于是搜下它在哪里生成</div>
+<div><br /></div>
+<div>$ gems git:(master) ag UploadedFile -G &#39;action.*5\.1&#39;</div>
+<div>actionpack-5.1.2/lib/action_controller/metal/strong_parameters.rb</div>
+<div>456:    # +ActionDispatch::Http::UploadedFile+ or +Rack::Test::UploadedFile+.</div>
+<div>888:        ActionDispatch::Http::UploadedFile,</div>
+<div>889:        Rack::Test::UploadedFile,</div>
+<div><br /></div>
+<div>actionpack-5.1.2/lib/action_controller/test_case.rb</div>
+<div>142:          when Rack::Test::UploadedFile</div>
+<div><br /></div>
+<div>actionpack-5.1.2/lib/action_dispatch.rb</div>
+<div>78:    autoload :UploadedFile, &#34;action_dispatch/http/upload&#34;</div>
+<div><br /></div>
+<div>actionpack-5.1.2/lib/action_dispatch/http/upload.rb</div>
+<div>11:    class UploadedFile</div>
+<div><br /></div>
+<div>actionpack-5.1.2/lib/action_dispatch/request/utils.rb</div>
+<div>50:              ActionDispatch::Http::UploadedFile.new(params)</div>
+<div><br /></div>
+<div>actionpack-5.1.2/lib/action_dispatch/testing/test_process.rb</div>
+<div>7:      # Shortcut for &lt;tt&gt;Rack::Test::UploadedFile.new(File.join(ActionDispatch::IntegrationTest.fixture_path, path), type)&lt;/tt&gt;:</div>
+<div>20:        Rack::Test::UploadedFile.new(path, mime_type, binary)</div>
+<div><br /></div>
+<div>如无意外，就是actionpack-5.1.2/lib/action_dispatch/request/utils.rb了，于是加入断点</div>
+<div><br /></div>
+<div>From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/http/upload.rb @ line 27 ActionDispatch::Http::UploadedFile#initialize:</div>
+<div><br /></div>
+<div>    26: def initialize(hash) # :nodoc:</div>
+<div> =&gt; 27:   binding.pry</div>
+<div>    28:   @tempfile = hash[:tempfile]</div>
+<div>    29:   raise(ArgumentError, &#34;:tempfile is required&#34;) unless @tempfile</div>
+<div>    30: </div>
+<div>    31:   if hash[:filename]</div>
+<div>    32:     @original_filename = hash[:filename].dup</div>
+<div>    33: </div>
+<div>    34:     begin</div>
+<div>    35:       @original_filename.encode!(Encoding::UTF_8)</div>
+<div>    36:     rescue EncodingError</div>
+<div>    37:       @original_filename.force_encoding(Encoding::UTF_8)</div>
+<div>    38:     end</div>
+<div>    39:   else</div>
+<div>    40:     @original_filename = nil</div>
+<div>    41:   end</div>
+<div>    42: </div>
+<div>    43:   @content_type      = hash[:type]</div>
+<div>    44:   @headers           = hash[:head]</div>
+<div>    45: end</div>
+<div><br /></div>
+<div>[2] pry(#&lt;ActionDispatch::Http::UploadedFile&gt;)&gt; _bsi_</div>
+<div>=&gt; {0=&gt;#&lt;Binding:69810035258640 ActionDispatch::Http::UploadedFile#initialize /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/http/upload.rb:27&gt;,</div>
+<div> 1=&gt;#&lt;Binding:69810096889400 ActionDispatch::Request::Utils::NoNilParamEncoder.normalize_encode_params /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/request/utils.rb:50&gt;,</div>
+<div> 2=&gt;#&lt;Binding:69810096945400 ActionDispatch::Request::Utils::NoNilParamEncoder.block in normalize_encode_params /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/request/utils.rb:53&gt;,</div>
+<div> 3=&gt;#&lt;Binding:69810096984900 ActionDispatch::Request::Utils::NoNilParamEncoder.normalize_encode_params /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/request/utils.rb:52&gt;,</div>
+<div> 4=&gt;#&lt;Binding:69810097032940 ActionDispatch::Request::Utils::NoNilParamEncoder.block in normalize_encode_params /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/request/utils.rb:53&gt;,</div>
+<div> 5=&gt;#&lt;Binding:69810097080980 ActionDispatch::Request::Utils::NoNilParamEncoder.normalize_encode_params /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/request/utils.rb:52&gt;,</div>
+<div> 6=&gt;#&lt;Binding:69810097145420 ActionDispatch::Request::Utils.normalize_encode_params /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/request/utils.rb:20&gt;,</div>
+<div> 7=&gt;#&lt;Binding:69810097193520 ActionDispatch::Request#block in POST /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/http/request.rb:361&gt;,</div>
+<div> 8=&gt;#&lt;Binding:69810032817940 ActionDispatch::Request#fetch_header /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/request.rb:57&gt;,</div>
+<div> 9=&gt;#&lt;Binding:69810032633460 ActionDispatch::Request#POST /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/http/request.rb:357&gt;,</div>
+<div> 10=&gt;#&lt;Binding:69810097372300 ActionDispatch::Request#parameters /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/http/parameters.rb:53&gt;,</div>
+<div> 11=&gt;#&lt;Binding:69810097411820 ActionDispatch::Request#filtered_parameters /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/http/filter_parameters.rb:41&gt;,</div>
+<div> 12=&gt;#&lt;Binding:69810097459460 StudentsController#process_action /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_controller/metal/instrumentation.rb:21&gt;,</div>
+<div> 13=&gt;#&lt;Binding:69810097507080 StudentsController#process_action /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_controller/metal/params_wrapper.rb:252&gt;,</div>
+<div> 14=&gt;#&lt;Binding:69810097587500 StudentsController#process_action /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.1.2/lib/active_record/railties/controller_runtime.rb:22&gt;,</div>
+<div> 15=&gt;#&lt;Binding:69810035015520 StudentsController#process /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/abstract_controller/base.rb:124&gt;,</div>
+<div> 16=&gt;#&lt;Binding:69810034443500 StudentsController#process /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionview-5.1.2/lib/action_view/rendering.rb:30&gt;,</div>
+<div> 17=&gt;#&lt;Binding:69810097756960 StudentsController#dispatch /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_controller/metal.rb:189&gt;,</div>
+<div> 18=&gt;#&lt;Binding:69810097804600 StudentsController.dispatch /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_controller/metal.rb:253&gt;,</div>
+<div> 19=&gt;#&lt;Binding:69810097852180 ActionDispatch::Routing::RouteSet::Dispatcher#dispatch /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/routing/route_set.rb:49&gt;,</div>
+<div> 20=&gt;#&lt;Binding:69810097891740 ActionDispatch::Routing::RouteSet::Dispatcher#serve /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/routing/route_set.rb:31&gt;,</div>
+<div> 21=&gt;#&lt;Binding:69810097939440 ActionDispatch::Journey::Router#block in serve /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/journey/router.rb:46&gt;,</div>
+<div> 22=&gt;#&lt;Binding:69810034636800 ActionDispatch::Journey::Router#serve /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/journey/router.rb:33&gt;,</div>
+<div> 23=&gt;#&lt;Binding:69810098069320 ActionDispatch::Routing::RouteSet#call /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/routing/route_set.rb:832&gt;,</div>
+<div><br /></div>
+<div>其中ActionDispatch::Request::Utils.normalize_encode_params发于这里</div>
+<div><br /></div>
+<div>module ActionDispatch</div>
+<div>  class Request</div>
+<div><br /></div>
+<div>    def POST</div>
+<div>      fetch_header(&#34;action_dispatch.request.request_parameters&#34;) do</div>
+<div>        pr = parse_formatted_parameters(params_parsers) do |params|</div>
+<div>          super || {}</div>
+<div>        end</div>
+<div>        self.request_parameters = Request::Utils.normalize_encode_params(pr)</div>
+<div>      end</div>
+<div>    rescue Http::Parameters::ParseError # one of the parse strategies blew up</div>
+<div>      self.request_parameters = Request::Utils.normalize_encode_params(super || {})</div>
+<div>      raise</div>
+<div>    rescue Rack::Utils::ParameterTypeError, Rack::Utils::InvalidParameterError =&gt; e</div>
+<div>      raise ActionController::BadRequest.new(&#34;Invalid request parameters: #{e.message}&#34;)</div>
+<div>    end</div>
+<div><br /></div>
+<div>    alias :request_parameters :POST</div>
+<div><br /></div>
+<div>    def request_parameters=(params)                                                                                                                                                                                                     </div>
+<div>      raise if params.nil?</div>
+<div>      set_header(&#34;action_dispatch.request.request_parameters&#34;.freeze, params)</div>
+<div>    end</div>
+<div><br /></div>
+<div>它的上几层是ActionDispatch::Request#filtered_parameters，而filtered_parameters发于这里</div>
+<div><br /></div>
+<div>module ActionController</div>
+<div>  module Instrumentation</div>
+<div>    extend ActiveSupport::Concern        </div>
+<div><br /></div>
+<div>    def process_action(*args)</div>
+<div>      raw_payload = {</div>
+<div>        controller: self.class.name,</div>
+<div>        action: action_name,</div>
+<div>        params: request.filtered_parameters,</div>
+<div>        headers: request.headers,</div>
+<div>        format: request.format.ref,</div>
+<div>        method: request.request_method,</div>
+<div>        path: request.fullpath</div>
+<div>      }   </div>
+<div><br /></div>
+<div>      ActiveSupport::Notifications.instrument(&#34;start_processing.action_controller&#34;, raw_payload.dup)</div>
+<div><br /></div>
+<div>      ActiveSupport::Notifications.instrument(&#34;process_action.action_controller&#34;, raw_payload) do |payload|</div>
+<div>        begin</div>
+<div>          result = super</div>
+<div>          payload[:status] = response.status</div>
+<div>          result</div>
+<div>        ensure</div>
+<div>          append_info_to_payload(payload)</div>
+<div>        end</div>
+<div>      end</div>
+<div>    end</div>
+<div><br /></div>
+<div>再回头观察ActionDispatch::Http::UploadedFile初始化时传入的参数，其中有:tempfile指向上传的文件，命名为RackMultipartXXX，估计是前面rack栈对http请求的读取，而生成的临时文件</div>
+<div><br /></div>
+<div>[5] pry(#&lt;ActionDispatch::Http::UploadedFile&gt;)&gt; hash</div>
+<div>=&gt; {:filename=&gt;&#34;win10-md5.txt&#34;,</div>
+<div> :type=&gt;&#34;text/plain&#34;,</div>
+<div> :name=&gt;&#34;student[photo]&#34;,</div>
+<div> :tempfile=&gt;#&lt;File:/tmp/RackMultipart20170830-3092-7hj5e8.txt&gt;,</div>
+<div> :head=&gt;&#34;Content-Disposition: form-data; name=\&#34;student[photo]\&#34;; filename=\&#34;win10-md5.txt\&#34;\r\n&#34; + &#34;Content-Type: text/plain\r\n&#34;}</div>
+<div><br /></div>
+<div>而rails的参数处理也针对:tempfile来抽取成ActionDispatch::Http::UploadedFile</div>
+<div><br /></div>
+<div>module ActionDispatch                                                                                                                                                                                                                   </div>
+<div>  class Request</div>
+<div>    class Utils # :nodoc: </div>
+<div>      class ParamEncoder # :nodoc:</div>
+<div>        # Convert nested Hash to HashWithIndifferentAccess.</div>
+<div>        #</div>
+<div>        def self.normalize_encode_params(params)</div>
+<div>          case params</div>
+<div>          when Array</div>
+<div>            handle_array params</div>
+<div>          when Hash</div>
+<div>            if params.has_key?(:tempfile)</div>
+<div>              ActionDispatch::Http::UploadedFile.new(params)</div>
+<div>            else</div>
+<div>              params.each_with_object({}) do |(key, val), new_hash|</div>
+<div>                new_hash[key] = normalize_encode_params(val)</div>
+<div>              end.with_indifferent_access</div>
+<div>            end</div>
+<div>          else</div>
+<div>            params</div>
+<div>          end</div>
+<div>        end                                                                                                                                                                                                                            </div>
+<div>      end</div>
+<div><br /></div>
+<div>不过，这已经递归到photo这层了，未encode的params是这样的</div>
+<div><br /></div>
+<div>=&gt; {&#34;utf8&#34;=&gt;&#34;✓&#34;,</div>
+<div> &#34;_method&#34;=&gt;&#34;patch&#34;,</div>
+<div> &#34;authenticity_token&#34;=&gt;&#34;wQ8nK2K0kxpo8o7HqukKiquNkvvpLZnEqJ9sPLSnWy43oZ4+TK4kIk4nC6uZ7Kj0aufzPXNpVCWSA3hxvtGFYA==&#34;,</div>
+<div> &#34;student&#34;=&gt;</div>
+<div>  {&#34;name&#34;=&gt;&#34;c&#34;,</div>
+<div>   &#34;grade&#34;=&gt;&#34;1&#34;,</div>
+<div>   &#34;photo&#34;=&gt;</div>
+<div>    {:filename=&gt;&#34;win10-md5.txt&#34;,</div>
+<div>     :type=&gt;&#34;text/plain&#34;,</div>
+<div>     :name=&gt;&#34;student[photo]&#34;,</div>
+<div>     :tempfile=&gt;#&lt;File:/tmp/RackMultipart20170830-3320-uq32df.txt&gt;,</div>
+<div>     :head=&gt;&#34;Content-Disposition: form-data; name=\&#34;student[photo]\&#34;; filename=\&#34;win10-md5.txt\&#34;\r\n&#34; + &#34;Content-Type: text/plain\r\n&#34;}},</div>
+<div> &#34;commit&#34;=&gt;&#34;Update Student&#34;}</div>
+<div><br /></div>
+<div>而controller中的params（StrongParameters），它其实是包装了request.parameters</div>
+<div><br /></div>
+<div>module StrongParameters</div>
+<div>  extend ActiveSupport::Concern</div>
+<div>  include ActiveSupport::Rescuable</div>
+<div><br /></div>
+<div>  def params                                                                                                                                                                                                                         </div>
+<div>    @_params ||= Parameters.new(request.parameters)</div>
+<div>  end</div>
+<div><br /></div>
+<div>而request.parameters主要是合成request_parameters（POST）和query_parameters（GET）</div>
+<div><br /></div>
+<div>module ActionDispatch                                                                                                                                                                                                                   </div>
+<div>  module Http</div>
+<div>    module Parameters</div>
+<div><br /></div>
+<div>      def parameters                                                                                                                                                                                                                    </div>
+<div>        params = get_header(&#34;action_dispatch.request.parameters&#34;)</div>
+<div>        return params if params</div>
+<div><br /></div>
+<div>        params = begin</div>
+<div>                   request_parameters.merge(query_parameters)</div>
+<div>                 rescue EOFError</div>
+<div>                   query_parameters.dup</div>
+<div>                 end</div>
+<div>        params.merge!(path_parameters)</div>
+<div>        params = set_binary_encoding(params)</div>
+<div>        set_header(&#34;action_dispatch.request.parameters&#34;, params)</div>
+<div>        params</div>
+<div>      end</div>
+<div><br /></div>
+<div>request_parameters（刚才分析过）和query_parameters（GET）如下</div>
+<div><br /></div>
+<div>module ActionDispatch</div>
+<div>  class Request</div>
+<div><br /></div>
+<div>    def GET</div>
+<div>      fetch_header(&#34;action_dispatch.request.query_parameters&#34;) do |k|</div>
+<div>        rack_query_params = super || {}</div>
+<div>        # Check for non UTF-8 parameter values, which would cause errors later</div>
+<div>        Request::Utils.check_param_encoding(rack_query_params)</div>
+<div>        set_header k, Request::Utils.normalize_encode_params(rack_query_params)</div>
+<div>      end</div>
+<div>    rescue Rack::Utils::ParameterTypeError, Rack::Utils::InvalidParameterError =&gt; e</div>
+<div>      raise ActionController::BadRequest.new(&#34;Invalid query parameters: #{e.message}&#34;)</div>
+<div>    end</div>
+<div><br /></div>
+<div>    alias :query_parameters :GET</div>
+<div><br /></div>
+<div>    # Override Rack&#39;s POST method to support indifferent access</div>
+<div>    def POST</div>
+<div>      fetch_header(&#34;action_dispatch.request.request_parameters&#34;) do</div>
+<div>        pr = parse_formatted_parameters(params_parsers) do |params|</div>
+<div>          super || {}</div>
+<div>        end</div>
+<div>        self.request_parameters = Request::Utils.normalize_encode_params(pr)</div>
+<div>      end</div>
+<div>    rescue Http::Parameters::ParseError # one of the parse strategies blew up</div>
+<div>      self.request_parameters = Request::Utils.normalize_encode_params(super || {})</div>
+<div>      raise</div>
+<div>    rescue Rack::Utils::ParameterTypeError, Rack::Utils::InvalidParameterError =&gt; e</div>
+<div>      raise ActionController::BadRequest.new(&#34;Invalid request parameters: #{e.message}&#34;)</div>
+<div>    end</div>
+<div><br /></div>
+<div>    alias :request_parameters :POST</div>
+<div><br /></div>
+<div>检查fetch_header来源，可知其最终会作用于request.env（也就是贯穿rack栈的那个hash）的fetch，因此，经normalize_encode_params包装成ActionDispatch::Http::UploadedFile的上传文件便得以在controller的params中又再取出来使用</div>
+<div><br /></div>
+<div>至此可知，就是rack会读取http请求，将文件数据包装成一个File，，然后Rails又包装成ActionDispatch::Http::UploadedFile</div>
+<div><br /></div>
+<div>那么rack又是怎样包装File的呢？搜索RackMultipart，然后加入断点</div>
+<div><br /></div>
+<div>From: /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/multipart/parser.rb @ line 11 :</div>
+<div><br /></div>
+<div>     6:</div>
+<div>     7:     class Parser</div>
+<div>     8:       BUFSIZE = 16384</div>
+<div>     9:       TEXT_PLAIN = &#34;text/plain&#34;</div>
+<div>    10:       TEMPFILE_FACTORY = lambda { |filename, content_type|</div>
+<div> =&gt; 11:         binding.pry</div>
+<div>    12:         Tempfile.new([&#34;RackMultipart&#34;, ::File.extname(filename.gsub(&#34;\0&#34;.freeze, &#39;%00&#39;.freeze))])</div>
+<div>    13:       }</div>
+<div>    14:</div>
+<div>    15:       class BoundedIO # :nodoc:</div>
+<div>    16:         def initialize(io, content_length)</div>
+<div><br /></div>
+<div>[1] pry(Rack::Multipart::Parser)&gt; _bsi_</div>
+<div>=&gt; {0=&gt;#&lt;Binding:70276671071600 Rack::Multipart::Parser.block in &lt;class:Parser&gt; /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/multipart/parser.rb:11&gt;,</div>
+<div> 1=&gt;#&lt;Binding:70276671104460 Rack::Multipart::Parser::Collector#on_mime_head /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/multipart/parser.rb:134&gt;,</div>
+<div> 2=&gt;#&lt;Binding:70276671129120 Rack::Multipart::Parser#handle_mime_head /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/multipart/parser.rb:259&gt;,</div>
+<div> 3=&gt;#&lt;Binding:70276671145660 Rack::Multipart::Parser#block in run_parser /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/multipart/parser.rb:212&gt;,</div>
+<div> 4=&gt;#&lt;Binding:70276671170340 Rack::Multipart::Parser#run_parser /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/multipart/parser.rb:205&gt;,</div>
+<div> 5=&gt;#&lt;Binding:70276671195000 Rack::Multipart::Parser#on_read /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/multipart/parser.rb:188&gt;,</div>
+<div> 6=&gt;#&lt;Binding:70276671219600 Rack::Multipart::Parser.parse /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/multipart/parser.rb:69&gt;,</div>
+<div> 7=&gt;#&lt;Binding:70276671252320 Rack::Multipart.extract_multipart /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/multipart.rb:52&gt;,</div>
+<div> 8=&gt;#&lt;Binding:70276671268820 Rack::Request#parse_multipart /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/request.rb:472&gt;,</div>
+<div> 9=&gt;#&lt;Binding:70276671293420 Rack::Request#POST /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/request.rb:335&gt;,</div>
+<div> 10=&gt;#&lt;Binding:70276671318020 Rack::MethodOverride#method_override_param /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/method_override.rb:39&gt;,</div>
+<div> 11=&gt;#&lt;Binding:70276671342540 Rack::MethodOverride#method_override /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/method_override.rb:27&gt;,</div>
+<div> 12=&gt;#&lt;Binding:70276671366880 Rack::MethodOverride#call /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/method_override.rb:15&gt;,</div>
+<div> 13=&gt;#&lt;Binding:70276671391100 Rack::Runtime#call /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/runtime.rb:22&gt;,</div>
+<div> 14=&gt;#&lt;Binding:70276671407620 ActionDispatch::Executor#call /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/middleware/executor.rb:12&gt;,</div>
+<div> 15=&gt;#&lt;Binding:70276671430880 ActionDispatch::Static#call /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/actionpack-5.1.2/lib/action_dispatch/middleware/static.rb:125&gt;,</div>
+<div> 16=&gt;#&lt;Binding:70276671495580 Rack::Sendfile#call /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/rack-2.0.3/lib/rack/sendfile.rb:111&gt;,</div>
+<div> 17=&gt;#&lt;Binding:70276671518980 School::Application#call /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.1.2/lib/rails/engine.rb:522&gt;,</div>
+<div> 18=&gt;#&lt;Binding:70276671534700 Puma::Configuration::ConfigMiddleware#call /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/puma-3.9.1/lib/puma/configuration.rb:224&gt;,</div>
+<div> 19=&gt;#&lt;Binding:70276671558460 Puma::Server#handle_request /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/puma-3.9.1/lib/puma/server.rb:602&gt;,</div>
+<div> 20=&gt;#&lt;Binding:70276671582160 Puma::Server#process_client /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/puma-3.9.1/lib/puma/server.rb:435&gt;,</div>
+<div> 21=&gt;#&lt;Binding:70276671597740 Puma::Server#block in run /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/puma-3.9.1/lib/puma/server.rb:299&gt;,</div>
+<div> 22=&gt;#&lt;Binding:70276671621740 Puma::ThreadPool#block in spawn_thread /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/puma-3.9.1/lib/puma/thread_pool.rb:120&gt;}</div>
+<div>[2] pry(Rack::Multipart::Parser)&gt;</div>
+
+  </div><a class="u-url" href="/2017/08/31/2e4ee78ba069f52c5a921b4ede396717.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

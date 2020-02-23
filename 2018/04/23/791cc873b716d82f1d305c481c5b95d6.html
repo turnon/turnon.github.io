@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>resque-scheduler的运作</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="resque-scheduler的运作" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="跟踪enqueue_in方法到底做了什么：…" />
+<meta property="og:description" content="跟踪enqueue_in方法到底做了什么：…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2018-04-23T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"跟踪enqueue_in方法到底做了什么：…","@type":"BlogPosting","headline":"resque-scheduler的运作","dateModified":"2018-04-23T00:00:00+00:00","url":"/2018/04/23/791cc873b716d82f1d305c481c5b95d6.html","datePublished":"2018-04-23T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2018/04/23/791cc873b716d82f1d305c481c5b95d6.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">resque-scheduler的运作</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2018-04-23T00:00:00+00:00" itemprop="datePublished">Apr 23, 2018
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>跟踪enqueue_in方法到底做了什么：</div>
+<div><br /></div>
+<pre><code>binding.trace_tree(htmp: &#39;resque_enqueue_in&#39;){ Resque.enqueue_in 2.seconds, TryResque, 4,5,6 }</code></pre>
+<div><br /></div>
+<div>完整调用栈如下：</div>
+<div><br /></div>
+<div><a href="/assets/files/791cc873b716d82f1d305c481c5b95d6/bc5192eae5ca919c1f127bd3a5d450c1.html"><img src="/assets/files/791cc873b716d82f1d305c481c5b95d6/3a5277a297c17e8863ae789ab643b774.png" alt="20180423_223027_764_resque_enqueue_in.html" /></a></div>
+<div><br /></div>
+<div><br /></div>
+<div>可见，最终job会由delayed_push添加到一些用于调度的集合中</div>
+<div><br /></div>
+<div><img src="/assets/files/791cc873b716d82f1d305c481c5b95d6/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div>方法delayed_push的源码如下。它会先把任务参数encode，加入键名为时间点（&#34;delayed:#{timestamp.to_i}&#34;）的列表中，使用列表是以防同时间的任务被覆盖。然后，再加入键名为job参数（&#34;timestamps:#{encode(item)}&#34;）的set中，以记录同一个job会在哪些时间被执行。最后，将时间点作为键加入到有序集:delayed_queue_schedule之中（这里时间相同倒是无所谓，值与键相同也无所谓）。至此，任务注册完成。</div>
+<div><br /></div>
+<div>resque-scheduler-4.0.0/lib/resque/scheduler/delaying_extensions.rb</div>
+<div><br /></div>
+<pre><code># Used internally to stuff the item into the schedule sorted list.
+# +timestamp+ can be either in seconds or a datetime object Insertion
+# if O(log(n)).  Returns true if it&#39;s the first job to be scheduled at
+# that time, else false
+def delayed_push(timestamp, item)
+  # First add this item to the list for this timestamp
+  redis.rpush(&#34;delayed:#{timestamp.to_i}&#34;, encode(item))
+
+  # Store the timestamps at with this item occurs
+  redis.sadd(&#34;timestamps:#{encode(item)}&#34;, &#34;delayed:#{timestamp.to_i}&#34;)
+
+  # Now, add this timestamp to the zsets.  The score and the value are
+  # the same since we&#39;ll be querying by timestamp, and we don&#39;t have
+  # anything else to store.
+  redis.zadd :delayed_queue_schedule, timestamp.to_i, timestamp.to_i
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>接着，便是任务提取了。跟resque一样，这就在rake中直接发起。它基本上就是循环地获取有序集:delayed_queue_schedule中当前时刻之前的时间最小的那个键</div>
+<div><br /></div>
+<div>resque-scheduler-4.0.0/lib/resque/scheduler.rb</div>
+<div><br /></div>
+<pre><code>class &lt;&lt; self
+  def run
+    procline &#39;Starting&#39;
+
+    # trap signals
+    register_signal_handlers
+
+    #...
+
+    begin
+      @th = Thread.current
+
+      # Now start the scheduling part of the loop.
+      loop do
+        if master?
+          begin
+            handle_delayed_items
+            update_schedule if dynamic
+          rescue Errno::EAGAIN, Errno::ECONNRESET =&gt; e
+            log! e.message
+          end
+        end
+        poll_sleep
+      end
+
+    rescue Interrupt
+      log &#39;Exiting&#39;
+    end
+  end
+
+  def handle_delayed_items(at_time = nil)
+    timestamp = Resque.next_delayed_timestamp(at_time)
+    if timestamp
+      procline &#39;Processing Delayed Items&#39;
+      until timestamp.nil?
+        enqueue_delayed_items_for_timestamp(timestamp)
+        timestamp = Resque.next_delayed_timestamp(at_time)
+      end
+    end
+  end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>resque-scheduler-4.0.0/lib/resque/scheduler/delaying_extensions.rb</div>
+<div><br /></div>
+<pre><code>def next_delayed_timestamp(at_time = nil)
+  search_first_delayed_timestamp_in_range(nil, at_time || Time.now)
+end
+
+def search_first_delayed_timestamp_in_range(start_at, stop_at)
+  start_at = start_at.nil? ? &#39;-inf&#39; : start_at.to_i
+  stop_at = stop_at.nil? ? &#39;+inf&#39; : stop_at.to_i
+
+  items = redis.zrangebyscore(
+    :delayed_queue_schedule, start_at, stop_at,
+    limit: [0, 1]
+  )
+  timestamp = items.nil? ? nil : Array(items).first
+  timestamp.to_i unless timestamp.nil?
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>然后以此时间去获取&#34;delayed:#{timestamp.to_i}&#34;中的任务参数，此方法会用同一个时间点去lpop列表中的任务参数，直到列表为空，才回到上级，去查另一个最小时间</div>
+<div><br /></div>
+<div>resque-scheduler-4.0.0/lib/resque/scheduler.rb</div>
+<div><br /></div>
+<pre><code>def enqueue_delayed_items_for_timestamp(timestamp)
+  item = nil
+  loop do
+    handle_shutdown do
+      # Continually check that it is still the master
+      if master?
+        item = Resque.next_item_for_timestamp(timestamp)
+        if item
+          log &#34;queuing #{item[&#39;class&#39;]} [delayed]&#34;
+          handle_errors { enqueue_from_config(item) }
+        end
+      end
+    end
+    # continue processing until there are no more ready items in this
+    # timestamp
+    break if item.nil?
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>resque-scheduler-4.0.0/lib/resque/scheduler/delaying_extensions.rb</div>
+<div><br /></div>
+<pre><code>def next_item_for_timestamp(timestamp)
+  key = &#34;delayed:#{timestamp.to_i}&#34;
+
+  encoded_item = redis.lpop(key)
+  redis.srem(&#34;timestamps:#{encoded_item}&#34;, key)
+  item = decode(encoded_item)
+
+  # If the list is empty, remove it.
+  clean_up_timestamp(key, timestamp)
+  item
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>接着再enqueue_from_config即可让转到resque的namespace下，让其接手</div>
+
+  </div><a class="u-url" href="/2018/04/23/791cc873b716d82f1d305c481c5b95d6.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

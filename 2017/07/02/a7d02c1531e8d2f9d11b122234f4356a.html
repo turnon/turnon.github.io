@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>active_record的enum类方法（还可以new）</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="active_record的enum类方法（还可以new）" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="One of the newest additions to Active Record introduced in Rails 4.1 is the ability to set an attribute as an  enumerable. Once an attribute…" />
+<meta property="og:description" content="One of the newest additions to Active Record introduced in Rails 4.1 is the ability to set an attribute as an  enumerable. Once an attribute…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-07-02T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"One of the newest additions to Active Record introduced in Rails 4.1 is the ability to set an attribute as an  enumerable. Once an attribute…","@type":"BlogPosting","headline":"active_record的enum类方法（还可以new）","dateModified":"2017-07-02T00:00:00+00:00","url":"/2017/07/02/a7d02c1531e8d2f9d11b122234f4356a.html","datePublished":"2017-07-02T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/07/02/a7d02c1531e8d2f9d11b122234f4356a.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">active_record的enum类方法（还可以new）</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-07-02T00:00:00+00:00" itemprop="datePublished">Jul 2, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>One of the newest additions to Active Record introduced in Rails 4.1 is the ability to set an attribute as an  enumerable. Once an attribute has been set as an enumerable, Active Record will restrict the assignment of  the attribute to a collection of predefined values</div>
+<div><br /></div>
+<div><b>跟踪类方法enum到底干什么</b></div>
+<div><br /></div>
+<pre><code>class Student &lt; ApplicationRecord
+  binding.trace_tree(htmp: &#39;rails/enum&#39;) do
+  enum gender: [:male, :female]
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>完整调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/a7d02c1531e8d2f9d11b122234f4356a/ac8a6cd1b237d49857779b01c1b9e48d.html"><img src="/assets/files/a7d02c1531e8d2f9d11b122234f4356a/a1f3accaba1f452df37cd8e0cf4006a4.png" alt="20170702_121828_946_enum.html" /></a></div>
+<div><br /></div>
+<div>其脉络基本上就在enum一个方法中</div>
+<div><br /></div>
+<pre><code># activerecord-5.0.4/lib/active_record/enum.rb
+def enum(definitions)
+  klass = self
+  enum_prefix = definitions.delete(:_prefix)
+  enum_suffix = definitions.delete(:_suffix)
+  definitions.each do |name, values|
+
+    # 枚举值及其对应的integer
+    # statuses = { }
+    enum_values = ActiveSupport::HashWithIndifferentAccess.new
+    name        = name.to_sym
+
+    # 可以通过“attr的复数”方法获取该attr的枚举值及对应integer
+    # def self.statuses() statuses end
+    detect_enum_conflict!(name, name.to_s.pluralize, true)
+    klass.singleton_class.send(:define_method, name.to_s.pluralize) { enum_values }
+
+    detect_enum_conflict!(name, name)
+    detect_enum_conflict!(name, &#34;#{name}=&#34;)
+
+    # 给这个attr关联一个EnumType
+    # 以便赋值时能检查值是否在枚举值中
+    # 在的话，就转换成integer，后面再分析
+    attr = attribute_alias?(name) ? attribute_alias(name) : name
+    decorate_attribute_type(attr, :enum) do |subtype|
+      EnumType.new(attr, enum_values, subtype)
+    end
+
+    # 便利方法都定义到单独一个module中
+    _enum_methods_module.module_eval do
+      # 除了integer，对应值也可以用hash来自定义的
+      pairs = values.respond_to?(:each_pair) ? values.each_pair : values.each_with_index
+      pairs.each do |value, i|
+
+        # prefix和suffix可以是用attr名或自定义，当让不假pre、suf也可以
+        if enum_prefix == true
+          prefix = &#34;#{name}_&#34;
+        elsif enum_prefix
+          prefix = &#34;#{enum_prefix}_&#34;
+        end
+        if enum_suffix == true
+          suffix = &#34;_#{name}&#34;
+        elsif enum_suffix
+          suffix = &#34;_#{enum_suffix}&#34;
+        end
+
+        value_method_name = &#34;#{prefix}#{value}#{suffix}&#34;
+        enum_values[value] = i
+
+        # 定义便利方法：#active?，#active!，.active
+
+        # def active?() status == 0 end
+        klass.send(:detect_enum_conflict!, name, &#34;#{value_method_name}?&#34;)
+        define_method(&#34;#{value_method_name}?&#34;) { self[attr] == value.to_s }
+
+        # def active!() update! status: :active end
+        klass.send(:detect_enum_conflict!, name, &#34;#{value_method_name}!&#34;)
+        define_method(&#34;#{value_method_name}!&#34;) { update!(attr =&gt; value) }
+
+        # scope :active, -&gt; { where status: 0 }
+        klass.send(:detect_enum_conflict!, name, value_method_name, true)
+        klass.scope value_method_name, -&gt; { where(attr =&gt; value) }
+      end
+    end
+
+    # 可以通过类方法defined_enums获取所有枚举字段的枚举值及对应integer
+    defined_enums[name.to_s] = enum_values
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><b>转换到数据库值</b></div>
+<div><br /></div>
+<div>调用某个attr的writer方法时，其实是会做type cast的。因为刚才gender字段以关联了一个EnumType，所以type cast就由EnumType来做</div>
+<div><br /></div>
+<div>如果赋的值不在枚举值中，是会报错的</div>
+<div><br /></div>
+<pre><code>irb(main):003:0&gt; binding.trace_tree(htmp: &#39;rails/enum_writer&#39;){s.gender = &#39;fdf&#39;}
+ArgumentError: &#39;fdf&#39; is not a valid gender
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.4/lib/active_record/enum.rb:139:in `assert_valid_value&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.4/lib/active_record/attribute.rb:67:in `with_value_from_user&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.4/lib/active_record/attribute_set.rb:53:in `write_from_user&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.4/lib/active_record/attribute_methods/write.rb:50:in `write_attribute_with_type_cast&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.4/lib/active_record/attribute_methods/write.rb:32:in `write_attribute&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activerecord-5.0.4/lib/active_record/attribute_methods/write.rb:20:in `__temp__7656e6465627=&#39;
+    from (irb):3:in `block in irb_binding&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/trace_tree-0.2.9/lib/trace_tree.rb:47:in `instance_eval&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/trace_tree-0.2.9/lib/trace_tree.rb:47:in `generate&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/trace_tree-0.2.9/lib/trace_tree.rb:13:in `trace_tree&#39;
+    from (irb):3
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.0.4/lib/rails/commands/console.rb:65:in `start&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.0.4/lib/rails/commands/console_helper.rb:9:in `start&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.0.4/lib/rails/commands/commands_tasks.rb:78:in `console&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.0.4/lib/rails/commands/commands_tasks.rb:49:in `run_command!&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/railties-5.0.4/lib/rails/commands.rb:18:in `&lt;top (required)=""&gt;&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:293:in `require&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:293:in `block in require&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:259:in `load_dependency&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:293:in `require&#39;
+    from /home/z/test_rails/school/bin/rails:9:in `&lt;top (required)=""&gt;&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:287:in `load&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:287:in `block in load&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:259:in `load_dependency&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/gems/2.4.0/gems/activesupport-5.0.4/lib/active_support/dependencies.rb:287:in `load&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/rubygems/core_ext/kernel_require.rb:55:in `require&#39;
+    from /home/z/.rbenv/versions/2.4.0/lib/ruby/2.4.0/rubygems/core_ext/kernel_require.rb:55:in `require&#39;
+    from -e:1:in `&lt;/top&gt;&lt;/top&gt;</code><main><code>&#39;</code></main></pre>
+<div><br /></div>
+<div><br /></div>
+<div>调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/a7d02c1531e8d2f9d11b122234f4356a/b284f586b598adb4afb8fecad9f26c39.html"><img src="/assets/files/a7d02c1531e8d2f9d11b122234f4356a/3a9e69fb8330e6c69a19c9847131976d.png" alt="20170702_155707_889_enum_writer.html" /></a></div>
+<div><br /></div>
+<div>调用的是EnumType#assert_valid_value</div>
+<div><br /></div>
+<pre><code># activerecord-5.0.4/lib/active_record/enum.rb
+class EnumType &lt; Type::Value
+
+  def initialize(name, mapping, subtype)
+    @name = name
+    @mapping = mapping
+    @subtype = subtype
+  end
+
+  def cast(value)
+    return if value.blank?
+
+    if mapping.has_key?(value)
+      value.to_s
+    elsif mapping.has_value?(value)
+      mapping.key(value)
+    else
+      assert_valid_value(value)
+    end
+  end
+
+  def assert_valid_value(value)
+    unless value.blank? || mapping.has_key?(value) || mapping.has_value?(value)
+      raise ArgumentError, &#34;&#39;#{value}&#39; is not a valid #{name}&#34;
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而如果值在枚举值中，就会很顺利的通过assert_valid_value，然后在save时进行type cast，取出对应的integer</div>
+<div><br /></div>
+<pre><code>irb(main):006:0&gt; binding.trace_tree(htmp: &#39;rails/enum_save&#39;){s.save}
+   (16.1ms)  begin transaction
+  SQL (51.2ms)  UPDATE &#34;students&#34; SET &#34;updated_at&#34; = ?, &#34;gender&#34; = ? WHERE &#34;students&#34;.&#34;no&#34; = ?  [[&#34;updated_at&#34;, &#34;2017-07-02 08:13:26.673089&#34;], [&#34;gender&#34;, 0], [&#34;no&#34;, &#34;1&#34;]]
+   (31.5ms)  commit transaction
+=&gt; true</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/a7d02c1531e8d2f9d11b122234f4356a/60a5527ae727e06ec478dd857904bb21.html"><img src="/assets/files/a7d02c1531e8d2f9d11b122234f4356a/9e8d16e1ebb22bee48c056717968b729.png" alt="20170702_161326_452_enum_save.html" /></a><br /></div>
+<div><br /></div>
+<div>从图中可搜到EnumType#cast，如下</div>
+<div><br /></div>
+<div><img src="/assets/files/a7d02c1531e8d2f9d11b122234f4356a/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+
+  </div><a class="u-url" href="/2017/07/02/a7d02c1531e8d2f9d11b122234f4356a.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>跟踪一个.where().order()和#each</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="跟踪一个.where().order()和#each" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="完整trace…" />
+<meta property="og:description" content="完整trace…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-03-08T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"完整trace…","@type":"BlogPosting","headline":"跟踪一个.where().order()和#each","dateModified":"2017-03-08T00:00:00+00:00","url":"/2017/03/08/052b7c91fb5157ec588133bf655939fc.html","datePublished":"2017-03-08T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/03/08/052b7c91fb5157ec588133bf655939fc.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">跟踪一个.where().order()和#each</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-03-08T00:00:00+00:00" itemprop="datePublished">Mar 8, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><b>完整trace</b></div>
+<div><br /></div>
+<pre><code>class ArticlesController &lt; ApplicationController
+  def index
+    @articles = binding.trace_tree(html: true, tmp: [&#39;rails&#39;, &#39;where_order.html&#39;]) do
+      Article.where(&#39;title &lt;&gt; ?&#39;, 1).order(title: :asc)
+    end
+  end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><a href="/assets/files/052b7c91fb5157ec588133bf655939fc/df0887c6d1200636ece3294e8c3995f1.html"><img src="/assets/files/052b7c91fb5157ec588133bf655939fc/70e607dd399a759df216f0e42ba9d94a.png" alt="where_order.html" /></a></div>
+<div><br /></div>
+<div><br /></div>
+<pre><code>class ArticlesController &lt; ApplicationController
+  def index
+    @articles = Article.where(&#39;title &lt;&gt; ?&#39;, 1).order(title: :asc)
+
+    binding.trace_tree(timer: true, html: true, tmp: [&#39;rails&#39;, &#39;relation_each.html&#39;]) do
+      @articles.each(&amp;:object_id)
+    end
+
+  end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><a href="/assets/files/052b7c91fb5157ec588133bf655939fc/e2d0d67b584f259a72f2989c7a5b926e.html"><img src="/assets/files/052b7c91fb5157ec588133bf655939fc/85ddea7f7c15367edcdb7f406f17ce5a.png" alt="relation_each.html" /></a></div>
+<div><br /></div>
+<div><br /></div>
+<div><b>.where().order()</b></div>
+<div><br /></div>
+<div>首先，所有查询方法（？）都会委托到all</div>
+<div><br /></div>
+<pre><code>module ActiveRecord
+  module Querying
+    delegate :find, :take, :take!, :first, :first!, :last, :last!, :exists?, :any?, :many?, :none?, :one?, to: :all
+    delegate :second, :second!, :third, :third!, :fourth, :fourth!, :fifth, :fifth!, :forty_two, :forty_two!, :third_to_last, :third_to_last!, :second_to_last, :second_to_last!, to: :all
+    delegate :first_or_create, :first_or_create!, :first_or_initialize, to: :all
+    delegate :find_or_create_by, :find_or_create_by!, :find_or_initialize_by, to: :all
+    delegate :find_by, :find_by!, to: :all
+    delegate :destroy, :destroy_all, :delete, :delete_all, :update, :update_all, to: :all
+    delegate :find_each, :find_in_batches, :in_batches, to: :all
+    delegate :select, :group, :order, :except, :reorder, :limit, :offset, :joins, :left_joins, :left_outer_joins, :or,
+             :where, :rewhere, :preload, :eager_load, :includes, :from, :lock, :readonly,
+             :having, :create_with, :uniq, :distinct, :references, :none, :unscope, to: :all
+    delegate :count, :average, :minimum, :maximum, :sum, :calculate, to: :all
+    delegate :pluck, :ids, to: :all</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而all实际上是返回一个ActiveRecord::Relation</div>
+<div><br /></div>
+<pre><code>module ActiveRecord
+  module Scoping
+    module Named
+      extend ActiveSupport::Concern
+
+      module ClassMethods
+
+        def all
+          if current_scope
+            current_scope.clone
+          else
+            default_scoped
+          end
+        end
+
+        def default_scoped # :nodoc:
+          scope = build_default_scope
+
+          if scope
+            relation.spawn.merge!(scope)
+          else
+            relation
+          end
+        end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>ActiveRecord::Relation是可以链式调用的，利用的是spawn来生成一个新的ActiveRecord::Relation</div>
+<div><br /></div>
+<pre><code>def where(opts = :chain, *rest)
+  if :chain == opts
+    WhereChain.new(spawn)
+  elsif opts.blank?
+    self
+  else
+    spawn.where!(opts, *rest)
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><img src="/assets/files/052b7c91fb5157ec588133bf655939fc/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div><br /></div>
+<div>基本上所有查询方法（？）都会用spawn来新建一个Relation，然后在其之上配置查询条件</div>
+<div><br /></div>
+<pre><code>$ gems git:(master) grep spawn activerecord-5.0.2/lib/active_record/relation/query_methods.rb
+      spawn.includes!(*args)
+      spawn.eager_load!(*args)
+      spawn.preload!(*args)
+      spawn.references!(*table_names)
+      spawn._select!(*fields)
+      spawn.group!(*args)
+      spawn.order!(*args)
+      spawn.reorder!(*args)
+      spawn.unscope!(*args)
+      spawn.joins!(*args)
+      spawn.left_outer_joins!(*args)
+        WhereChain.new(spawn)
+        spawn.where!(opts, *rest)
+      spawn.or!(other)
+      opts.blank? ? self : spawn.having!(opts, *rest)
+      spawn.limit!(value)
+      spawn.offset!(value)
+      spawn.lock!(locks)
+      spawn.readonly!(value)
+      spawn.create_with!(value)
+      spawn.from!(value, subquery_name)
+      spawn.distinct!(value)
+        spawn.extending!(*modules, &amp;block)
+      spawn.reverse_order!</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>spawn就是简单地clone</div>
+<div><br /></div>
+<pre><code>module ActiveRecord
+  module SpawnMethods
+
+    # This is overridden by Associations::CollectionProxy
+    def spawn #:nodoc:
+      clone
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而为了避免Relation重用时修改到查询条件，需要对保存查询条件的@values进行深复制</div>
+<div><br /></div>
+<pre><code>module ActiveRecord
+  class Relation
+    def initialize_copy(other)
+      @values        = Hash[@values]
+      reset
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><img src="/assets/files/052b7c91fb5157ec588133bf655939fc/91eee3f8d75dbb327ede474944726554.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div><br /></div>
+<div>复制之后就是塞条件了</div>
+<div><br /></div>
+<pre><code># activerecord-5.0.2/lib/active_record/relation/query_methods.rb
+def where!(opts, *rest) # :nodoc:
+  opts = sanitize_forbidden_attributes(opts)
+  references!(PredicateBuilder.references(opts)) if Hash === opts
+  self.where_clause += where_clause_factory.build(opts, rest)
+  self
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>where_clause定义如下</div>
+<div><br /></div>
+<pre><code># activerecord-5.0.2/lib/active_record/relation/query_methods.rb
+Relation::CLAUSE_METHODS.each do |name|
+  class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+    def #{name}_clause                           # def where_clause
+      @values[:#{name}] || new_#{name}_clause    #   @values[:where] || new_where_clause
+    end                                          # end
+                                                 #
+    def #{name}_clause=(value)                   # def where_clause=(value)
+      assert_mutability!                         #   assert_mutability!
+      @values[:#{name}] = value                  #   @values[:where] = value
+    end                                          # end
+  CODE
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>ActiveRecord::Relation底下还有各种constant</div>
+<div><br /></div>
+<pre><code>irb(main):005:0&gt; puts ActiveRecord::Relation.constree
+ActiveRecord::Relation (Class)
+├─MULTI_VALUE_METHODS (Array)
+├─SINGLE_VALUE_METHODS (Array)
+├─CLAUSE_METHODS (Array)
+├─INVALID_METHODS_FOR_DELETE_ALL (Array)
+├─VALUE_METHODS (Array)
+├─HashMerger (Class)
+├─Merger (Class)
+│ ├─NORMAL_VALUES (Array)
+│ └─CLAUSE_METHOD_NAMES (Array)
+├─FromClause (Class)
+├─QueryAttribute (Class)
+│ └─UserProvidedDefault (Class)
+│   └─UserProvidedDefault → ActiveRecord::Relation::QueryAttribute::UserProvidedDefault
+├─WhereClause (Class)
+│ └─ARRAY_WITH_EMPTY_STRING (Array)
+├─WhereClauseFactory (Class)
+├─ONE_AS_ONE (String)
+├─WhereChain (Class)
+├─FROZEN_EMPTY_ARRAY (Array)
+├─FROZEN_EMPTY_HASH (Hash)
+├─VALID_UNSCOPING_VALUES (Set)
+├─VALID_DIRECTIONS (Array)
+├─BatchEnumerator (Class)
+├─ORDER_OR_LIMIT_IGNORED_MESSAGE (String)
+├─DelegateCache (Module)
+├─ClassSpecificRelation (Module)
+│ └─ClassMethods (Module)
+└─ClassMethods (Module)
+=&gt; nil</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>不过现在关注的主要是XX_METHODS</div>
+<div><br /></div>
+<pre><code>module ActiveRecord
+  class Relation
+    MULTI_VALUE_METHODS  = [:includes, :eager_load, :preload, :select, :group,
+                            :order, :joins, :left_joins, :left_outer_joins, :references,
+                            :extending, :unscope]
+
+    SINGLE_VALUE_METHODS = [:limit, :offset, :lock, :readonly, :reordering,
+                            :reverse_order, :distinct, :create_with]
+    CLAUSE_METHODS = [:where, :having, :from]</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>order同理，spawn后，塞查询条件</div>
+<div><br /></div>
+<pre><code>def order(*args)
+  check_if_method_has_arguments!(:order, args)
+  spawn.order!(*args)
+end
+
+def order!(*args) # :nodoc:
+  preprocess_order_args(args)
+
+  self.order_values += args
+  self
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>order_values定义如下</div>
+<div><br /></div>
+<pre><code>Relation::MULTI_VALUE_METHODS.each do |name|
+  class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+    def #{name}_values
+      @values[:#{name}] || FROZEN_EMPTY_ARRAY
+    end
+
+    def #{name}_values=(values)
+      assert_mutability!
+      @values[:#{name}] = values
+    end
+  CODE
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><b>#each</b></div>
+<div><br /></div>
+<div>所有的类Enumerable方法（？）都会委托到records方法返回的@records上</div>
+<div><br /></div>
+<pre><code>module ActiveRecord
+  module Delegation
+
+    delegate :to_xml, :encode_with, :length, :collect, :map, :each, :all?, :include?, :to_ary, :join,
+             :[], :&amp;, :|, :+, :-, :sample, :reverse, :compact, :in_groups, :in_groups_of,
+             :to_sentence, :to_formatted_s,
+             :shuffle, :split, :index, to: :records</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>records所做的就是exec_queries，缓存@records，并标记@load为true，以使下次不用再exec_queries</div>
+<div><br /></div>
+<pre><code>module ActiveRecord
+  class Relation
+
+    attr_reader :table, :klass, :loaded, :predicate_builder
+    alias :model :klass
+
+    alias :loaded? :loaded
+
+    def records
+      load
+      @records
+    end
+
+    def load(&amp;block)
+      exec_queries(&amp;block) unless loaded?
+      self
+    end
+
+    private
+
+    def exec_queries(&amp;block)
+      @records = eager_loading? ? find_with_associations.freeze : @klass.find_by_sql(arel, bound_attributes, &amp;block).freeze
+
+      preload = preload_values
+      preload +=  includes_values unless eager_loading?
+      preloader = build_preloader
+      preload.each do |associations|
+        preloader.preload @records, associations
+      end
+
+      @records.each(&amp;:readonly!) if readonly_value
+
+      @loaded = true
+      @records
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>find_by_sql所使用的arel对象的生成如下</div>
+<div><br /></div>
+<pre><code># activerecord-5.0.2/lib/active_record/relation/query_methods.rb
+def arel
+  @arel ||= build_arel
+end
+
+def build_arel
+  arel = Arel::SelectManager.new(table)
+
+  build_joins(arel, joins_values.flatten) unless joins_values.empty?
+  build_left_outer_joins(arel, left_outer_joins_values.flatten) unless left_outer_joins_values.empty?
+
+  arel.where(where_clause.ast) unless where_clause.empty?
+  arel.having(having_clause.ast) unless having_clause.empty?
+  if limit_value
+    if string_containing_comma?(limit_value)
+      arel.take(connection.sanitize_limit(limit_value))
+    else
+      arel.take(Arel::Nodes::BindParam.new)
+    end
+  end
+  arel.skip(Arel::Nodes::BindParam.new) if offset_value
+  arel.group(*arel_columns(group_values.uniq.reject(&amp;:blank?))) unless group_values.empty?
+
+  build_order(arel)
+
+  build_select(arel)
+
+  arel.distinct(distinct_value)
+  arel.from(build_from) unless from_clause.empty?
+  arel.lock(lock_value) if lock_value
+
+  arel
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>find_by_sql所使用的bound_attributes</div>
+<div><br /></div>
+<pre><code>def bound_attributes
+  if limit_value &amp;&amp; !string_containing_comma?(limit_value)
+    limit_bind = Attribute.with_cast_value(
+      &#34;LIMIT&#34;.freeze,
+      connection.sanitize_limit(limit_value),
+      Type::Value.new,
+    )
+  end
+  if offset_value
+    offset_bind = Attribute.with_cast_value(
+      &#34;OFFSET&#34;.freeze,
+      offset_value.to_i,
+      Type::Value.new,
+    )
+  end
+  connection.combine_bind_parameters(
+    from_clause: from_clause.binds,
+    join_clause: arel.bind_values,
+    where_clause: where_clause.binds,
+    having_clause: having_clause.binds,
+    limit: limit_bind,
+    offset: offset_bind,
+  )
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>检查find_by_sql接受了什么arel和bound_attributes</div>
+<div><br /></div>
+<pre><code>class ArticlesController &lt; ApplicationController
+  def index
+    @articles = Article.where(&#39;title &lt;&gt; ?&#39;, 1).order(title: :asc)
+    byebug
+    @articles.each(&amp;:object_id)
+
+    @articles
+  end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>发现sql已填充了值，binds中啥都没有</div>
+<div><br /></div>
+<pre><code>[1, 10] in /home/z/test_rails/dapo/app/controllers/articles_controller.rb
+    1: class ArticlesController &lt; ApplicationController
+    2:   def index
+    3:     @articles = Article.where(&#39;title &lt;&gt; ?&#39;, 1).order(title: :asc)
+    4:     byebug
+=&gt;  5:     @articles.each(&amp;:object_id)
+    6:
+(byebug) break Article#find_by_sql
+Successfully created breakpoint with id 1
+(byebug) continue
+Stopped by breakpoint 1 at /home/z/.rbenv/versions/2.3.3/lib/ruby/gems/2.3.0/gems/activerecord-5.0.2/lib/active_record/querying.rb:38
+
+[33, 42] in /home/z/.rbenv/versions/2.3.3/lib/ruby/gems/2.3.0/gems/activerecord-5.0.2/lib/active_record/querying.rb
+   33:     #
+   34:     # You can use the same string replacement techniques as you can with <tt>ActiveRecord::QueryMethods#where</tt>:
+   35:     #
+   36:     #   Post.find_by_sql [&#34;SELECT title FROM posts WHERE author = ? AND created &gt; ?&#34;, author_id, start_date]
+   37:     #   Post.find_by_sql [&#34;SELECT body FROM comments WHERE author = :user_id OR approved_by = :user_id&#34;, { :user_id =&gt; user_id }]
+=&gt; 38:     def find_by_sql(sql, binds = [], preparable: nil, &amp;block)
+   39:       result_set = connection.select_all(sanitize_sql(sql), &#34;#{name} Load&#34;, binds, preparable: preparable)
+   40:       column_types = result_set.column_types.dup
+   41:       columns_hash.each_key { |k| column_types.delete k }
+   42:       message_bus = ActiveSupport::Notifications.instrumenter
+(byebug) sql.to_sql
+&#34;SELECT \&#34;articles\&#34;.* FROM \&#34;articles\&#34; WHERE (title &lt;&gt; 1) ORDER BY \&#34;articles\&#34;.\&#34;title\&#34; ASC&#34;
+(byebug) binds
+[]
+(byebug)</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>不过select_all中似乎是可区分prepared_statement的，这个待研究（还有arel和bound_attributes）</div>
+<div><br /></div>
+<pre><code>def select_all(arel, name = nil, binds = [], preparable: nil)
+  arel, binds = binds_from_relation arel, binds
+  sql = to_sql(arel, binds)
+  if !prepared_statements || (arel.is_a?(String) &amp;&amp; preparable.nil?)
+    preparable = false
+  else
+    preparable = visitor.preparable
+  end
+  if prepared_statements &amp;&amp; preparable
+    select_prepared(sql, name, binds)
+  else
+    select(sql, name, binds)
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>find_by_sql最终返回的Array是由map那里生成的，instantiate会将查得的值塞到本类的实例中</div>
+<div><br /></div>
+<pre><code>def find_by_sql(sql, binds = [], preparable: nil, &amp;block)
+  result_set = connection.select_all(sanitize_sql(sql), &#34;#{name} Load&#34;, binds, preparable: preparable)
+  column_types = result_set.column_types.dup
+  columns_hash.each_key { |k| column_types.delete k }
+  message_bus = ActiveSupport::Notifications.instrumenter
+
+  payload = {
+    record_count: result_set.length,
+    class_name: name
+  }
+
+  message_bus.instrument(&#34;instantiation.active_record&#34;, payload) do
+    result_set.map { |record| instantiate(record, column_types, &amp;block) }
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><img src="/assets/files/052b7c91fb5157ec588133bf655939fc/f7cb588f62bc16ba6c8ac0b4956bd711.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div><br /></div>
+<div>如上，是result_set含4个article的情况</div>
+<div><br /></div>
+<div><img src="/assets/files/052b7c91fb5157ec588133bf655939fc/caebd5802a502287b56167f6208b00f3.png" type="image/png" data-filename="Image.png" style="height: auto;" /></div>
+<div><br /></div>
+<div><br /></div>
+<div><b>where如何mixin到model上</b></div>
+<div><br /></div>
+<div>ActiveRecord::Querying的实例方法where能在Article上调用，如无意外是extend了，检查一下</div>
+<div><br /></div>
+<pre><code>(byebug) Article.ancestors.select{|c| c.singleton_methods.include? :where}
+[Article(id: integer, title: string, text: text, created_at: datetime, updated_at: datetime), ApplicationRecord(abstract), ActiveRecord::Base]</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>确实是</div>
+<div><br /></div>
+<pre><code>$ lib git:(master) grep Querying -rn *
+active_record/attributes.rb:150:      # ==== \Querying
+active_record/base.rb:282:    extend Querying
+active_record/querying.rb:2:  module Querying
+active_record.rb:55:  autoload :Querying</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><b>each如何mixin到Relation</b></div>
+<div><br /></div>
+<pre><code>module ActiveRecord
+  class Relation
+    include Enumerable
+    include FinderMethods, Calculations, SpawnMethods, QueryMethods, Batches, Explain, Delegation</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而Delegation</div>
+<div><br /></div>
+<pre><code>module ActiveRecord
+  module Delegation
+
+    delegate :to_xml, :encode_with, :length, :collect, :map, :each, :all?, :include?, :to_ary, :join,
+             :[], :&amp;, :|, :+, :-, :sample, :reverse, :compact, :in_groups, :in_groups_of,
+             :to_sentence, :to_formatted_s,
+             :shuffle, :split, :index, to: :records</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/03/08/052b7c91fb5157ec588133bf655939fc.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

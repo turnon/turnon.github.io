@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>paper_trail</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="paper_trail" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="先跟踪一下has_paper_trail方法是干什么的…" />
+<meta property="og:description" content="先跟踪一下has_paper_trail方法是干什么的…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-10-04T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"先跟踪一下has_paper_trail方法是干什么的…","@type":"BlogPosting","headline":"paper_trail","dateModified":"2017-10-04T00:00:00+00:00","url":"/2017/10/04/0ca1c1057a093a8c066c35ee2f324d5e.html","datePublished":"2017-10-04T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2017/10/04/0ca1c1057a093a8c066c35ee2f324d5e.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">paper_trail</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-10-04T00:00:00+00:00" itemprop="datePublished">Oct 4, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>先跟踪一下has_paper_trail方法是干什么的</div>
+<div><br /></div>
+<pre><code>[1] pry(main)&gt; Student
+=&gt; Student (call &#39;Student.connection&#39; to establish a connection)
+[2] pry(main)&gt; class Student
+[2] pry(main)*   binding.trace_tree(htmp: &#39;paper_trail/has&#39;){ has_paper_trail }
+[2] pry(main)* end  
+=&gt; []</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>调用栈如下</div>
+<div><br /></div>
+<div><a href="/assets/files/0ca1c1057a093a8c066c35ee2f324d5e/ac2fa68b76e21486b448f1b8d66330bc.html"><img src="/assets/files/0ca1c1057a093a8c066c35ee2f324d5e/b38c8d3db3e3c7a7605f26373820e4f9.png" alt="20171004_220317_613_has.html" /></a></div>
+<div><br /></div>
+<div>可见其主要就是让model类include了PaperTrail::Model::InstanceMethods，然后再加一些callback，拦截model的增删改，骨干如下</div>
+<div><br /></div>
+<div><img src="/assets/files/0ca1c1057a093a8c066c35ee2f324d5e/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /><br /></div>
+<div><br /></div>
+<div>源码如下</div>
+<div><br /></div>
+<pre><code># Set up `@model_class` for PaperTrail. Installs callbacks, associations,
+# &#34;class attributes&#34;, instance methods, and more.
+# @api private
+def setup(options = {})
+  options[:on] ||= %i[create update destroy]
+  options[:on] = Array(options[:on]) # Support single symbol
+  @model_class.send :include, ::PaperTrail::Model::InstanceMethods
+  if ::ActiveRecord::VERSION::STRING &lt; &#34;4.2&#34;
+    ::ActiveSupport::Deprecation.warn(
+      &#34;Your version of ActiveRecord (&lt; 4.2) has reached EOL. PaperTrail &#34; \
+      &#34;will soon drop support. Please upgrade ActiveRecord ASAP.&#34;
+    )
+    @model_class.send :extend, AttributeSerializers::LegacyActiveRecordShim
+  end
+  setup_options(options)
+  setup_associations(options)
+  setup_transaction_callbacks
+  setup_callbacks_from_options options[:on]
+  setup_callbacks_for_habtm options[:join_tables]
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>其中setup_options是对options进行“整理”和指定默认值。如果仅仅调用has_paper_trail，没给什么选项，那么默认就是这样</div>
+<div><br /></div>
+<pre><code>[14] pry(main)&gt; Student.paper_trail_options
+=&gt; {:on=&gt;[:create, :update, :destroy], :ignore=&gt;[], :skip=&gt;[], :only=&gt;[], :meta=&gt;{}, :save_changes=&gt;true}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>setup_associations是建立versions关联，使能通过student.versions查到过往版本。关联的名字可以通过:versions选项指定，但一般不建议改</div>
+<div><br /></div>
+<div>setup_transaction_callbacks是用于重置“关联对象版本控制”的transaction_id的，详细来说：PaperTrail can restore three types of associations: Has-One, Has-Many, and Has-Many-Through. The transaction_id is a unique id for version records created in the same transaction. It is used to associate the version of the model and the version of the association that are created in the same transaction。不过，“关联对象版本控制”这一功能不太完美（详见官方文档），不推荐使用，就不深究了</div>
+<div><br /></div>
+<div>setup_callbacks_for_habtm options也是，暂不深究</div>
+<div><br /></div>
+<div>而setup_callbacks_from_options options，正是版本记录的功能所在，其源码如下。如果调用has_paper_trail时没有指定忽略增删改哪个事件，那么三个on*都会设置</div>
+<div><br /></div>
+<pre><code>def setup_callbacks_from_options(options_on = [])
+  options_on.each do |event|
+    public_send(&#34;on_#{event}&#34;)
+  end
+end
+
+
+# Adds a callback that records a version after a &#34;create&#34; event.
+def on_create
+  @model_class.after_create { |r|
+    r.paper_trail.record_create if r.paper_trail.save_version?
+  }
+  return if @model_class.paper_trail_options[:on].include?(:create)
+  @model_class.paper_trail_options[:on] &lt;&lt; :create
+end
+
+
+# Adds a callback that records a version before or after a &#34;destroy&#34; event.
+def on_destroy(recording_order = &#34;before&#34;)
+  unless %w[after before].include?(recording_order.to_s)
+    raise ArgumentError, &#39;recording order can only be &#34;after&#34; or &#34;before&#34;&#39;
+  end
+
+  if recording_order.to_s == &#34;after&#34; &amp;&amp; cannot_record_after_destroy?
+    ::ActiveSupport::Deprecation.warn(E_CANNOT_RECORD_AFTER_DESTROY)
+  end
+
+  @model_class.send(
+    &#34;#{recording_order}_destroy&#34;,
+    -&gt;(r) { r.paper_trail.record_destroy if r.paper_trail.save_version? }
+  )
+
+  return if @model_class.paper_trail_options[:on].include?(:destroy)
+  @model_class.paper_trail_options[:on] &lt;&lt; :destroy
+end
+
+
+# Adds a callback that records a version after an &#34;update&#34; event.
+def on_update
+  @model_class.before_save(on: :update) { |r|
+    r.paper_trail.reset_timestamp_attrs_for_update_if_needed
+  }
+  @model_class.after_update { |r|
+    r.paper_trail.record_update(nil) if r.paper_trail.save_version?
+  }
+  @model_class.after_update { |r|
+    r.paper_trail.clear_version_instance
+  }
+  return if @model_class.paper_trail_options[:on].include?(:update)
+  @model_class.paper_trail_options[:on] &lt;&lt; :update
+end</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2017/10/04/0ca1c1057a093a8c066c35ee2f324d5e.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
