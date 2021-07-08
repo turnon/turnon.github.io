@@ -118,11 +118,13 @@ module Mongo
       def initialize(options = {})
         @options = options
       end
+
       def started(event)
         if logger.debug?
           log_debug(&#34;#{prefix(event)} | STARTED | #{format_command(event.command)}&#34;)
         end
       end
+
       def format_command(args)
         begin
           truncating? ? truncate(args) : args.inspect
@@ -130,9 +132,11 @@ module Mongo
           &#39;<unable to="" inspect="" arguments="">&#39;
         end
       end
+
       def truncate(command)
         ((s = command.inspect).length &gt; LOG_STRING_LIMIT) ? &#34;#{s[0..LOG_STRING_LIMIT]}...&#34; : s
       end
+
       def truncating?
         @truncating ||= (options[:truncate_logs] != false)
       end
@@ -145,26 +149,26 @@ end</unable></code></pre>
 <pre><code>[1] pry(#<mongo::monitoring::commandlogsubscriber>)&gt; caller
 =&gt; [
 # ...
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongo-2.6.2/lib/mongo/monitoring/command_log_subscriber.rb:45:in `initialize&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongo-2.6.2/lib/mongo/monitoring.rb:209:in `new&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongo-2.6.2/lib/mongo/monitoring.rb:209:in `initialize&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongo-2.6.2/lib/mongo/client.rb:282:in `new&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongo-2.6.2/lib/mongo/client.rb:282:in `initialize&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/clients/factory.rb:64:in `new&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/clients/factory.rb:64:in `create_client&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/clients/factory.rb:27:in `create&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/clients.rb:69:in `block in with_name&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/clients.rb:68:in `synchronize&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/clients.rb:68:in `with_name&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/persistence_context.rb:114:in `client&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/persistence_context.rb:70:in `collection&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/clients/options.rb:73:in `collection&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/contextual/mongo.rb:342:in `initialize&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/contextual.rb:53:in `new&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/contextual.rb:53:in `create_context&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/contextual.rb:35:in `context&#39;&#34;,
- &#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/contextual.rb:20:in `pluck&#39;&#34;,
- &#34;(pry):1:in `</mongo::monitoring::commandlogsubscriber></code><main><code>’&#34;,</code></main></pre>
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongo-2.6.2/lib/mongo/monitoring/command_log_subscriber.rb:45:in `initialize&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongo-2.6.2/lib/mongo/monitoring.rb:209:in `new&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongo-2.6.2/lib/mongo/monitoring.rb:209:in `initialize&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongo-2.6.2/lib/mongo/client.rb:282:in `new&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongo-2.6.2/lib/mongo/client.rb:282:in `initialize&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/clients/factory.rb:64:in `new&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/clients/factory.rb:64:in `create_client&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/clients/factory.rb:27:in `create&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/clients.rb:69:in `block in with_name&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/clients.rb:68:in `synchronize&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/clients.rb:68:in `with_name&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/persistence_context.rb:114:in `client&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/persistence_context.rb:70:in `collection&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/clients/options.rb:73:in `collection&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/contextual/mongo.rb:342:in `initialize&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/contextual.rb:53:in `new&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/contextual.rb:53:in `create_context&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/contextual.rb:35:in `context&#39;&#34;,
+&#34;/Users/yuanzhipeng/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/mongoid-7.0.2/lib/mongoid/contextual.rb:20:in `pluck&#39;&#34;,
+&#34;(pry):1:in `</mongo::monitoring::commandlogsubscriber></code><main><code>’&#34;,</code></main></pre>
 <div><br /></div>
 <div>预计options应该是在client到clients之间生成，于是挑中间一个看看，就factory吧</div>
 <div><br /></div>
@@ -173,6 +177,7 @@ module Mongoid
   module Clients
     module Factory
       extend self
+
       def create(name = nil)
         return default unless name
         config = Mongoid.clients[name]

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>go sync.Mutex</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="go sync.Mutex" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="TL;DR…" />
+<meta property="og:description" content="TL;DR…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-04-02T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"TL;DR…","@type":"BlogPosting","headline":"go sync.Mutex","dateModified":"2021-04-02T00:00:00+00:00","url":"/2021/04/02/1f5169e0f3fff3f98778cf73b72e08dd.html","datePublished":"2021-04-02T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/04/02/1f5169e0f3fff3f98778cf73b72e08dd.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">go sync.Mutex</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2021-04-02T00:00:00+00:00" itemprop="datePublished">Apr 2, 2021
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>TL;DR</div>
+<div><br /></div>
+<div>sync.Mutex使用32位int记录锁定状态，从高到低：29位记录等待数、1位记录“是否有饥饿goroutine”、1位记录“是否在无饥饿goroutine的情况下被解锁”、1位记录“是否锁定”，比较省空间</div>
+<div><br /></div>
+<div>使用时应注意访问相同的锁实例（应使用指针传递，或者在闭包中使用）</div>
+<div><br /></div>
+<div>sync.Mutex本身并不记录被哪个goroutine锁定，<span style="font-size: unset; color: unset; font-family: unset;">可以由一个goroutine锁定，在由另一个goroutine解锁</span></div>
+<div><span style="font-size: unset;"><br /></span></div>
+<div><span style="font-size: unset; color: unset; font-family: unset;">也不会记录锁定次数，所以不能重入</span></div>
+<div><span style="font-size: unset; color: unset; font-family: unset;"><br /></span></div>
+<div><span style="font-size: unset; color: unset; font-family: unset;">实现方式：尝试能否自旋，如果不能自旋获取到锁，则加入信号量的队列中，等待叫醒</span></div>
+<div><br /></div>
+<div>PAUSE指令</div>
+<div><br /></div>
+<div><a href="http://www.luo666.com/?p=55">http://www.luo666.com/?p=55</a></div>
+<div><a href="https://stackoverflow.com/questions/12894078/what-is-the-purpose-of-the-pause-instruction-in-x86">https://stackoverflow.com/questions/12894078/what-is-the-purpose-of-the-pause-instruction-in-x86</a></div>
+<div><br /></div>
+<div>结构</div>
+<div><br /></div>
+<pre><code>type Mutex struct {
+    state int32
+    sema  uint32
+}
+
+const (
+    mutexLocked = 1 &lt;&lt; iota // mutex is locked
+    mutexWoken
+    mutexStarving
+    mutexWaiterShift = iota
+}</code></pre>
+<div><br /></div>
+<div>Lock</div>
+<div><br /></div>
+<pre><code>func (m *Mutex) Lock() {
+    // 如果没其它goroutine锁住，就直接锁定，然后返回
+    if atomic.CompareAndSwapInt32(&amp;m.state, 0, mutexLocked) {
+        if race.Enabled {
+            race.Acquire(unsafe.Pointer(m))
+        }
+        return
+    }
+    // 如果已被锁，则轮询抢锁
+    m.lockSlow()
+}</code></pre>
+<div><br /></div>
+<div>lockSlow</div>
+<div><br /></div>
+<pre><code>func (m *Mutex) lockSlow() {
+    var waitStartTime int64
+    starving := false // 一开始这个goroutine是不饿的
+    awoke := false // 一开始这个goroutine是没被叫醒过的
+    iter := 0 // 暂停次数
+    old := m.state // 取当前状态
+    for {
+        // Don&#39;t spin in starvation mode, ownership is handed off to waiters
+        // so we won&#39;t be able to acquire the mutex anyway.
+        // 如果已被锁且没有饥饿的goroutine，而且runtime_canSpin（iter &lt; active_spin &amp;&amp; ncpu &gt; 1 &amp;&amp; runqempty），则暂停一次（runtime_doSpin和continue）
+        if old&amp;(mutexLocked|mutexStarving) == mutexLocked &amp;&amp; runtime_canSpin(iter) {
+            // Active spinning makes sense.
+            // Try to set mutexWoken flag to inform Unlock
+            // to not wake other blocked goroutines.
+            // 如果自己没被叫醒过，而且别人都没叫醒过锁，而且有等待锁的goroutine（3位以上用于记录等待数），而且成功叫醒（锁设置mutexWoken位）
+            // 则也标记自己是“那个叫醒锁的goroutine”
+            if !awoke &amp;&amp; old&amp;mutexWoken == 0 &amp;&amp; old&gt;&gt;mutexWaiterShift != 0 &amp;&amp; atomic.CompareAndSwapInt32(&amp;m.state, old, old|mutexWoken) {
+                awoke = true
+            }
+            // 暂停CPU，避免另一goroutine解锁时重排当前goroutine的一系列读操作
+            runtime_doSpin()
+            iter++
+            old = m.state
+            continue
+        }
+        new := old
+        // Don&#39;t try to acquire starving mutex, new arriving goroutines must queue.
+        // 如果没有其它饥饿的goroutine，则尝试加锁
+        if old&amp;mutexStarving == 0 {
+            new |= mutexLocked
+        }
+        // 如果已被锁或者另有饥饿的goroutine，则等待数加一（3位以上用于记录等待数）
+        if old&amp;(mutexLocked|mutexStarving) != 0 {
+            new += 1 &lt;&lt; mutexWaiterShift
+        }
+        // The current goroutine switches mutex to starvation mode.
+        // But if the mutex is currently unlocked, don&#39;t do the switch.
+        // Unlock expects that starving mutex has waiters, which will not
+        // be true in this case.
+        // 如果已经饿了，而且已被锁了，则尝试将锁标记为“有饥饿goroutine”
+        if starving &amp;&amp; old&amp;mutexLocked != 0 {
+            new |= mutexStarving
+        }
+        // 如果被叫醒过，则mutexWoken位清零
+        if awoke {
+            // The goroutine has been woken from sleep,
+            // so we need to reset the flag in either case.
+            if new&amp;mutexWoken == 0 {
+                throw(&#34;sync: inconsistent mutex state&#34;)
+            }
+            new &amp;^= mutexWoken
+        }
+        // 如果锁状态一致……
+        if atomic.CompareAndSwapInt32(&amp;m.state, old, new) {
+            // 且原本没加锁也没有饥饿goroutine，则说明已从“未锁”改为“已锁”，锁定成功，结束抢锁
+            if old&amp;(mutexLocked|mutexStarving) == 0 {
+                break // locked the mutex with CAS
+            }
+            // If we were already waiting before, queue at the front of the queue.
+            // 首次循环为false，之后为true（更早被叫醒）
+            queueLifo := waitStartTime != 0
+            if waitStartTime == 0 {
+                waitStartTime = runtime_nanotime()
+            }
+            // 尝试获取一个信号量（挂起，当另一goroutine调用unlock释出一个信号量时，才返回）
+            runtime_SemacquireMutex(&amp;m.sema, queueLifo, 1)
+            starving = starving || runtime_nanotime()-waitStartTime &gt; starvationThresholdNs
+            old = m.state
+            // 如果已经有饥饿的goroutine，且自己就是被叫醒的那个（等得最久，最迟才被加到队头的那个），则有权马上设定锁定状态
+            if old&amp;mutexStarving != 0 {
+                // If this goroutine was woken and mutex is in starvation mode,
+                // ownership was handed off to us but mutex is in somewhat
+                // inconsistent state: mutexLocked is not set and we are still
+                // accounted as waiter. Fix that.
+                if old&amp;(mutexLocked|mutexWoken) != 0 || old&gt;&gt;mutexWaiterShift == 0 {
+                    throw(&#34;sync: inconsistent mutex state&#34;)
+                }
+                // 1减8等于-7，最低位为1
+                delta := int32(mutexLocked - 1&lt;&lt;mutexwaitershift)  =""  =""  =""  =""  =""  =""  =""  ="" 如果被叫醒的goroutine并不是饥饿状态，或者饥饿的就只有自己（没有其他等待中的goroutine了），就解除锁的饥饿标识=""                 if="" !starving="" ||="" old=""&gt;&gt;mutexWaiterShift == 1 {
+                    // Exit starvation mode.
+                    // Critical to do it here and consider wait time.
+                    // Starvation mode is so inefficient, that two goroutines
+                    // can go lock-step infinitely once they switch mutex
+                    // to starvation mode.
+                    delta -= mutexStarving
+                }
+                // 此时state的最低位为0，加上delta，会设置最低位mutexLocked为1，即锁定。然后可以结束抢锁
+                atomic.AddInt32(&amp;m.state, delta)
+                break
+            }
+            // 如果仅仅被叫醒，但并没有很饿，那么
+            awoke = true
+            iter = 0
+        } else {
+            // 获取最新状态并继续抢锁
+            old = m.state
+        }
+    }
+
+    if race.Enabled {
+        race.Acquire(unsafe.Pointer(m))
+    }
+}&lt;/mutexwaitershift)&gt;</code></pre>
+<div><br /></div>
+<div>Unlock</div>
+<div><br /></div>
+<pre><code>func (m *Mutex) Unlock() {
+    if race.Enabled {
+        _ = m.state
+        race.Release(unsafe.Pointer(m))
+    }
+
+    // 将mutexLocked位清零
+    new := atomic.AddInt32(&amp;m.state, -mutexLocked)
+    // 如果有等待中的goroutine
+    if new != 0 {
+        // Outlined slow path to allow inlining the fast path.
+        // To hide unlockSlow during tracing we skip one extra frame when tracing GoUnblock.
+        m.unlockSlow(new)
+    }
+}</code></pre>
+<div><br /></div>
+<div>unlockSlow</div>
+<div><br /></div>
+<pre><code>func (m *Mutex) unlockSlow(new int32) {
+    // 如果解锁了一个未被锁定的锁，报错……
+    if (new+mutexLocked)&amp;mutexLocked == 0 {
+        throw(&#34;sync: unlock of unlocked mutex&#34;)
+    }
+    // 如果没有饥饿的goroutine
+    if new&amp;mutexStarving == 0 {
+        old := new
+        for {
+            // If there are no waiters or a goroutine has already
+            // been woken or grabbed the lock, no need to wake anyone.
+            // In starvation mode ownership is directly handed off from unlocking
+            // goroutine to the next waiter. We are not part of this chain,
+            // since we did not observe mutexStarving when we unlocked the mutex above.
+            // So get off the way.
+            // 如果没有等待中的goroutine，或者抢锁的goroutine已在刚才一瞬间抢到锁，则无需叫醒任何goroutine
+            if old&gt;&gt;mutexWaiterShift == 0 || old&amp;(mutexLocked|mutexWoken|mutexStarving) != 0 {
+                return
+            }
+            // 随便叫醒一个goroutine
+            new = (old - 1&lt;&lt;mutexwaitershift) |="" mutexwoken=""             if="" atomic.compareandswapint32(&amp;m.state,="" old,="" new)="" {=""                 runtime_semrelease(&amp;m.sema,="" false,="" 1)=""                 return=""             }=""             old="m.state"         }=""     }="" else="" {=""         ="" starving="" mode:="" handoff="" mutex="" ownership="" to="" the="" next="" waiter,="" and="" yield=""         ="" our="" time="" slice="" so="" that="" the="" next="" waiter="" can="" start="" to="" run="" immediately.=""         ="" note:="" mutexlocked="" is="" not="" set,="" the="" waiter="" will="" set="" it="" after="" wakeup.=""         ="" but="" mutex="" is="" still="" considered="" locked="" if="" mutexstarving="" is="" set,=""         ="" so="" new="" coming="" goroutines="" won't="" acquire="" it.=""  =""  =""  =""   ="" 如果有饥饿的goroutine，叫醒队头那个=""         runtime_semrelease(&amp;m.sema,="" true,="" 1)=""     }="" }&lt;="" code=""&gt;&lt;/mutexwaitershift)&gt;</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2021/04/02/1f5169e0f3fff3f98778cf73b72e08dd.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

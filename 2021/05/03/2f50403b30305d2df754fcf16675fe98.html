@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>浅析gin</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="浅析gin" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="一个普通的gin应用…" />
+<meta property="og:description" content="一个普通的gin应用…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-05-03T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"一个普通的gin应用…","@type":"BlogPosting","headline":"浅析gin","dateModified":"2021-05-03T00:00:00+00:00","url":"/2021/05/03/2f50403b30305d2df754fcf16675fe98.html","datePublished":"2021-05-03T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/05/03/2f50403b30305d2df754fcf16675fe98.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">浅析gin</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2021-05-03T00:00:00+00:00" itemprop="datePublished">May 3, 2021
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style="color: rgb(23, 43, 77);">一个普通的gin应用</span></div>
+<div><br /></div>
+<pre><code>package main
+
+import &#34;github.com/gin-gonic/gin&#34;
+
+type person struct {
+    Name string `form:&#34;name&#34;`
+}
+
+func main(){
+    r := gin.Default() // 内含请求日志middleware
+
+    hello := r.Group(&#34;/hello&#34;) // 路由命名空间
+    hello.GET(&#34;/world&#34;, func(c *gin.Context){ // 路由
+        p := person{}
+        c.Bind(&amp;p) // 参数绑定
+
+        c.JSON(200, gin.H{ // 响应
+            &#34;msg&#34;: &#34;hello, &#34; + p.Name,
+        })
+    })
+
+    r.Run() // 启动
+}
+
+
+// http://localhost:8080/hello/world?name=jack
+// {&#34;msg&#34;:&#34;hello, jack&#34;}</code></pre>
+<div><font style="font-size: 10pt;"><span style="letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; font-size: 10pt;"><br /></span></font></div>
+<div><font style="font-size: 10pt;"><span style="letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; font-size: 10pt;"><br /></span></font></div>
+<div><b>初始化</b></div>
+<div><br /></div>
+<div>可以使用New初始化一个空白的服务器。如果使用Default的话，会在此基础上，预置Logger和Recovery两个中间件</div>
+<div><br /></div>
+<pre><code>func New() *Engine {
+    debugPrintWARNINGNew()
+    engine := &amp;Engine{
+        RouterGroup: RouterGroup{
+            Handlers: nil,
+            basePath: &#34;/&#34;,
+            root:     true,
+        },
+        // ...
+    }
+    engine.RouterGroup.engine = engine
+    engine.pool.New = func() interface{} {
+        return engine.allocateContext()
+    }
+    return engine
+}
+
+func Default() *Engine {
+    debugPrintWARNINGDefault()
+    engine := New()
+    engine.Use(Logger(), Recovery())
+    return engine
+}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><b>中间件</b></div>
+<div><br /></div>
+<div>可以通过RouterGroup.Use（或者Engine.Use）方法设置middleware</div>
+<div><br /></div>
+<pre><code>func (group *RouterGroup) Use(middleware ...HandlerFunc) IRoutes {
+    group.Handlers = append(group.Handlers, middleware...)
+    return group.returnObj()
+}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>因为RouterGroup.handle（GET、POST……会调用到的）会在设置路由时，复制当前RouterGroup已定义过的middleware，所以后来的Use所增加的middleware不会影响前面的handle</div>
+<div><br /></div>
+<pre><code>func (group *RouterGroup) handle(httpMethod, relativePath string, handlers HandlersChain) IRoutes {
+    absolutePath := group.calculateAbsolutePath(relativePath)
+    // 这是一个新的切片
+    handlers = group.combineHandlers(handlers)
+    group.engine.addRoute(httpMethod, absolutePath, handlers)
+    return group.returnObj()
+}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>middleware函数一般需要调用context.Next或context.AbortWithStatus。</div>
+<div><br /></div>
+<div>Next会调用下层middleware。如果某层没有调用Next也没有调用Abort，那么上层也会调用更下一层的middleware。没有调用Next的层，无法获得下层结果。</div>
+<div><br /></div>
+<div>Abort用于提早返回，不执行下层middleware和handler。</div>
+<div><br /></div>
+<pre><code>func (c *Context) Next() {
+    c.index++
+    for c.index &lt; int8(len(c.handlers)) {
+        c.handlers[c.index](c)
+        c.index++
+    }
+}
+
+func (c *Context) AbortWithStatus(code int) {
+    c.Status(code)
+    c.Writer.WriteHeaderNow()
+    c.Abort()
+}
+
+func (c *Context) Abort() {
+    c.index = abortIndex
+}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>除了使用RouterGroup.Use，还可以在定义Group（命名空间）和定义handler（路由终端）时，增加middleware，他们实际上都是调用RouterGroup.combineHandlers</div>
+<div><br /></div>
+<div><br /></div>
+<div><b>命名空间</b></div>
+<div><br /></div>
+<div>一个Engine会有一个默认的Group，路由是&#34;/&#34;。调用Engine.Group（其实就是RouterGroup.Group），会返回一个新的RouterGroup</div>
+<div><br /></div>
+<pre><code>type RouterGroup struct {
+    Handlers HandlersChain
+    basePath string
+    engine   *Engine
+    root     bool
+}
+
+func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *RouterGroup {
+    return &amp;RouterGroup{
+        Handlers: group.combineHandlers(handlers),
+        basePath: group.calculateAbsolutePath(relativePath),
+        engine:   group.engine,
+    }
+}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>新Group的middlewares会继承原Group的middlewares，，假设原有m1，新Group有m2，则处理顺序：m1 -&gt; m2 -&gt; handler -&gt; m2 -&gt; m1</div>
+<div><br /></div>
+<pre><code>func (group *RouterGroup) combineHandlers(handlers HandlersChain) HandlersChain {
+    finalSize := len(group.Handlers) + len(handlers)
+    if finalSize &gt;= int(abortIndex) {
+        panic(&#34;too many handlers&#34;)
+    }
+    mergedHandlers := make(HandlersChain, finalSize)
+    copy(mergedHandlers, group.Handlers)
+    copy(mergedHandlers[len(group.Handlers):], handlers)
+    return mergedHandlers
+}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>新Group的basePath是原Group的basePath拼接上relativePath</div>
+<div><br /></div>
+<pre><code>func (group *RouterGroup) calculateAbsolutePath(relativePath string) string {
+    return joinPaths(group.basePath, relativePath)
+}
+
+func joinPaths(absolutePath, relativePath string) string {
+    if relativePath == &#34;&#34; {
+        return absolutePath
+    }
+    finalPath := path.Join(absolutePath, relativePath)
+    if lastChar(relativePath) == &#39;/&#39; &amp;&amp; lastChar(finalPath) != &#39;/&#39; {
+        return finalPath + &#34;/&#34;
+    }
+    return finalPath
+}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>新Group的root为false，可能是为了避免在链式调用GET、POST……时，把下级命名空间的路由定义到默认命名空间上</div>
+<div><br /></div>
+<div>例如： route.Group(“/hello”).GET(“/world”, func(){}).GET(“/bye”, func(){})</div>
+<div><br /></div>
+<pre><code>func (group *RouterGroup) returnObj() IRoutes {
+    if group.root {
+        return group.engine
+    }
+    return group
+}</code></pre>
+<div><font style="font-size: 10pt;"><span style="letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; font-size: 10pt;"><br /></span></font></div>
+<div><font style="font-size: 10pt;"><span style="letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; font-size: 10pt;"><br /></span></font></div>
+<div><span style="font-size: 13.3333px;"><b>参数绑定</b></span></div>
+<div><font style="font-size: 10pt;"><span style="letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; font-size: 10pt;"><br /></span></font></div>
+<div><font style="font-size: 10pt;"><span style="letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; font-size: 10pt; color: rgb(23, 43, 77); font-variant-caps: normal; font-variant-ligatures: normal;">除了调用Context.Param获取url上的某一个参数，我们可以使用Context.Bind或</span><span style="letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; font-size: 10pt; color: rgb(23, 43, 77); font-variant-caps: normal; font-variant-ligatures: normal;">Context.ShouldBind 把一堆参数（url上的或body里的）赋值到一个struct里</span></font></div>
+<div><br /></div>
+<div>问：Bind 与 ShouldBind 有何区别？</div>
+<div><br /></div>
+<div>同：它们都会调用binding.Default，根据content-type匹配一个参数处理器（均实现Binding接口），然后调用Binding.Bind方法，将请求参数绑定到struct或map中</div>
+<div>异：绑定参数出错时，Bind会设置code为400（不能更改），并中止后续中间件的调用；但ShouldBind不会</div>
+<div><br /></div>
+<div>问：参数容器的类型？</div>
+<div><br /></div>
+<div>如果是GET请求，默认会调用formBinding，容器可以是struct、map[string]string、map[string][]string。struct的字段需要以`form:&#34;xxx&#34;`注解</div>
+<div>如果不是GET，则根据content-type匹配一个参数处理器（匹配不到会默认用formBinding）。以jsonBinding为例，容器可以是struct（字段以`json:&#34;xxx&#34;`注解）、map（键为string，值类型与参数类型相同）</div>
+<div>容器需要以指针形式传递给Bind函数</div>
+<div><br /></div>
+<div>问：什么时候会绑定出错返回400？</div>
+<div><br /></div>
+<div>例如类型不匹配的时候。例如重复读取body导致EOF的时候。</div>
+<div><br /></div>
+<div>问：怎样重复读取body而不报EOF</div>
+<div><br /></div>
+<div>EOF是因为body的读取默认是流式的，读完没法再读</div>
+<div>使用ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (err error)，<span style="font-size: unset; color: unset; font-family: unset;">它会将body存于Context中，每次调用都会重头读取该缓存</span></div>
+<div>需要自己指定参数处理器，目前只有json、msgpack、protobuf、xml、yaml实现了binding.BindingBody接口（formBinding是从url读取参数的）</div>
+<div><br /></div>
+<div>问：BindUri 是什么</div>
+<div><br /></div>
+<div>定义路由时，可以/:name/:id形式，然后struct字段用`uri:&#34;name&#34;`、`uri:&#34;id&#34;`注解来获取参数</div>
+<div><br /></div>
+<div><br /></div>
+<div><img src="/assets/files/2f50403b30305d2df754fcf16675fe98/558b50909fe0de2ed1d0852406a01396.png" type="image/png" data-filename="gin_bind.png" /></div>
+<div><br /></div>
+<div><br /></div>
+<div><b>返回响应</b></div>
+<div><br /></div>
+<div>生成响应时调用的context.HTML、context.JSON等便利方法，实际上都是调用context.Render</div>
+<div><br /></div>
+<div><img src="/assets/files/2f50403b30305d2df754fcf16675fe98/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div>context.Render接收两个参数：http code和render.Render实现类</div>
+<div><br /></div>
+<div>render.Render实现类需实现Render和WriteContentType接口，往http.ResponseWriter写入响应</div>
+<div><br /></div>
+<div><br /></div>
+<div><b>启动服务器</b></div>
+<div><br /></div>
+<div>Engine.Run实际上是调用了http.ListenAndServe这一便利方法</div>
+<div><br /></div>
+<pre><code>func (engine *Engine) Run(addr ...string) (err error) {
+    // ...
+    err = http.ListenAndServe(address, engine)
+    return
+}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>以下为http包的代码。</div>
+<div><br /></div>
+<div>Engine会被组合到http.Server的Handler字段之中（要求实现ServeHTTP接口），http.Server的newConn方法创建的http.conn对象也会引用http.Server，因此serverHandler{c.server}.ServeHTTP(w, w.req)会调用到Engine.ServeHTTP。</div>
+<div><br /></div>
+<div>而请求的并发处理，还是由http包使用go net.Conn.serve实现，gin只是为路由定义、参数处理提供方便而已。</div>
+<div><br /></div>
+<pre><code>func ListenAndServe(addr string, handler Handler) error {
+    server := &amp;Server{Addr: addr, Handler: handler}
+    return server.ListenAndServe()
+}
+
+func (srv *Server) ListenAndServe() error {
+    // ...
+    ln, err := net.Listen(&#34;tcp&#34;, addr)
+    // ...
+    return srv.Serve(ln)
+}
+
+func (srv *Server) Serve(l net.Listener) error {
+    // ...
+    for {
+        rw, err := l.Accept()
+        // ...
+        c := srv.newConn(rw)
+        c.setState(c.rwc, StateNew, runHooks) // before Serve can return
+        go c.serve(connCtx)
+    }
+}
+
+func (c *conn) serve(ctx context.Context) {
+    // ...
+    for {
+        w, err := c.readRequest(ctx)
+        // ...
+        serverHandler{c.server}.ServeHTTP(w, w.req)
+        w.cancelCtx()
+        if c.hijacked() {
+            return
+        }
+        w.finishRequest()
+        if !w.shouldReuseConnection() {
+            if w.requestBodyLimitHit || w.closedRequestBodyEarly() {
+                c.closeWriteAndWait()
+            }
+            return
+        }
+        // ...
+    }
+}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>Engine对ServeHTTP的实现如下：从pool中产生或重用一个Context，给其填充http.ResponseWriter和http.Request，然后让handleHTTPRequest处理该Context，最后将Context的空间回收</div>
+<div><br /></div>
+<pre><code>func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+    c := engine.pool.Get().(*Context)
+    c.writermem.reset(w)
+    c.Request = req
+    c.reset()
+    engine.handleHTTPRequest(c)
+    engine.pool.Put(c)
+}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>Context的处理过程如下就是先从路由树中找出对应GET、POST……的methodTree，然后将该methodTree之前定义middleware赋值到Context上，再调用Context.Next，执行层层middleware直至最终handler</div>
+<div><br /></div>
+<pre><code>func (engine *Engine) handleHTTPRequest(c *Context) {
+    httpMethod := c.Request.Method
+    // ...
+    t := engine.trees
+    for i, tl := 0, len(t); i &lt; tl; i++ {
+        if t[i].method != httpMethod {
+            continue
+        }
+        root := t[i].root
+        // Find route in tree
+        value := root.getValue(rPath, c.params, unescape)
+        if value.params != nil {
+            c.Params = *value.params
+        }
+        if value.handlers != nil {
+            c.handlers = value.handlers
+            c.fullPath = value.fullPath
+            c.Next()
+            c.writermem.WriteHeaderNow()
+            return
+        }
+        // ....
+        break
+    }
+    // ...
+}</code></pre>
+
+  </div><a class="u-url" href="/2021/05/03/2f50403b30305d2df754fcf16675fe98.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

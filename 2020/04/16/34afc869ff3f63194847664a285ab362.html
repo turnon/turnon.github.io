@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>浅析elastic-apm</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="浅析elastic-apm" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="环境搭建…" />
+<meta property="og:description" content="环境搭建…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-04-16T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"环境搭建…","@type":"BlogPosting","headline":"浅析elastic-apm","dateModified":"2020-04-16T00:00:00+00:00","url":"/2020/04/16/34afc869ff3f63194847664a285ab362.html","datePublished":"2020-04-16T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2020/04/16/34afc869ff3f63194847664a285ab362.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">浅析elastic-apm</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2020-04-16T00:00:00+00:00" itemprop="datePublished">Apr 16, 2020
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style="font-weight: bold;">环境搭建</span></div>
+<div><br /></div>
+<div><a href="https://www.elastic.co/guide/en/apm/get-started/current/quick-start-overview.html">https://www.elastic.co/guide/en/apm/get-started/current/quick-start-overview.html</a></div>
+<div><br /></div>
+<div>然后在项目里加入apm agent，并设置好apm server的地址即可</div>
+<div><br /></div>
+<div><span style="font-weight: bold;">结构分析</span></div>
+<div><br /></div>
+<div>span：通过 a.订阅rails事件、b.改写底层gem、c.用户with_span 来收集，代表一些特别关注的可能消耗性能的过程。内含transaction id。</div>
+<div><br /></div>
+<div>transaction：在middleware中收集，代表整个请求响应的过程。可能带有trace id</div>
+<div><br /></div>
+<div>trace id：调用其他服务时，在http header中加入trace id，以便分布式链路跟踪</div>
+<div><br /></div>
+<div><b><img src="/assets/files/34afc869ff3f63194847664a285ab362/a0405c8044974f4e49f0963a52eb27c3.jpg" type="image/jpeg" data-filename="apm-arch.jpg" /></b></div>
+<div><b><br /></b></div>
+<div><img src="/assets/files/34afc869ff3f63194847664a285ab362/9816397227d005b2427fb75a7024b208.png" type="image/png" data-filename="image2020-4-16_14-4-57.png" /></div>
+<div><br /></div>
+<div><br /></div>
+<div><b>elastic-apm ruby agent的源码分析</b></div>
+<div><b><br /></b></div>
+<div><br /></div>
+<div><img src="/assets/files/34afc869ff3f63194847664a285ab362/a33aca2a18031cb76473d34e046c1159.jpg" type="image/jpeg" data-filename="elastic-apm.jpg" /></div>
+<div><br /></div>
+<div><br /></div>
+<div><b>增加额外跟踪信息</b></div>
+<div><br /></div>
+<div><a href="https://www.elastic.co/guide/en/apm/agent/ruby/current/context.html">https://www.elastic.co/guide/en/apm/agent/ruby/current/context.html</a></div>
+<div><br /></div>
+<div><b><img src="/assets/files/34afc869ff3f63194847664a285ab362/9c4b98174de9c6dec8b57a58bd3d4971.png" type="image/png" data-filename="image2020-4-16_13-55-34.png" /></b></div>
+<div><b><br /></b></div>
+<div><b><br /></b></div>
+<div><b>聚合查询</b></div>
+<div><b><br /></b></div>
+<div><b><br /></b></div>
+<div>transaction和span存储在不同的索引里，不便于查询“哪些url的redis访问频繁”，“哪些url的IO时间占比低但总RT却很长”</div>
+<div><br /></div>
+<pre><code>require &#39;elasticsearch&#39;
+
+class Txns
+  attr_reader :c
+
+  def initialize(c)
+    @c = c
+  end
+
+  def load
+    res = c.search(
+      index: &#39;apm-*-transaction-*&#39;,
+      body: {
+        size: 200,
+        query: {match_all: {}},
+        _source: {includes: [
+          &#39;transaction.duration.us&#39;,
+          &#39;transaction.id&#39;,
+          &#39;url.path&#39;
+        ]}
+      }
+    )
+
+    res[&#39;hits&#39;][&#39;hits&#39;].map{ |r| Txn.new(c, r[&#39;_source&#39;]) }
+  end
+end
+
+class Txn
+  attr_reader :conn, :src, :id, :duration, :path
+  def initialize(conn, src)
+    @conn = conn
+    @src = src
+  end
+
+  def id
+    @id ||= src.dig(&#39;transaction&#39;, &#39;id&#39;)
+  end
+
+  def duration
+    @duration ||= src.dig(&#39;transaction&#39;, &#39;duration&#39;, &#39;us&#39;)
+  end
+
+  def path
+    @path ||= src.dig(&#39;url&#39;, &#39;path&#39;)
+  end
+
+  def spans
+    res = conn.search(
+      index: &#39;apm-*-span-*&#39;,
+      body: {
+        size: 0,
+        query: {terms: {&#39;transaction.id&#39; =&gt; [id]}},
+        aggs: {
+          by_subtype: {
+            terms: {field: &#39;span.subtype&#39;},
+            aggs: {
+              duration_sum: {
+                stats: {field: &#39;span.duration.us&#39;}
+              }
+            }
+          }
+        }
+      }
+    )
+    buckets = res.dig(&#39;aggregations&#39;, &#39;by_subtype&#39;, &#39;buckets&#39;)
+    buckets.map do |b|
+      b[&#39;duration_sum&#39;].merge!(
+        &#39;percentage&#39; =&gt; (b[&#39;duration_sum&#39;][&#39;sum&#39;] / duration),
+        &#39;subtype&#39; =&gt; b[&#39;key&#39;],
+      )
+    end
+  end
+
+  def to_doc
+    {txn_id: id, path: path, duration: duration, spans: spans}
+  end
+
+  def index
+    conn.index index: &#39;txn_stats_001&#39;, id: id, body: to_doc
+  end
+end
+
+client = Elasticsearch::Client.new log: true
+
+Txns.new(client).load.each &amp;:index</code></pre>
+<div><br /></div>
+<div><img src="/assets/files/34afc869ff3f63194847664a285ab362/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div><img src="/assets/files/34afc869ff3f63194847664a285ab362/91eee3f8d75dbb327ede474944726554.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+<div><br /></div>
+<div><b>聚合统计图</b></div>
+<div><br /></div>
+<div><br /></div>
+<div><img src="/assets/files/34afc869ff3f63194847664a285ab362/f7cb588f62bc16ba6c8ac0b4956bd711.png" type="image/png" data-filename="Image.png" /></div>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2020/04/16/34afc869ff3f63194847664a285ab362.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

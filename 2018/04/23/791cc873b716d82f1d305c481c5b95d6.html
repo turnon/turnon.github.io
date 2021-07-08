@@ -55,7 +55,7 @@
 <div><br /></div>
 <div><img src="/assets/files/791cc873b716d82f1d305c481c5b95d6/be53a0541a6d36f6ecb879fa2c584b08.png" type="image/png" data-filename="Image.png" /></div>
 <div><br /></div>
-<div>方法delayed_push的源码如下。它会先把任务参数encode，加入键名为时间点（&#34;delayed:#{timestamp.to_i}&#34;）的列表中，使用列表是以防同时间的任务被覆盖。然后，再加入键名为job参数（&#34;timestamps:#{encode(item)}&#34;）的set中，以记录同一个job会在哪些时间被执行。最后，将时间点作为键加入到有序集:delayed_queue_schedule之中（这里时间相同倒是无所谓，值与键相同也无所谓）。至此，任务注册完成。</div>
+<div>方法delayed_push的源码如下。它会先把任务参数encode，加入键名为时间点（&#34;delayed:#{timestamp.to_i}&#34;）的列表中，使用列表是以防同时间的任务被覆盖。然后，再加入键名为job参数（&#34;timestamps:#{encode(item)}&#34;）的set中，以记录同一个job会在哪些时间被执行（因为可以执行多次）。最后，将时间点作为键加入到有序集:delayed_queue_schedule之中（这里时间相同倒是无所谓，值与键相同也无所谓）。至此，任务注册完成。</div>
 <div><br /></div>
 <div>resque-scheduler-4.0.0/lib/resque/scheduler/delaying_extensions.rb</div>
 <div><br /></div>

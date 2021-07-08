@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>对比RequestStore和ActiveSupport::CurrentAttributes</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="对比RequestStore和ActiveSupport::CurrentAttributes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="TL;DR…" />
+<meta property="og:description" content="TL;DR…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-06-13T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"TL;DR…","@type":"BlogPosting","headline":"对比RequestStore和ActiveSupport::CurrentAttributes","dateModified":"2021-06-13T00:00:00+00:00","url":"/2021/06/13/b95e89447f35b61ccbe7947ec5f49d9f.html","datePublished":"2021-06-13T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/06/13/b95e89447f35b61ccbe7947ec5f49d9f.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">对比RequestStore和ActiveSupport::CurrentAttributes</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2021-06-13T00:00:00+00:00" itemprop="datePublished">Jun 13, 2021
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style="font-weight: bold;">TL;DR</span></div>
+<div><br /></div>
+<div>它们都是线程缓存工具，并且能在请求结束时自动清理</div>
+<div><br /></div>
+<div>CurrentAttributes通过定义子类的方式，帮助归类线程变量，而RequestStore则通常是直接存取</div>
+<div><br /></div>
+<div>RequestStore的清理是通过增加middleware，而CurrentAttributes是通过ActiveSupport::Executor</div>
+<div><br /></div>
+<div>RequestStore有一个扩展request_store-sidekiq，可以让你的sidekiq程序也能自动清理线程缓存，而CurrentAttributes没有配套工具，需要自己实现</div>
+<div><br /></div>
+<div><span style="font-weight: bold;">RequestStore</span></div>
+<div><br /></div>
+<div>request_store的使用方法非常直接，例如：RequestStore.store[:foo] ||= 123</div>
+<div><br /></div>
+<pre><code>module RequestStore
+  def self.store
+    Thread.current[:request_store] ||= {}
+  end
+
+  def self.clear!
+    Thread.current[:request_store] = {}
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>线程缓存的清空方法，是通过增加一个middleware来实现的：</div>
+<div><br /></div>
+<pre><code>module RequestStore
+  class Railtie &lt; ::Rails::Railtie
+    initializer &#34;request_store.insert_middleware&#34; do |app|
+      if ActionDispatch.const_defined? :RequestId
+        app.config.middleware.insert_after ActionDispatch::RequestId, RequestStore::Middleware
+      else
+        app.config.middleware.insert_after Rack::MethodOverride, RequestStore::Middleware
+      end
+
+      if ActiveSupport.const_defined?(:Reloader) &amp;&amp; ActiveSupport::Reloader.respond_to?(:to_complete)
+        ActiveSupport::Reloader.to_complete do
+          RequestStore.clear!
+        end
+      elsif ActionDispatch.const_defined?(:Reloader) &amp;&amp; ActionDispatch::Reloader.respond_to?(:to_cleanup)
+        ActionDispatch::Reloader.to_cleanup do
+          RequestStore.clear!
+        end
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>顺提，request_store-sidekiq就是这样利用sidekiq chain而已，也是非常简单</div>
+<div><br /></div>
+<pre><code>module RequestStore
+  module Sidekiq
+    class ServerMiddleware
+      def call(worker, job, queue)
+        yield
+      ensure
+        ::RequestStore.clear!
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div><span style="font-weight: bold;">CurrentAttributes</span></div>
+<div><br /></div>
+<div>以下是CurrentAttributes的解析</div>
+<div><br /></div>
+<pre><code>class ActiveSupport::CurrentAttributes
+  include ActiveSupport::Callbacks
+  define_callbacks :reset
+
+  class &lt;&lt; self
+    # 在线程变量中找回CurrentAttributes子类的实例（如果没有就会设置一个）
+    def instance
+      current_instances[current_instances_key] ||= new
+    end
+
+    # 方法generated_attribute_methods会创建一个匿名module，并让CurrentAttributes子类include之
+    # 然后在该module上定义一些名字为names的一些实例方法和类方法
+    # 类方法其实调用线程变量中的子类的实例的实例方法，去set或get在@attributes中的对应name的值
+    #
+    # 例如以下，每个请求都会由一个线程去运行，于是调用Current.user会在线程中创建一个Current实例
+    # 然后在设置该实例@attributes[:user] = User.find_by...
+    #
+    # class Current &lt; ActiveSupport::CurrentAttributes
+    #   attribute :user
+    #
+    #   resets { Time.zone = nil }
+    #
+    #   def user=(user)
+    #     super
+    #     self.account = user.account
+    #     Time.zone    = user.time_zone
+    #   end
+    # end
+    #
+    # class SampleController &lt; ApplicationController
+    #   before_action :set_context
+    #
+    #   def set_context
+    #     Current.user = User.find_by(id: cookies.encrypted[:user_id])
+    #   end
+    # end
+    #
+    def attribute(*names)
+      generated_attribute_methods.module_eval do
+        names.each do |name|
+          define_method(name) do
+            attributes[name.to_sym]
+          end
+
+          define_method(&#34;#{name}=&#34;) do |attribute|
+            attributes[name.to_sym] = attribute
+          end
+        end
+      end
+
+      names.each do |name|
+        define_singleton_method(name) do
+          instance.public_send(name)
+        end
+
+        define_singleton_method(&#34;#{name}=&#34;) do |attribute|
+          instance.public_send(&#34;#{name}=&#34;, attribute)
+        end
+      end
+    end
+
+    # 还可以定义一些回调，在请求结束时调用
+    def resets(&amp;block)
+      set_callback :reset, :after, &amp;block
+    end
+
+    private
+      # 这里的include，是让CurrentAttributes子类include匿名module
+      def generated_attribute_methods
+        @generated_attribute_methods ||= Module.new.tap { |mod| include mod }
+      end
+
+      # 如果有定义多个CurrentAttributes子类，例如CurrentUser &lt; CurrentAttributes，UpStream &lt; CurrentAttributes
+      # 则Thread.current[:current_attributes_instances] = {&#39;CurrentUser&#39; =&gt; CurrentUser.new, &#39;UpStream&#39; =&gt; UpStream.new}
+      # 当然，在不同线程中分配的是不同的数据块
+      def current_instances
+        Thread.current[:current_attributes_instances] ||= {}
+      end
+
+      # key用的是子类的类名
+      def current_instances_key
+        @current_instances_key ||= name.to_sym
+      end
+  end
+
+  attr_accessor :attributes
+
+  def initialize
+    @attributes = {}
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>那么它是如何做到请求结束时清空线程缓存的呢？通过ActiveSupport::Executor。</div>
+<div><br /></div>
+<div>每个rails应用启动时都会内含一个ActiveSupport::Executor实例，它会被包装在ActionDispatch::Executor中，</div>
+<div><br /></div>
+<div>而ActionDispatch::Executor本身是一个middleware，会在请求结束时调用ActiveSupport::Executor#complete!，</div>
+<div><br /></div>
+<div>从而触发ActiveSupport::CurrentAttributes.reset_all</div>
+<div><br /></div>
+<pre><code># lib/active_support/railtie.rb
+module ActiveSupport
+  class Railtie &lt; Rails::Railtie
+
+    initializer &#34;active_support.reset_all_current_attributes_instances&#34; do |app|
+      app.reloader.before_class_unload { ActiveSupport::CurrentAttributes.clear_all }
+      app.executor.to_run              { ActiveSupport::CurrentAttributes.reset_all }
+      app.executor.to_complete         { ActiveSupport::CurrentAttributes.reset_all }
+    end
+  end
+end
+
+
+# lib/action_dispatch/middleware/executor.rb
+module ActionDispatch
+  class Executor
+    def initialize(app, executor)
+      @app, @executor = app, executor
+    end
+
+    def call(env)
+      state = @executor.run!
+      begin
+        response = @app.call(env)
+        returned = response &lt;&lt; ::Rack::BodyProxy.new(response.pop) { state.complete! }
+      ensure
+        state.complete! unless returned
+      end
+    end
+  end
+end
+
+
+# lib/rails/application/default_middleware_stack.rb
+module Rails
+  class Application
+    class DefaultMiddlewareStack
+      def build_stack
+        ActionDispatch::MiddlewareStack.new do |middleware|
+          # ...
+          middleware.use ::ActionDispatch::Executor, app.executor</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>清空的方法reset_all，如下</div>
+<div><br /></div>
+<pre><code>class ActiveSupport::CurrentAttributes
+  include ActiveSupport::Callbacks
+  define_callbacks :reset
+
+  class &lt;&lt; self
+    # 可以设置before回调
+    def before_reset(&amp;block)
+      set_callback :reset, :before, &amp;block
+    end
+
+    # 可以设置after回调
+    def resets(&amp;block)
+      set_callback :reset, :after, &amp;block
+    end
+    alias_method :after_reset, :resets
+
+    # 在类上调用reset，实质上是调用本线程变量中的实例的reset
+    delegate :set, :reset, to: :instance
+
+    # 对本线程中所有创建过的CurrentAttributes子类实例，调用reset方法
+    def reset_all
+      current_instances.each_value(&amp;:reset)
+    end
+
+    # 当重新加载类时，除了通过reset_all把attributes清空
+    # 还要把CurrentAttributes子类实例清掉
+    def clear_all
+      reset_all
+      current_instances.clear
+    end
+  end
+
+  def reset
+    run_callbacks :reset do
+      self.attributes = {}
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2021/06/13/b95e89447f35b61ccbe7947ec5f49d9f.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

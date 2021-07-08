@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>go flag</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="go flag" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="各种flag.String，flag.Float64Var……方法，最终都会调用以下Var方法，将选项名与该类型选项的处理器（Flag，含有该类型的一个新指针，该类型的Set方法将解析得的选项值赋值到变量指针所指位置）的对应关系，保存到formal里…" />
+<meta property="og:description" content="各种flag.String，flag.Float64Var……方法，最终都会调用以下Var方法，将选项名与该类型选项的处理器（Flag，含有该类型的一个新指针，该类型的Set方法将解析得的选项值赋值到变量指针所指位置）的对应关系，保存到formal里…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-06-09T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"各种flag.String，flag.Float64Var……方法，最终都会调用以下Var方法，将选项名与该类型选项的处理器（Flag，含有该类型的一个新指针，该类型的Set方法将解析得的选项值赋值到变量指针所指位置）的对应关系，保存到formal里…","@type":"BlogPosting","headline":"go flag","dateModified":"2021-06-09T00:00:00+00:00","url":"/2021/06/09/699196196f129fc9bb5ea9cb59dd0863.html","datePublished":"2021-06-09T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/06/09/699196196f129fc9bb5ea9cb59dd0863.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">go flag</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2021-06-09T00:00:00+00:00" itemprop="datePublished">Jun 9, 2021
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>各种flag.String，flag.Float64Var……方法，最终都会调用以下Var方法，将选项名与该类型选项的处理器（Flag，含有该类型的一个新指针，该类型的Set方法将解析得的选项值赋值到变量指针所指位置）的对应关系，保存到formal里</div>
+<div><br /></div>
+<pre><code>func (f *FlagSet) Var(value Value, name string, usage string) {
+    // Remember the default value as a string; it won&#39;t change.
+    flag := &amp;Flag{name, usage, value, value.String()}
+    _, alreadythere := f.formal[name]
+    if alreadythere {
+        var msg string
+        if f.name == &#34;&#34; {
+            msg = fmt.Sprintf(&#34;flag redefined: %s&#34;, name)
+        } else {
+            msg = fmt.Sprintf(&#34;%s flag redefined: %s&#34;, f.name, name)
+        }
+        fmt.Fprintln(f.Output(), msg)
+        panic(msg) // Happens only if flags are declared with identical names
+    }
+    if f.formal == nil {
+        f.formal = make(map[string]*Flag)
+    }
+    f.formal[name] = flag
+}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>flag.Parse方法会取命令行的第一个参数，即程序名作为选项集（FlagSet）的名字，然后调用该选项集的Parse方法</div>
+<div><br /></div>
+<pre><code>var CommandLine = NewFlagSet(os.Args[0], ExitOnError)
+
+func NewFlagSet(name string, errorHandling ErrorHandling) *FlagSet {
+    f := &amp;FlagSet{
+        name:          name,
+        errorHandling: errorHandling,
+    }
+    f.Usage = f.defaultUsage
+    return f
+}
+
+func Parse() {
+    CommandLine.Parse(os.Args[1:])
+}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而选项集的Parse方法则是循环调用parseOne，迭代每一个参数来处理</div>
+<div><br /></div>
+<pre><code>func (f *FlagSet) Parse(arguments []string) error {
+    f.parsed = true
+    f.args = arguments
+    for {
+        seen, err := f.parseOne()
+        if seen {
+            continue
+        }
+        if err == nil {
+            break
+        }
+        switch f.errorHandling {
+        case ContinueOnError:
+            return err
+        case ExitOnError:
+            if err == ErrHelp {
+                os.Exit(0)
+            }
+            os.Exit(2)
+        case PanicOnError:
+            panic(err)
+        }
+    }
+    return nil
+}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>parseOne方法会将形式为-p=1、--p=1、-p 1的参数值解析出来，通过Set方法赋值到变量指针所指位置，详细如下</div>
+<div><br /></div>
+<pre><code>func (f *FlagSet) parseOne() (bool, error) {
+    // 如果没有参数剩余了，则结束选项解析
+    if len(f.args) == 0 {
+        return false, nil
+    }
+    s := f.args[0]
+
+    // 如果选项长度为0或1，或者不是-开头，则结束选项解析
+    if len(s) &lt; 2 || s[0] != &#39;-&#39; {
+        return false, nil
+    }
+    numMinuses := 1
+
+    // 如果选项是--，则结束选项解析
+    if s[1] == &#39;-&#39; {
+        numMinuses++
+        if len(s) == 2 { // &#34;--&#34; terminates the flags
+            f.args = f.args[1:]
+            return false, nil
+        }
+    }
+
+    // 如果去掉开头两个--后，没有选项名称，或者还有-，或者直接等号没有选项名，则报错
+    name := s[numMinuses:]
+    if len(name) == 0 || name[0] == &#39;-&#39; || name[0] == &#39;=&#39; {
+        return false, f.failf(&#34;bad flag syntax: %s&#34;, s)
+    }
+
+    // 如果选项与值以等号相连，则分离它们
+    f.args = f.args[1:]
+    hasValue := false
+    value := &#34;&#34;
+    for i := 1; i &lt; len(name); i++ { // equals cannot be first
+        if name[i] == &#39;=&#39; {
+            value = name[i+1:]
+            hasValue = true
+            name = name[0:i]
+            break
+        }
+    }
+    m := f.formal
+
+    // 如果该选项未被定义，则报错（如果选项是help，则打印help）
+    flag, alreadythere := m[name] // BUG
+    if !alreadythere {
+        if name == &#34;help&#34; || name == &#34;h&#34; { // special case for nice help message.
+            f.usage()
+            return false, ErrHelp
+        }
+        return false, f.failf(&#34;flag provided but not defined: -%s&#34;, name)
+    }
+
+    // 如果是bool选项……
+    if fv, ok := flag.Value.(boolFlag); ok &amp;&amp; fv.IsBoolFlag() { // special case: doesn&#39;t need an arg
+        if hasValue {
+            if err := fv.Set(value); err != nil {
+                return false, f.failf(&#34;invalid boolean value %q for -%s: %v&#34;, value, name, err)
+            }
+        } else {
+            if err := fv.Set(&#34;true&#34;); err != nil {
+                return false, f.failf(&#34;invalid boolean flag %s: %v&#34;, name, err)
+            }
+        }
+    } else {
+        // 如果没用等号，则选项值应为下一参数
+        if !hasValue &amp;&amp; len(f.args) &gt; 0 {
+            // value is the next arg
+            hasValue = true
+            value, f.args = f.args[0], f.args[1:]
+        }
+        // 如果还是没能设置值，则报错
+        if !hasValue {
+            return false, f.failf(&#34;flag needs an argument: -%s&#34;, name)
+        }
+        // 如果值类型错误，则报错
+        if err := flag.Value.Set(value); err != nil {
+            return false, f.failf(&#34;invalid value %q for flag -%s: %v&#34;, value, name, err)
+        }
+    }
+
+    // 保存解析到的选项
+    if f.actual == nil {
+        f.actual = make(map[string]*Flag)
+    }
+    f.actual[name] = flag
+    return true, nil
+}</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>值类型的Set方法实现如下：</div>
+<div><br /></div>
+<div><img src="/assets/files/699196196f129fc9bb5ea9cb59dd0863/cdaeeeba9b4a4c5ebf042c0215a7bb0e.PNG" type="image/png" data-filename="set.PNG" /></div>
+<div><br /></div>
+<div><br /></div>
+<div>其实我们也可以自定义值类型：</div>
+<div><br /></div>
+<pre><code>type plusOne int
+
+func (i *plusOne) Set(s string) error {
+    v, err := strconv.ParseInt(s, 0, strconv.IntSize)
+    if err != nil {
+        err = numError(err)
+    }
+    *i = plusOne(v) + 1
+    return err
+}
+
+func (i *plusOne) String() string { return strconv.Itoa(int(*i)) }
+
+func main() {
+    var num plusOne
+    flag.Var(&amp;num, &#34;addOne&#34;, &#34;加一&#34;)
+    flag.Parse()
+
+
+    log.Print(num)
+}</code></pre>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2021/06/09/699196196f129fc9bb5ea9cb59dd0863.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

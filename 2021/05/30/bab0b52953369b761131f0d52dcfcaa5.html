@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>如何让rails执行gem中自带的migration</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="如何让rails执行gem中自带的migration" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="TL;DR…" />
+<meta property="og:description" content="TL;DR…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-05-30T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"TL;DR…","@type":"BlogPosting","headline":"如何让rails执行gem中自带的migration","dateModified":"2021-05-30T00:00:00+00:00","url":"/2021/05/30/bab0b52953369b761131f0d52dcfcaa5.html","datePublished":"2021-05-30T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/05/30/bab0b52953369b761131f0d52dcfcaa5.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">如何让rails执行gem中自带的migration</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2021-05-30T00:00:00+00:00" itemprop="datePublished">May 30, 2021
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><b>TL;DR</b></div>
+<div><br /></div>
+<div>让你的gem继承一下Rails::Engine，并增加db/migrate目录，在里面放一些migration文件。可参考acts-as-taggable-on</div>
+<div><br /></div>
+<div><b>源码分析</b></div>
+<div><br /></div>
+<div>根据acts-as-taggable-on的官网描述，创建标签表的操作需通过rake acts_as_taggable_on_engine:install:migrations。于是检查该job是定义在哪里的</div>
+<div><br /></div>
+<pre><code>$ rake -w
+# ...
+rake acts_as_taggable_on_engine:install:migrations /home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/railties-6.0.3.7/lib/rails/engine.rb:641:in `block (3 levels) in <class:engine>&#39;
+rake acts_as_taggable_on_engine:tag_names:collate_bin /home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/acts-as-taggable-on-7.0.0/lib/tasks/tags_collate_utf8.rake:10:in `block (2 levels) in </class:engine></code><main><code>&#39;
+rake acts_as_taggable_on_engine:tag_names:collate_ci /home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/acts-as-taggable-on-7.0.0/lib/tasks/tags_collate_utf8.rake:15:in `block (2 levels) in </code><main><code>&#39;
+# ...
+rake railties:install:migrations    /home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/activerecord-6.0.3.7/lib/active_record/railties/databases.rake:503:in `block (2 levels) in </code><main><code>&#39;
+# ...</code></main></main></main></pre>
+<div><br /></div>
+<div><br /></div>
+<div>可见acts_as_taggable_on_engine:install:migrations定义如下，它实际上是执行railties:install:migrations或app:railties:install:migrations</div>
+<div><br /></div>
+<pre><code># railties-6.0.3.7/lib/rails/engine.rb
+rake_tasks do
+  next if is_a?(Rails::Application)
+  next unless has_migrations?
+
+  namespace railtie_name do
+    namespace :install do
+      desc &#34;Copy migrations from #{railtie_name} to application&#34;
+      task :migrations do
+        ENV[&#34;FROM&#34;] = railtie_name
+        if Rake::Task.task_defined?(&#34;railties:install:migrations&#34;)
+          Rake::Task[&#34;railties:install:migrations&#34;].invoke
+        else
+          Rake::Task[&#34;app:railties:install:migrations&#34;].invoke
+        end
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而从上面的rake -w可知，railties:install:migrations是有的，它定义如下</div>
+<div><br /></div>
+<pre><code># activerecord-6.0.3.7/lib/active_record/railties/databases.rake
+namespace :railties do
+  namespace :install do
+    # desc &#34;Copies missing migrations from Railties (e.g. engines). You can specify Railties to use with FROM=railtie1,railtie2&#34;
+    task migrations: :&#39;db:load_config&#39; do
+      to_load = ENV[&#34;FROM&#34;].blank? ? :all : ENV[&#34;FROM&#34;].split(&#34;,&#34;).map(&amp;:strip)
+      railties = {}
+      Rails.application.migration_railties.each do |railtie|
+        next unless to_load == :all || to_load.include?(railtie.railtie_name)
+
+        if railtie.respond_to?(:paths) &amp;&amp; (path = railtie.paths[&#34;db/migrate&#34;].first)
+          railties[railtie.railtie_name] = path
+        end
+
+        unless ENV[&#34;MIGRATIONS_PATH&#34;].blank?
+          railties[railtie.railtie_name] = railtie.root + ENV[&#34;MIGRATIONS_PATH&#34;]
+        end
+      end
+
+      on_skip = Proc.new do |name, migration|
+        puts &#34;NOTE: Migration #{migration.basename} from #{name} has been skipped. Migration with the same name already exists.&#34;
+      end
+
+      on_copy = Proc.new do |name, migration|
+        puts &#34;Copied migration #{migration.basename} from #{name}&#34;
+      end
+
+      ActiveRecord::Migration.copy(ActiveRecord::Tasks::DatabaseTasks.migrations_paths.first, railties,
+                                    on_skip: on_skip, on_copy: on_copy)
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>该任务其实就是将gem下的db/migrate里的migration文件复制到rails项目的db/migrate里，复制过程中，会在文件里加上“This migration comes from XXX”的注释，并且文件会重命名为当前日期开头</div>
+<div><br /></div>
+<pre><code># activerecord-6.0.3.7/lib/active_record/migration.rb
+def copy(destination, sources, options = {})
+  copied = []
+  schema_migration = options[:schema_migration] || ActiveRecord::SchemaMigration
+
+  FileUtils.mkdir_p(destination) unless File.exist?(destination)
+
+  destination_migrations = ActiveRecord::MigrationContext.new(destination, schema_migration).migrations
+  last = destination_migrations.last
+  sources.each do |scope, path|
+    source_migrations = ActiveRecord::MigrationContext.new(path, schema_migration).migrations
+
+    source_migrations.each do |migration|
+      source = File.binread(migration.filename)
+      inserted_comment = &#34;# This migration comes from #{scope} (originally #{migration.version})\n&#34;
+      magic_comments = +&#34;&#34;
+      loop do
+        # If we have a magic comment in the original migration,
+        # insert our comment after the first newline(end of the magic comment line)
+        # so the magic keep working.
+        # Note that magic comments must be at the first line(except sh-bang).
+        source.sub!(/\A(?:#.*\b(?:en)?coding:\s*\S+|#\s*frozen_string_literal:\s*(?:true|false)).*\n/) do |magic_comment|
+          magic_comments &lt;&lt; magic_comment; &#34;&#34;
+        end || break
+      end
+      source = &#34;#{magic_comments}#{inserted_comment}#{source}&#34;
+
+      if duplicate = destination_migrations.detect { |m| m.name == migration.name }
+        if options[:on_skip] &amp;&amp; duplicate.scope != scope.to_s
+          options[:on_skip].call(scope, migration)
+        end
+        next
+      end
+
+      migration.version = next_migration_number(last ? last.version + 1 : 0).to_i
+      new_path = File.join(destination, &#34;#{migration.version}_#{migration.name.underscore}.#{scope}.rb&#34;)
+      old_path, migration.filename = migration.filename, new_path
+      last = migration
+
+      File.binwrite(migration.filename, source)
+      copied &lt;&lt; migration
+      options[:on_copy].call(scope, migration, old_path) if options[:on_copy]
+      destination_migrations &lt;&lt; migration
+    end
+  end
+
+  copied
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>虽然知道了acts_as_taggable_on_engine:install:migrations定义在哪里，但还不知道它是何时被定义的。于是通过caller看看它的调用栈：</div>
+<div><br /></div>
+<pre><code>rake_tasks do
+  pp &#39;----------------------&#39;
+  pp caller
+  pp &#39;----------------------&#39;
+  next if is_a?(Rails::Application)
+  next unless has_migrations?
+
+  namespace railtie_name do
+    namespace :install do
+      desc &#34;Copy migrations from #{railtie_name} to application&#34;
+      task :migrations do
+        # ...
+      end
+    end
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>再执行rake -w，得：</div>
+<div><br /></div>
+<pre><code>[&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/railties-6.0.3.7/lib/rails/railtie.rb:245:in `instance_exec&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/railties-6.0.3.7/lib/rails/railtie.rb:245:in `block in run_tasks_blocks&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/railties-6.0.3.7/lib/rails/railtie.rb:253:in `each&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/railties-6.0.3.7/lib/rails/railtie.rb:253:in `each_registered_block&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/railties-6.0.3.7/lib/rails/railtie.rb:245:in `run_tasks_blocks&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/railties-6.0.3.7/lib/rails/engine.rb:662:in `run_tasks_blocks&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/railties-6.0.3.7/lib/rails/application.rb:518:in `run_tasks_blocks&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/railties-6.0.3.7/lib/rails/engine.rb:459:in `load_tasks&#39;&#34;,
+&#34;/home/z/projects/train/automigrate/Rakefile:6:in `&lt;top (required)=""&gt;&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/rake-13.0.3/lib/rake/rake_module.rb:29:in `load&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/rake-13.0.3/lib/rake/rake_module.rb:29:in `load_rakefile&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/rake-13.0.3/lib/rake/application.rb:703:in `raw_load_rakefile&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/rake-13.0.3/lib/rake/application.rb:104:in `block in load_rakefile&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/rake-13.0.3/lib/rake/application.rb:186:in `standard_exception_handling&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/rake-13.0.3/lib/rake/application.rb:103:in `load_rakefile&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/rake-13.0.3/lib/rake/application.rb:82:in `block in run&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/rake-13.0.3/lib/rake/application.rb:186:in `standard_exception_handling&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/rake-13.0.3/lib/rake/application.rb:80:in `run&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/lib/ruby/gems/2.6.0/gems/rake-13.0.3/exe/rake:27:in `&lt;top (required)=""&gt;&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/bin/rake:23:in `load&#39;&#34;,
+&#34;/home/z/.rbenv/versions/2.6.3/bin/rake:23:in `&lt;/top&gt;&lt;/top&gt;</code><main><code>&#39;&#34;]</code></main></pre>
+<div><br /></div>
+<div><br /></div>
+<div>可见项目中生成的Rakefile，会调用此application的所有railties的run_tasks_blocks方法</div>
+<div><br /></div>
+<pre><code># railties-6.0.3.7/lib/rails/engine.rb
+def load_tasks(app = self)
+  require &#34;rake&#34;
+  run_tasks_blocks(app)
+  self
+end
+
+# railties-6.0.3.7/lib/rails/application.rb
+def run_tasks_blocks(app) #:nodoc:
+  railties.each { |r| r.run_tasks_blocks(app) }
+  super
+  require &#34;rails/tasks&#34;
+  task :environment do
+    ActiveSupport.on_load(:before_initialize) { config.eager_load = false }
+
+    require_environment!
+  end
+end
+
+# railties-6.0.3.7/lib/rails/railtie.rb
+class Railtie
+  class &lt;&lt; self
+
+    def subclasses
+      @subclasses ||= []
+    end
+
+    def inherited(base)
+      unless base.abstract_railtie?
+        subclasses &lt;&lt; base
+      end
+    end
+
+    def rake_tasks(&amp;blk)
+      register_block_for(:rake_tasks, &amp;blk)
+    end
+
+    def register_block_for(type, &amp;blk)
+      var_name = &#34;@#{type}&#34;
+      blocks = instance_variable_defined?(var_name) ? instance_variable_get(var_name) : instance_variable_set(var_name, [])
+      blocks &lt;&lt; blk if blk
+      blocks
+    end
+
+    # ...
+
+    def run_tasks_blocks(app) #:nodoc:
+      extend Rake::DSL
+      each_registered_block(:rake_tasks) { |block| instance_exec(app, &amp;block) }
+    end
+
+    private
+    # run `&amp;block` in every registered block in `#register_block_for`
+    def each_registered_block(type, &amp;block)
+      klass = self.class
+      while klass.respond_to?(type)
+        klass.public_send(type).each(&amp;block)
+        klass = klass.superclass
+      end
+    end</code></pre>
+<div><br /></div>
+<div><br /></div>
+<div>而run_tasks_blocks就是将rake_tasks{namespace railtie_name{namespace :install {task :migrations {}}}}所收集的install:migrations任务，在当前railtie上instance_exec一次</div>
+<div><br /></div>
+<div>acts-as-taggable-on是这样被收集为railties的</div>
+<div><br /></div>
+<pre><code># acts-as-taggable-on-7.0.0/lib/acts_as_taggable_on/engine.rb
+module ActsAsTaggableOn
+  class Engine &lt; Rails::Engine
+  end
+end</code></pre>
+<div><br /></div>
+<div><br /></div>
+
+  </div><a class="u-url" href="/2021/05/30/bab0b52953369b761131f0d52dcfcaa5.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
