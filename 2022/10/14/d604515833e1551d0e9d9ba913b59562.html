@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>sidekiq架构</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="sidekiq架构" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-10-14T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"sidekiq架构","dateModified":"2022-10-14T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2022-10-14T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">sidekiq架构</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-10-14T00:00:00+00:00" itemprop="datePublished">Oct 14, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div>
+<ul>
+<li><code>Sidekiq::Laucher#run</code>触发<code>Sidekiq::Scheduled::Poller#start</code>、<code>Sidekiq::Manager#start</code>、<code>heartbeat</code></li>
+<li><code>Sidekiq::Manager</code>根据配置的concurrency数（默认10），生成一些<code>Sidekiq::Processor</code>，并在<code>start</code>中调用它们的<code>start</code></li>
+<li><code>Sidekiq::Processor#start</code>会创建一个线程，该线程<code>process_one until @done</code></li>
+<li><code>Sidekiq::Processor#process_one</code>会先根据队列优先级配置，从redis取出一个任务来执行</li>
+<li><code>Sidekiq::Scheduled::Poller#start</code>会创建一个线程，循环地从<code>retry</code>和<code>schedule</code>这两个sorted set中取出早于当前时间的任务，放入对应的队列中</li>
+</ul>
+<div><img src='/assets/files/gQfgBbv.gif'>
+<a href="https://gitdiagram.com/sidekiq/sidekiq">GitDiagram</a></div><div><br /></div><pre><code>graph TB
+    %% Define styles
+    classDef application fill:#f9f,stroke:#333,stroke-width:2px
+    classDef client fill:#bbf,stroke:#333,stroke-width:2px
+    classDef storage fill:#f66,stroke:#333,stroke-width:2px
+    classDef processing fill:#bfb,stroke:#333,stroke-width:2px
+    classDef webui fill:#d9f,stroke:#333,stroke-width:2px
+    classDef integration fill:#ff9,stroke:#333,stroke-width:2px
+
+    %% Application Layer
+    subgraph Application
+        App[Ruby/Rails Application]
+        Rails[Rails Integration]:::integration
+        AJ[ActiveJob Adapter]:::integration
+    end
+
+    %% Client Layer
+    subgraph ClientLayer
+        Client[Job Client]:::client
+        JobImpl[Core Job Implementation]:::client
+        Middleware[Middleware Chain]:::client
+    end
+
+    %% Storage Layer
+    subgraph StorageLayer
+        Redis[(Redis Storage)]:::storage
+        RedisConn[Redis Connection]:::storage
+    end
+
+    %% Processing Layer
+    subgraph ProcessingLayer
+        Launch[Launcher]:::processing
+        Manager[Manager]:::processing
+        ProcPool[Processor Pool]:::processing
+        Scheduler[Scheduler]:::processing
+        Fetcher[Job Fetcher]:::processing
+        RetryHandler[Retry Handler]:::processing
+        DeadJobs[Dead Job Handler]:::processing
+        Logger[Job Logger]:::processing
+        Metrics[Metrics System]:::processing
+        Capsule[Capsule System]:::processing
+    end
+
+    %% Web Interface Layer
+    subgraph WebInterface
+        WebUI[Web UI Interface]:::webui
+    end
+
+    %% Relationships
+    App --> Rails
+    App --> AJ
+    Rails --> Client
+    AJ --> Client
+    Client --> JobImpl
+    Client --> Middleware
+    Middleware --> RedisConn
+    RedisConn --> Redis
+    Launch --> Manager
+    Manager --> ProcPool
+    Manager --> Scheduler
+    Manager --> Fetcher
+    Fetcher --> Redis
+    ProcPool --> RetryHandler
+    RetryHandler --> Redis
+    RetryHandler --> DeadJobs
+    ProcPool --> Logger
+    ProcPool --> Metrics
+    Capsule --> ProcPool
+    Redis --> WebUI
+
+    %% Click events
+    click Client "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/client.rb"
+    click ProcPool "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/processor.rb"
+    click RedisConn "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/redis_connection.rb"
+    click WebUI "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/web.rb"
+    click Rails "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/rails.rb"
+    click Manager "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/manager.rb"
+    click Scheduler "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/scheduled.rb"
+    click Fetcher "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/fetch.rb"
+    click RetryHandler "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/job_retry.rb"
+    click DeadJobs "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/job_retry.rb"
+    click Middleware "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/middleware/chain.rb"
+    click Metrics "https://github.com/sidekiq/sidekiq/tree/main/lib/sidekiq/metrics"
+    click Capsule "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/capsule.rb"
+    click Logger "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/job_logger.rb"
+    click JobImpl "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/job.rb"
+    click Launch "https://github.com/sidekiq/sidekiq/blob/main/lib/sidekiq/launcher.rb"
+
+    %% Legend
+    subgraph Legend
+        L1[Application Components]:::application
+        L2[Client Components]:::client
+        L3[Storage Components]:::storage
+        L4[Processing Components]:::processing
+        L5[Web UI Components]:::webui
+        L6[Integration Components]:::integration
+    end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>检查perform的调用栈</span></div><div><br /></div><div>参考 [[sidekiq环境]]，在perform中打印调用栈</div><div><br /></div><pre><code> require "sidekiq"
+
+ class PlainOldRuby
+   include Sidekiq::Job
+
+   def perform(how_hard = "super hard", how_long = 1)
++    pp caller
+     sleep how_long
+     puts "Workin' #{how_hard}"
+   end
+ end
+</code></pre><div><br /></div><div>得</div><div><br /></div><pre><code>[".../sidekiq-6.5.7/lib/sidekiq/processor.rb:202:in `execute_job'",
+ ".../sidekiq-6.5.7/lib/sidekiq/processor.rb:170:in `block (2 levels) in process'",
+ ".../sidekiq-6.5.7/lib/sidekiq/middleware/chain.rb:172:in `invoke'",
+ ".../sidekiq-6.5.7/lib/sidekiq/processor.rb:169:in `block in process'",
+ ".../sidekiq-6.5.7/lib/sidekiq/processor.rb:136:in `block (6 levels) in dispatch'",
+ ".../sidekiq-6.5.7/lib/sidekiq/job_retry.rb:113:in `local'",
+ ".../sidekiq-6.5.7/lib/sidekiq/processor.rb:135:in `block (5 levels) in dispatch'",
+ ".../sidekiq-6.5.7/lib/sidekiq.rb:44:in `block in <module:Sidekiq>'",
+ ".../sidekiq-6.5.7/lib/sidekiq/processor.rb:131:in `block (4 levels) in dispatch'",
+ ".../sidekiq-6.5.7/lib/sidekiq/processor.rb:263:in `stats'",
+ ".../sidekiq-6.5.7/lib/sidekiq/processor.rb:126:in `block (3 levels) in dispatch'",
+ ".../sidekiq-6.5.7/lib/sidekiq/job_logger.rb:13:in `call'",
+ ".../sidekiq-6.5.7/lib/sidekiq/processor.rb:125:in `block (2 levels) in dispatch'",
+ ".../sidekiq-6.5.7/lib/sidekiq/job_retry.rb:80:in `global'",
+ ".../sidekiq-6.5.7/lib/sidekiq/processor.rb:124:in `block in dispatch'",
+ ".../sidekiq-6.5.7/lib/sidekiq/job_logger.rb:39:in `prepare'",
+ ".../sidekiq-6.5.7/lib/sidekiq/processor.rb:123:in `dispatch'",
+ ".../sidekiq-6.5.7/lib/sidekiq/processor.rb:168:in `process'",
+ ".../sidekiq-6.5.7/lib/sidekiq/processor.rb:78:in `process_one'",
+ ".../sidekiq-6.5.7/lib/sidekiq/processor.rb:68:in `run'",
+ ".../sidekiq-6.5.7/lib/sidekiq/component.rb:8:in `watchdog'",
+ ".../sidekiq-6.5.7/lib/sidekiq/component.rb:17:in `block in safe_thread'"]
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>队列优先级</span></div><div><br /></div><div>队列可以设置优先级</div><div><br /></div><div>命令行方式：</div><div><br /></div><pre><code># 带优先级
+sidekiq -q critical,2 -q default
+
+# 不带优先级
+sidekiq -q critical -q default -q low
+</code></pre><div><br /></div><div>配置文件方式：</div><div><br /></div><pre><code># 带优先级
+:queues:
+  - [critical, 2]
+  - default
+
+# 不带优先级
+:queues:
+  - critical
+  - default
+  - low
+</code></pre><div><br /></div><div>当检测到配置任何一个队列有优先级且大于1，则设置“严格排序”为false；否则还要将队列名按优先级数复制出多份</div><div><br /></div><pre><code># sidekiq-6.5.7/lib/sidekiq/cli.rb
+[weight.to_i, 1].max.times { opts[:queues] << queue.to_s }
+opts[:strict] = false if weight.to_i > 0
+</code></pre><div><br /></div><div>从redis取任务时，如果是严格排序，则直接执行<code>brpop queue:a queue:b 2</code>；否则先将队列名集合洗牌并去重，使高优先级的队列有更大机会排到参数列表的前面，然后再提交<code>brpop</code></div><div><br /></div><pre><code># sidekiq-6.5.7/lib/sidekiq/fetch.rb
+module Sidekiq
+  class BasicFetch
+    def initialize(config)
+      # ..
+      @strictly_ordered_queues = !!@config[:strict]
+      @queues = @config[:queues].map { |q| "queue:#{q}" }
+      if @strictly_ordered_queues
+        @queues.uniq!
+        @queues << {timeout: TIMEOUT}
+      end
+    end
+
+    def retrieve_work
+      qs = queues_cmd
+      # ...
+      queue, job = redis { |conn| conn.brpop(*qs) }
+      UnitOfWork.new(queue, job, config) if queue
+    end
+
+    def queues_cmd
+      if @strictly_ordered_queues
+        @queues
+      else
+        permute = @queues.shuffle
+        permute.uniq!
+        permute << {timeout: TIMEOUT}
+        permute
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>任务处理流程</span></div><div><br /></div><div><code>Sidekiq::Processor#start</code>会创建一个线程去调<code>run</code>（<code>process_one until @done</code>）。</div><div><br /></div><div>而<code>process_one</code>会根据队列优先级配置，从redis取出一个任务，然后调用<code>process</code></div><div><br /></div><pre><code># sidekiq-6.5.7/lib/sidekiq/processor.rb
+def process(uow)
+  jobstr = uow.job
+  queue = uow.queue_name
+
+  job_hash = nil
+  begin
+    job_hash = Sidekiq.load_json(jobstr)
+  rescue => ex
+    # ...
+    now = Time.now.to_f
+    config.redis.zadd("dead", now.to_s, jobstr)
+    # ...
+  end
+
+  begin
+    # 找回这个任务的Sidekiq::Job子类，并将其实例化
+    dispatch(job_hash, queue, jobstr) do |inst|
+      # 执行server_middleware
+      @config.server_middleware.invoke(inst, job_hash, queue) do
+        # 传递参数给Sidekiq::Job子类对象的perform方法
+        execute_job(inst, job_hash["args"])
+      end
+    end
+    # ...
+  rescue Exception => ex
+    # ...
+    raise ex
+  ensure
+    # ...
+  end
+end
+
+def execute_job(inst, cloned_args)
+  inst.perform(*cloned_args)
+end
+
+def dispatch(job_hash, queue, jobstr)
+  # 不明
+  @job_logger.prepare(job_hash) do
+    # 捕捉错误并加入重试队列
+    @retrier.global(jobstr, queue) do
+      # 在任务执行前后打印日志
+      @job_logger.call(job_hash, queue) do
+        # 记录当前进程的任务执行次数（PROCESSED）、任务失败次数（FAILURE）、当前任务（WORK_STATE）
+        # 会有别的线程（heartbeat）将其写入redis
+        stats(jobstr, queue) do
+          # 可用:reloader选项传入热加载器，使其在执行任务前加载最新代码，重连数据库等
+          @reloader.call do
+            # 找回这个任务的Sidekiq::Job子类，并将其实例化
+            klass = constantize(job_hash["class"])
+            inst = klass.new
+            inst.jid = job_hash["jid"]
+            @retrier.local(inst, jobstr, queue) do
+              # 回到process方法里的那个block
+              yield inst
+            end
+          end
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>重试与定时</span></div><div><br /></div><div>因为重试也是有时间间隔的，与定时任务逻辑类似，所以都放在了<code>Sidekiq::Scheduled</code>这个module中</div><div><br /></div><div><code>Sidekiq::Scheduled::Poller#start</code>会创建一个线程，不断地执行<code>Sidekiq::Scheduled::Enq#enqueue_jobs</code></div><div><br /></div><pre><code># sidekiq-6.5.7/lib/sidekiq/scheduled.rb
+module Sidekiq
+  module Scheduled
+    class Poller
+      include Sidekiq::Component
+
+      def initialize(options)
+        @enq = (options[:scheduled_enq] || Sidekiq::Scheduled::Enq).new
+        # ...
+      end
+
+      def start
+        @thread ||= safe_thread("scheduler") {
+          # ...
+          until @done
+            enqueue
+            wait
+          end
+        }
+      end
+
+      def enqueue
+        @enq.enqueue_jobs
+        # ...
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>而<code>Sidekiq::Scheduled::Enq</code>则是利用lua脚本，返回<code>retry</code>和<code>schedule</code>两个sorted set中，预定执行时间早于当前时间的任务，然后塞入对应的<code>queue:xxx</code>中</div><div><br /></div><pre><code># sidekiq-6.5.7/lib/sidekiq/scheduled.rb
+module Sidekiq
+  module Scheduled
+    SETS = %w[retry schedule]
+
+    class Enq
+      LUA_ZPOPBYSCORE = <<~LUA
+        local key, now = KEYS[1], ARGV[1]
+        local jobs = redis.call("zrangebyscore", key, "-inf", now, "limit", 0, 1)
+        if jobs[1] then
+          redis.call("zrem", key, jobs[1])
+          return jobs[1]
+        end
+      LUA
+
+      def initialize
+        @done = false
+        @lua_zpopbyscore_sha = nil
+      end
+
+      def enqueue_jobs(sorted_sets = SETS)
+        Sidekiq.redis do |conn|
+          sorted_sets.each do |sorted_set|
+            while !@done && (job = zpopbyscore(conn, keys: [sorted_set], argv: [Time.now.to_f.to_s]))
+              Sidekiq::Client.push(Sidekiq.load_json(job))
+              Sidekiq.logger.debug { "enqueued #{sorted_set}: #{job}" }
+            end
+          end
+        end
+      end
+
+      private
+
+      def zpopbyscore(conn, keys: nil, argv: nil)
+        if @lua_zpopbyscore_sha.nil?
+          raw_conn = conn.respond_to?(:redis) ? conn.redis : conn
+          @lua_zpopbyscore_sha = raw_conn.script(:load, LUA_ZPOPBYSCORE)
+        end
+
+        conn.evalsha(@lua_zpopbyscore_sha, keys, argv)
+      rescue RedisConnection.adapter::CommandError => e
+        # ...
+        retry
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>heartbeat</span></div><div><br /></div><div>heartbeat线程每隔5秒将运行状态写入redis</div><div><br /></div><pre><code>module Sidekiq
+  class Launcher
+    include Sidekiq::Component
+
+    STATS_TTL = 5 * 365 * 24 * 60 * 60 # 5 years
+
+    def run
+      @thread = safe_thread("heartbeat", &method(:start_heartbeat))
+      # ...
+    end
+
+    BEAT_PAUSE = 5
+
+    def start_heartbeat
+      loop do
+        heartbeat
+        sleep BEAT_PAUSE
+      end
+      logger.info("Heartbeat stopping...")
+    end
+
+    def heartbeat
+      # ...
+      ❤
+    end
+
+    def ❤
+      key = identity
+      fails = procd = 0
+
+      begin
+        fails = Processor::FAILURE.reset
+        procd = Processor::PROCESSED.reset
+        curstate = Processor::WORK_STATE.dup
+
+        nowdate = Time.now.utc.strftime("%Y-%m-%d")
+
+        redis do |conn|
+          # 记录总成功数、每日成功数、总失败数、每日失败数
+          # 每日计数保留五年
+          conn.multi do |transaction|
+            transaction.incrby("stat:processed", procd)
+            transaction.incrby("stat:processed:#{nowdate}", procd)
+            transaction.expire("stat:processed:#{nowdate}", STATS_TTL)
+
+            transaction.incrby("stat:failed", fails)
+            transaction.incrby("stat:failed:#{nowdate}", fails)
+            transaction.expire("stat:failed:#{nowdate}", STATS_TTL)
+          end
+
+          # 在"#{host+pid+rand}:work"这个hash中
+          # 记录当前进程正在运行的线程（key）及其执行的任务（value）
+          # 过期时间60秒
+          work_key = "#{key}:work"
+          conn.pipelined do |transaction|
+            transaction.unlink(work_key)
+            curstate.each_pair do |tid, hash|
+              transaction.hset(work_key, tid, Sidekiq.dump_json(hash))
+            end
+            transaction.expire(work_key, 60)
+          end
+        end
+
+        rtt = check_rtt
+
+        fails = procd = 0
+        kb = memory_usage(::Process.pid)
+
+        # 在processes这个set中记录host+pid+rand
+        # 并在host+pid+rand这个hash中，记录执行中的任务数（busy）、心跳时间（beat）、
+        # 响应时间(rtt_us)、是否退出（quiet）、读取/proc所知的内存占用（rss）
+        _, exists, _, _, msg = redis { |conn|
+          conn.multi { |transaction|
+            transaction.sadd("processes", [key])
+            transaction.exists?(key)
+            transaction.hmset(key, "info", to_json,
+              "busy", curstate.size,
+              "beat", Time.now.to_f,
+              "rtt_us", rtt,
+              "quiet", @done.to_s,
+              "rss", kb)
+            transaction.expire(key, 60)
+            transaction.rpop("#{key}-signals")
+          }
+        }
+
+        # first heartbeat or recovering from an outage and need to reestablish our heartbeat
+        fire_event(:heartbeat) unless exists
+        fire_event(:beat, oneshot: false)
+
+        return unless msg
+
+        ::Process.kill(msg, ::Process.pid)
+      rescue => e
+        # ignore all redis/network issues
+        logger.error("heartbeat: #{e}")
+        # don't lose the counts if there was a network issue
+        Processor::PROCESSED.incr(procd)
+        Processor::FAILURE.incr(fails)
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>值示例如下</div><div><br /></div><div>进程总体状态</div><div><br /></div><pre><code>> hgetall z-VirtualBox:3952:c200d7ce2ae0
+> 1) "rtt_us"
+> 2) "266"
+> 3) "quiet"
+> 4) "false"
+> 5) "info"
+> 6) "{\"hostname\":\"z-VirtualBox\",\"started_at\":1666511019.355878,\"pid\":3952,\"tag\":\"\",\"concurrency\":5,\"queues\":[\"misc\",\"big\"],\"labels\":[],\"identity\":\"z-VirtualBox:3952:c200d7ce2ae0\"}"
+> 7) "beat"
+> 8) "1666513260.3950865"
+> 9) "busy"
+> 10) "3"
+> 11) "rss"
+> 12) "42720"
+</code></pre><div><br /></div><div>进程执行中的任务</div><div><br /></div><pre><code>> hgetall z-VirtualBox:3952:c200d7ce2ae0:work
+> 1) "200"
+> 2) "{\"queue\":\"big\",\"payload\":\"{\\\"retry\\\":true,\\\"queue\\\":\\\"big\\\",\\\"args\\\":[],\\\"class\\\":\\\"Jobs::Big0\\\",\\\"jid\\\":\\\"63a64a7a42fe7f44c9196f11\\\",\\\"created_at\\\":1666513524.5409067,\\\"enqueued_at\\\":1666513524.5409853}\",\"run_at\":1666513524}"
+> 3) "218"
+> 4) "{\"queue\":\"big\",\"payload\":\"{\\\"retry\\\":true,\\\"queue\\\":\\\"big\\\",\\\"args\\\":[],\\\"class\\\":\\\"Jobs::Big1\\\",\\\"jid\\\":\\\"9a60f9bf3d97fd3f79ee4cd6\\\",\\\"created_at\\\":1666513521.5368056,\\\"enqueued_at\\\":1666513521.5368824}\",\"run_at\":1666513521}"
+> 5) "228"
+> 6) "{\"queue\":\"misc\",\"payload\":\"{\\\"retry\\\":true,\\\"queue\\\":\\\"misc\\\",\\\"args\\\":[],\\\"class\\\":\\\"Jobs::Misc0\\\",\\\"jid\\\":\\\"3802c6c4369a0ce00553d2cc\\\",\\\"created_at\\\":1666513525.5429494,\\\"enqueued_at\\\":1666513525.5430243}\",\"run_at\":1666513525}"
+> 7) "21w"
+> 8) "{\"queue\":\"big\",\"payload\":\"{\\\"retry\\\":true,\\\"queue\\\":\\\"big\\\",\\\"args\\\":[],\\\"class\\\":\\\"Jobs::Big0\\\",\\\"jid\\\":\\\"c4bfb708f1063e32f920942b\\\",\\\"created_at\\\":1666513522.5381534,\\\"enqueued_at\\\":1666513522.5382252}\",\"run_at\":1666513522}"
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>sidekiq-web-ui</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="sidekiq-web-ui" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-10-22T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"sidekiq-web-ui","dateModified":"2022-10-22T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2022-10-22T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">sidekiq-web-ui</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-10-22T00:00:00+00:00" itemprop="datePublished">Oct 22, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>搭建纯rack app环境</span></div><div><br /></div><div>先创建一个session secret。进入irb执行以下命令</div><div><br /></div><pre><code>require 'securerandom'
+File.open(".session.key", "w") {|f| f.write(SecureRandom.hex(32)) }
+</code></pre><div><br /></div><div>创建Gemfile，并bundle install</div><div><br /></div><pre><code>source 'https://rubygems.org/'
+
+gem 'rack', '2.2.4'
+gem 'sidekiq', path: '/home/z/project/sidekiq'
+</code></pre><div><br /></div><div>然后创建config.ru。里面要增加一个<code>Rack::Session::Cookie</code>层</div><div><br /></div><pre><code>require "sidekiq/web"
+
+use Rack::Session::Cookie, secret: File.read(".session.key"), same_site: true, max_age: 86400
+run Sidekiq::Web
+</code></pre><div><br /></div><div>启动</div><div><br /></div><pre><code>bundle exec rackup --host 192.168.31.200 -p 5000
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>Sidekiq::Web</span></div><div><br /></div><div><code>Sidekiq::Web.call</code>其实是交由<code>Sidekiq::WebApplication</code></div><div><br /></div><pre><code># sidekiq-6.5.7/lib/sidekiq/web.rb
+module Sidekiq
+  class Web
+    def call(env)
+      app.call(env)
+    end
+
+    def self.call(env)
+      @app ||= new
+      @app.call(env)
+    end
+
+    def app
+      @app ||= build
+    end
+
+    def build
+      klass = self.class
+      m = middlewares
+
+      rules = []
+      rules = [[:all, {"cache-control" => "public, max-age=86400"}]] unless ENV["SIDEKIQ_WEB_TESTING"]
+
+      ::Rack::Builder.new do
+        use Rack::Static, urls: ["/stylesheets", "/images", "/javascripts"],
+          root: ASSETS,
+          cascade: true,
+          header_rules: rules
+        m.each { |middleware, block| use(*middleware, &block) }
+        use Sidekiq::Web::CsrfProtection unless $TESTING
+        run WebApplication.new(klass)
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>路由</span></div><div><br /></div><div><code>Sidekiq::WebApplication.extend WebRouter</code>后，获得了定义路由的方法</div><div><br /></div><pre><code># sidekiq-6.5.7/lib/sidekiq/web/application.rb
+module Sidekiq
+  class WebApplication
+    extend WebRouter
+
+    head "/" do
+      # ...
+    end
+
+    get "/" do
+      # ...
+    end
+  end
+end
+</code></pre><div><br /></div><div>这些方法来自sidekiq-6.5.7/lib/sidekiq/web/router.rb。在其中把路径打印出来</div><div><br /></div><pre><code> module Sidekiq
+   module WebRouter
+     def head(path, &block)
+       route(HEAD, path, &block)
+     end
+
+     def get(path, &block)
+       route(GET, path, &block)
+     end
+
+     # ...
+
+     def route(method, path, &block)
+       @routes ||= {GET => [], POST => [], PUT => [], PATCH => [], DELETE => [], HEAD => []} 
++      puts "#{method} #{path}"
+       @routes[method] << WebRoute.new(method, path, block)
+     end
+   end
+ end
+</code></pre><div><br /></div><div>可得</div><div><br /></div><pre><code>HEAD /
+GET /
+GET /metrics
+GET /metrics/:name
+GET /busy
+POST /busy
+GET /queues
+GET /queues/:name
+POST /queues/:name
+POST /queues/:name/delete
+GET /morgue
+GET /morgue/:key
+POST /morgue
+POST /morgue/all/delete
+POST /morgue/all/retry
+POST /morgue/:key
+GET /retries
+GET /retries/:key
+POST /retries
+POST /retries/all/delete
+POST /retries/all/retry
+POST /retries/all/kill
+POST /retries/:key
+GET /scheduled
+GET /scheduled/:key
+POST /scheduled
+POST /scheduled/:key
+GET /dashboard/stats
+GET /stats
+GET /stats/queues
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>GET / 首页，取历史数据</span></div><div><br /></div><div>取多天的stat:processed:xxx和stat:failed:xxx，生成曲线</div><div><br /></div><pre><code>get "/" do
+  @redis_info = redis_info.select { |k, v| REDIS_KEYS.include? k }
+  days = (params["days"] || 30).to_i
+  return halt(401) if days < 1 || days > 180
+
+  stats_history = Sidekiq::Stats::History.new(days)
+  @processed_history = stats_history.processed
+  @failed_history = stats_history.failed
+
+  erb(:dashboard)
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>GET /stats 首页轮询，更新每X秒的曲线</span></div><div><br /></div><div>会用本次processed/failed减上次processed/failed，生成曲线</div><div><br /></div><pre><code>get "/stats" do
+  sidekiq_stats = Sidekiq::Stats.new
+  redis_stats = redis_info.select { |k, v| REDIS_KEYS.include? k }
+  json(
+    sidekiq: {
+      processed: sidekiq_stats.processed, # 执行次数
+      failed: sidekiq_stats.failed, # 失败次数
+      busy: sidekiq_stats.workers_size, # 执行中的任务数
+      processes: sidekiq_stats.processes_size, # 进程数
+      enqueued: sidekiq_stats.enqueued, # 所有队列当前总长
+      scheduled: sidekiq_stats.scheduled_size, # 定时任务当前数量
+      retries: sidekiq_stats.retry_size, # 重试任务当前数量
+      dead: sidekiq_stats.dead_size, # 死任务当前数量
+      default_latency: sidekiq_stats.default_queue_latency # default队列的延迟
+    },
+    redis: redis_stats, # 调用redis的info命令所返回的数据
+    server_utc_time: server_utc_time
+  )
+end
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

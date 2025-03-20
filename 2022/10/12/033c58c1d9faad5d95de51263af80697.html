@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>yabeda-sidekiq浅析</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="yabeda-sidekiq浅析" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-10-12T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"yabeda-sidekiq浅析","dateModified":"2022-10-12T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2022-10-12T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">yabeda-sidekiq浅析</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-10-12T00:00:00+00:00" itemprop="datePublished">Oct 12, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div>
+<ul>
+<li>指标有采自sidekiq存于redis中的状态快照，也有通过middleware拦截记录</li>
+</ul>
+<div><span style='font-weight: bold;'>官网</span></div><div><br /></div><div><a href="https://github.com/yabeda-rb/yabeda-sidekiq">yabeda-rb/yabeda-sidekiq: Yabeda plugin for complete monitoring of Sidekiq</a></div><div><br /></div><div><span style='font-weight: bold;'>环境搭建</span></div><div><br /></div><div>在 [[sidekiq环境]] 的环境基础上，加上yabeda-sidekiq和yabeda-prometheus</div><div><br /></div><pre><code>require "sidekiq"
+require "yabeda/sidekiq"
+require "yabeda/prometheus"
+
+Yabeda.configure!
+
+if ENV['METRICS_SERVER']
+  Sidekiq.configure_server do |_config|
+    Yabeda::Prometheus::Exporter.start_metrics_server!
+  end
+end
+
+class PlainOldRuby
+  include Sidekiq::Job
+
+  def perform(how_hard = "super hard", how_long = 1)
+    sleep how_long
+    puts "Workin' #{how_hard}"
+  end
+end
+</code></pre><div><br /></div><div>启动服务</div><div><br /></div><pre><code>METRICS_SERVER=1 sidekiq -r ./por.rb
+</code></pre><div><br /></div><div>可见sidekiq以及metrics-server都有启动</div><div><br /></div><pre><code>2022-10-11T15:18:55.421Z pid=2676 tid=34k INFO: Running in ruby 2.7.5p203 (2021-11-24 revision f69aeb8314) [x86_64-linux]
+2022-10-11T15:18:55.421Z pid=2676 tid=34k INFO: See LICENSE and the LGPL-3.0 for licensing details.
+2022-10-11T15:18:55.421Z pid=2676 tid=34k INFO: Upgrade to Sidekiq Pro for more features and support: https://sidekiq.org
+2022-10-11T15:18:55.421Z pid=2676 tid=34k INFO: Booting Sidekiq 6.5.7 with Sidekiq::RedisConnection::RedisAdapter options {}
+2022-10-11T15:18:55.425Z pid=2676 tid=34k INFO: Starting processing, hit Ctrl-C to stop
+[2022-10-11 23:18:55] INFO  WEBrick 1.6.1
+[2022-10-11 23:18:55] INFO  ruby 2.7.5 (2021-11-24) [x86_64-linux]
+[2022-10-11 23:18:55] INFO  WEBrick::HTTPServer#start: pid=2676 port=9394
+</code></pre><div><br /></div><div>创建任务</div><div><br /></div><pre><code>irb -r ./por.rb
+irb(main):001:0> PlainOldRuby.perform_async "like a dog", 3
+=> "320a8b57ca6c7dfd232f49a8"
+irb(main):002:0>
+</code></pre><div><br /></div><div>去<a href="http://your-sidekiq-host:9394/metrics%E6%A3%80%E6%9F%A5%E7%BB%9F%E8%AE%A1%E6%95%B0%E6%8D%AE">http://your-sidekiq-host:9394/metrics检查统计数据</a></div><div><br /></div><div><span style='font-weight: bold;'>引入yabeda/sidekiq</span></div><div><br /></div><div>当<code>require &#39;yabeda/sidekiq&#39;</code>时，我们会利用yabeda的DSL定义指标（注意运行时有没调用<code>Yabeda.configure!</code>），并给sidekiq插入中间件（[[sidekiq中间件]]），以便拦截sidekiq的运作，设置指标值</div><div><br /></div><pre><code># yabeda-sidekiq-0.9.0/lib/yabeda/sidekiq.rb
+module Yabeda
+  module Sidekiq
+    # 设置指标
+    Yabeda.configure do
+      config = ::Yabeda::Sidekiq.config
+
+      group :sidekiq
+      counter :jobs_enqueued_total, tags: %i[queue worker], comment: "A counter of the total number of jobs sidekiq enqueued."
+      # ...
+
+      collect do
+        # ...
+      end
+    end
+
+    # 插入中间件
+    ::Sidekiq.configure_server do |config|
+      # ...
+    end
+    ::Sidekiq.configure_client do |config|
+      # ...
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>中间件：拦截任务并设置指标值</span></div><div><br /></div><div>客户端中间件，但客户端一般不暴露采集接口吧，在服务端采集就好</div><div><br /></div><pre><code># yabeda-sidekiq-0.9.0/lib/yabeda/sidekiq/client_middleware.rb
+module Yabeda
+  module Sidekiq
+    class ClientMiddleware
+      def call(worker, job, queue, _redis_pool)
+        labels = Yabeda::Sidekiq.labelize(worker, job, queue)
+        # 增加此类job的入队数
+        Yabeda.sidekiq_jobs_enqueued_total.increment(labels)
+        yield
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>服务端中间件</div><div><br /></div><pre><code># yabeda-sidekiq-0.9.0/lib/yabeda/sidekiq/server_middleware.rb
+module Yabeda
+  module Sidekiq
+    class ServerMiddleware
+      # See https://github.com/mperham/sidekiq/discussions/4971
+      JOB_RECORD_CLASS = defined?(::Sidekiq::JobRecord) ? ::Sidekiq::JobRecord : ::Sidekiq::Job
+
+      def call(worker, job, queue)
+        custom_tags = Yabeda::Sidekiq.custom_tags(worker, job).to_h
+        labels = Yabeda::Sidekiq.labelize(worker, job, queue).merge(custom_tags)
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        begin
+          job_instance = JOB_RECORD_CLASS.new(job)
+          # 统计此类job的出队延迟时间分布（histgram，当前时间与入队时间的差值）
+          Yabeda.sidekiq_job_latency.measure(labels, job_instance.latency)
+          # 记录此job的开始执行时间，以便统计running_job_runtime（gauge，当前运行中的job的最大持续时间）
+          Yabeda::Sidekiq.jobs_started_at[labels][job["jid"]] = start
+          Yabeda.with_tags(**custom_tags) do
+            yield
+          end
+          # 增加此类job的成功计数（counter）
+          Yabeda.sidekiq_jobs_success_total.increment(labels)
+        rescue Exception
+          # 增加此类job的失败计数（counter）
+          Yabeda.sidekiq_jobs_failed_total.increment(labels)
+          raise
+        ensure
+          # 统计此类job的运行时间分布
+          Yabeda.sidekiq_job_runtime.measure(labels, elapsed(start))
+          # 增加此类job的执行计数（counter）
+          Yabeda.sidekiq_jobs_executed_total.increment(labels)
+          # 删除此job的开始执行时间记录
+          Yabeda::Sidekiq.jobs_started_at[labels].delete(job["jid"])
+        end
+      end
+
+      private
+
+      def elapsed(start)
+        (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start).round(3)
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>非事件产生的指标</span></div><div><br /></div><pre><code>collect do
+  # 每类job当前运行中的
+  Yabeda::Sidekiq.track_max_job_runtime if ::Sidekiq.server?
+
+  next unless config.collect_cluster_metrics
+
+  stats = ::Sidekiq::Stats.new
+
+  # 每个队列的长度（gauge）
+  stats.queues.each do |k, v|
+    sidekiq_jobs_waiting_count.set({ queue: k }, v)
+  end
+  # 执行中的任务数（gauge）
+  sidekiq_active_workers_count.set({}, stats.workers_size)
+  # 定时任务数（gauge）
+  sidekiq_jobs_scheduled_count.set({}, stats.scheduled_size)
+  # 死任务数（gauge）
+  sidekiq_jobs_dead_count.set({}, stats.dead_size)
+  # 进程数（gauge）
+  sidekiq_active_processes.set({}, stats.processes_size)
+  # 等待重试的任务数（gauge）
+  sidekiq_jobs_retry_count.set({}, stats.retry_size)
+
+  # 每个队列的延迟（gauge）
+  ::Sidekiq::Queue.all.each do |queue|
+    sidekiq_queue_latency.set({ queue: queue.name }, queue.latency)
+  end
+
+  # 按队列分组统计待重试的任务数（需要读取重试队列里的每个任务）
+  #
+  # 作者注释了以下部分，说怕太慢
+  #
+  # retries_by_queues =
+  #     ::Sidekiq::RetrySet.new.each_with_object(Hash.new(0)) do |job, cntr|
+  #       cntr[job["queue"]] += 1
+  #     end
+  # retries_by_queues.each do |queue, count|
+  #   sidekiq_jobs_retry_count.set({ queue: queue }, count)
+  # end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>提供prometheus</span></div><div><br /></div><div>见 [[yabeda-prometheus浅析]]</div><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>puma如何加载rack应用并将请求传递给它</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="puma如何加载rack应用并将请求传递给它" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-11-14T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"puma如何加载rack应用并将请求传递给它","dateModified":"2022-11-14T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2022-11-14T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">puma如何加载rack应用并将请求传递给它</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-11-14T00:00:00+00:00" itemprop="datePublished">Nov 14, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div>
+<ul>
+<li>默认使用<code>Rack::Builder</code>解析config.ru</li>
+<li>多进程模式（<code>workers N</code>）下可选择<code>preload_app!</code>，使其在创建worker进程前先加载rackup文件</li>
+</ul>
+<div><span style='font-weight: bold;'>过程</span></div><div><br /></div><div>搭建环境，参考 [[puma环境搭建]]，在config.ru加入<code>pp caller</code></div><div><br /></div><div>启动，得调用栈</div><div><br /></div><div><span style='font-weight: bold;'>单进程模式</span></div><div><br /></div><div>单进程模式的调用栈如下</div><div><br /></div><pre><code>[".../3.1.1/lib/ruby/gems/3.1.0/gems/rack-2.2.4/lib/rack/builder.rb:116:in `eval'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/rack-2.2.4/lib/rack/builder.rb:116:in `new_from_string'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/rack-2.2.4/lib/rack/builder.rb:105:in `load_file'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/rack-2.2.4/lib/rack/builder.rb:66:in `parse_file'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/configuration.rb:348:in `load_rackup'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/configuration.rb:270:in `app'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/runner.rb:150:in `load_and_bind'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/single.rb:44:in `run'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/launcher.rb:193:in `run'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/cli.rb:81:in `run'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/bin/puma:10:in `<top (required)>'",
+ ".../3.1.1/bin/puma:25:in `load'",
+ ".../3.1.1/bin/puma:25:in `<top (required)>'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli/exec.rb:58:in `load'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli/exec.rb:58:in `kernel_load'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli/exec.rb:23:in `run'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli.rb:484:in `exec'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/vendor/thor/lib/thor/command.rb:27:in `run'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/vendor/thor/lib/thor/invocation.rb:127:in `invoke_command'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/vendor/thor/lib/thor.rb:392:in `dispatch'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli.rb:31:in `dispatch'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/vendor/thor/lib/thor/base.rb:485:in `start'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli.rb:25:in `start'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/bundler-2.3.7/libexec/bundle:48:in `block in <top (required)>'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/friendly_errors.rb:103:in `with_friendly_errors'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/bundler-2.3.7/libexec/bundle:36:in `<top (required)>'",
+ ".../3.1.1/bin/bundle:25:in `load'",
+ ".../3.1.1/bin/bundle:25:in `<main>'"]
+</code></pre><div><br /></div><div>它会使用<code>::Rack::Builder</code>解析config.ru文件（可通过rackup DSL命令改成别的路径），然后包装成<code>ConfigMiddleware</code></div><div><br /></div><pre><code># lib/puma/configuration.rb
+module Puma
+  class Configuration
+
+    class ConfigMiddleware
+      def initialize(config, app)
+        @config = config
+        @app = app
+      end
+
+      def call(env)
+        env[Const::PUMA_CONFIG] = @config
+        @app.call(env)
+      end
+    end
+
+    def app
+      found = options[:app] || load_rackup
+
+      if @options[:log_requests]
+        require 'puma/commonlogger'
+        logger = @options[:logger]
+        found = CommonLogger.new(found, logger)
+      end
+
+      ConfigMiddleware.new(self, found)
+    end
+  end
+end
+</code></pre><div><br /></div><div>返回给<code>Runner</code>（<code>Single</code>和<code>Cluster::Worker</code>的基类），再包装在<code>Puma::Server</code>里</div><div><br /></div><pre><code># lib/puma/runner.rb
+def start_server
+  server = Puma::Server.new app, @launcher.events, @options
+  server.inherit_binder @launcher.binder
+  server
+end
+</code></pre><div><br /></div><div><code>Server</code>接收请求以后，就会丢进线程池。而线程池的处理方法，就是交给这个<code>@app</code>处理</div><div><br /></div><pre><code># puma-5.6.5/lib/puma/server.rb
+module Puma
+  class Server
+    include Request
+
+    def run(background=true, thread_name: 'srv')
+      # ...
+      @thread_pool = ThreadPool.new(
+        thread_name,
+        @min_threads,
+        @max_threads,
+        ::Puma::IOBuffer,
+        &method(:process_client)
+      )
+      # ...
+      handle_servers
+    end
+
+    def handle_servers
+      # ...
+      while @status == :run || (drain && shutting_down?)
+        # ...
+        ios = IO.select sockets, nil, nil, (shutting_down? ? 0 : nil)
+        break unless ios
+        ios.first.each do |sock|
+          # ...
+            pool << Client.new(io, @binder.env(sock)).tap { |c|
+              c.listener = sock
+              c.send(addr_send_name, addr_value) if addr_value
+            }
+          end
+        end
+      end
+    end
+
+    def process_client(client, buffer)
+      # ...
+      while true
+        @requests_count += 1
+        handle_request(client, buffer, requests + 1)
+      end
+      # ...
+    end
+  end
+end
+</code></pre><div><br /></div><div>（<code>handle_request</code>方法来自<code>Puma::Request</code>）</div><div><br /></div><pre><code># puma-5.6.5/lib/puma/request.rb
+module Puma
+  module Request
+    def handle_request(client, lines, requests)
+      env = client.env
+      # ...
+      status, headers, res_body = @thread_pool.with_force_shutdown do
+        @app.call(env)
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>多进程模式</span></div><div><br /></div><div>非<code>preload_app!</code>的调用栈如下</div><div><br /></div><pre><code>[".../3.1.1/lib/ruby/gems/3.1.0/gems/rack-2.2.4/lib/rack/builder.rb:116:in `eval'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/rack-2.2.4/lib/rack/builder.rb:116:in `new_from_string'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/rack-2.2.4/lib/rack/builder.rb:105:in `load_file'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/rack-2.2.4/lib/rack/builder.rb:66:in `parse_file'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/configuration.rb:348:in `load_rackup'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/configuration.rb:270:in `app'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/runner.rb:161:in `app'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/runner.rb:165:in `start_server'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/cluster/worker.rb:58:in `run'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/cluster.rb:204:in `worker'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/cluster.rb:97:in `block in spawn_worker'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/cluster.rb:97:in `fork'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/cluster.rb:97:in `spawn_worker'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/cluster.rb:79:in `block in spawn_workers'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/cluster.rb:72:in `times'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/cluster.rb:72:in `spawn_workers'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/cluster.rb:415:in `run'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/launcher.rb:193:in `run'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/cli.rb:81:in `run'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/bin/puma:10:in `<top (required)>'",
+ ".../3.1.1/bin/puma:25:in `load'",
+ ".../3.1.1/bin/puma:25:in `<top (required)>'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli/exec.rb:58:in `load'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli/exec.rb:58:in `kernel_load'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli/exec.rb:23:in `run'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli.rb:484:in `exec'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/vendor/thor/lib/thor/command.rb:27:in `run'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/vendor/thor/lib/thor/invocation.rb:127:in `invoke_command'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/vendor/thor/lib/thor.rb:392:in `dispatch'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli.rb:31:in `dispatch'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/vendor/thor/lib/thor/base.rb:485:in `start'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli.rb:25:in `start'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/bundler-2.3.7/libexec/bundle:48:in `block in <top (required)>'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/friendly_errors.rb:103:in `with_friendly_errors'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/bundler-2.3.7/libexec/bundle:36:in `<top (required)>'",
+ ".../3.1.1/bin/bundle:25:in `load'",
+ ".../3.1.1/bin/bundle:25:in `<main>'"]
+</code></pre><div><br /></div><div><code>preload_app!</code>的调用栈如下</div><div><br /></div><pre><code>[".../3.1.1/lib/ruby/gems/3.1.0/gems/rack-2.2.4/lib/rack/builder.rb:116:in `eval'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/rack-2.2.4/lib/rack/builder.rb:116:in `new_from_string'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/rack-2.2.4/lib/rack/builder.rb:105:in `load_file'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/rack-2.2.4/lib/rack/builder.rb:66:in `parse_file'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/configuration.rb:348:in `load_rackup'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/configuration.rb:270:in `app'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/runner.rb:150:in `load_and_bind'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/cluster.rb:357:in `run'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/launcher.rb:193:in `run'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/lib/puma/cli.rb:81:in `run'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/puma-5.6.5/bin/puma:10:in `<top (required)>'",
+ ".../3.1.1/bin/puma:25:in `load'",
+ ".../3.1.1/bin/puma:25:in `<top (required)>'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli/exec.rb:58:in `load'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli/exec.rb:58:in `kernel_load'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli/exec.rb:23:in `run'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli.rb:484:in `exec'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/vendor/thor/lib/thor/command.rb:27:in `run'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/vendor/thor/lib/thor/invocation.rb:127:in `invoke_command'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/vendor/thor/lib/thor.rb:392:in `dispatch'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli.rb:31:in `dispatch'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/vendor/thor/lib/thor/base.rb:485:in `start'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/cli.rb:25:in `start'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/bundler-2.3.7/libexec/bundle:48:in `block in <top (required)>'",
+ ".../3.1.1/lib/ruby/3.1.0/bundler/friendly_errors.rb:103:in `with_friendly_errors'",
+ ".../3.1.1/lib/ruby/gems/3.1.0/gems/bundler-2.3.7/libexec/bundle:36:in `<top (required)>'",
+ ".../3.1.1/bin/bundle:25:in `load'",
+ ".../3.1.1/bin/bundle:25:in `<main>'"]
+</code></pre><div><br /></div><div>区别在于，设置了<code>preload_app!</code>，就会在<code>spawn_workers</code>前加载rack应用，否则是在新进程里加载rack应用</div><div><br /></div><pre><code># puma-5.6.5/lib/puma/cluster.rb
+module PumaG
+  class Cluster < Runner
+    def run
+      # ...
+      if preload?
+        # ...
+        load_and_bind
+        # ...
+      else
+        # ...
+      end
+      # ...
+      spawn_workers
+      # ...
+    end
+
+    def spawn_workers
+      diff = @options[:workers] - @workers.size
+      # ...
+      diff.times do
+        # ...
+        spawn_worker(idx, master)
+        # ...
+      end
+      # ...
+    end
+
+    def spawn_worker(idx, master)
+      # ...
+      fork { worker(idx, master) }
+      # ...
+    end
+
+    def worker(index, master)
+      # ...
+      server = start_server if preload?
+      new_worker = Worker.new index: index,
+                              master: master,
+                              launcher: @launcher,
+                              pipes: pipes,
+                              server: server
+      new_worker.run
+    end
+  end
+end
+</code></pre><div><br /></div><div><code>Cluster::Worker#run</code>时，发现未有<code>@server</code>，于是再调用一次<code>Runner#start_server</code>产生rack应用</div><div><br /></div><pre><code># puma-5.6.5/lib/puma/cluster/worker.rb
+module Puma
+  class Cluster < Puma::Runner
+    class Worker < Puma::Runner
+      def run
+        # ...
+        server = @server ||= start_server
+        # ...
+      end
+    end
+  end
+end
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

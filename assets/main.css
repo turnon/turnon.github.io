@@ -111,7 +111,7 @@ code {
   font-size: 15px;
   border: 1px solid #e8e8e8;
   border-radius: 3px;
-  background-color: #eef; }
+  background-color: #f5f5dc; }
 
 code {
   padding: 1px 5px; }
@@ -544,3 +544,15 @@ iframe#st {
 
 .rss-subscribe {
   display: none; }
+
+.trigger .page-link:nth-child(1) {
+    display: none;
+}
+
+.trigger .page-link:nth-child(2) {
+    display: none;
+}
+
+.site-footer {
+  border-top: none;
+}

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>yabeda-puma-plugin浅析</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="yabeda-puma-plugin浅析" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-10-08T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"yabeda-puma-plugin浅析","dateModified":"2022-10-08T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2022-10-08T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">yabeda-puma-plugin浅析</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-10-08T00:00:00+00:00" itemprop="datePublished">Oct 8, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div>
+<ul>
+<li>通过实现puma插件的方式，被puma初始化</li>
+<li>插件中通过puma controller server获取puma统计信息。（需要在puma配置文件中activate<em>control</em>app）</li>
+<li>如果需要向prometheus提供数据，则还需加上yabeda-prometheus这个gem。（因为可以对接prometheus以外的监控系统，所以没有在一开始就启动metric服务器）</li>
+</ul>
+<div><span style='font-weight: bold;'>搭建环境</span></div><div><br /></div><div>参考 [[puma环境搭建]]</div><div><br /></div><div>安装gem</div><div><br /></div><pre><code>source 'https://rubygems.org/'
+
+gem 'puma', '~> 5.6.5'
+gem 'yabeda-puma-plugin', '~> 0.7.0'
+gem 'yabeda-prometheus', '~> 0.8.0'
+</code></pre><div><br /></div><div>config.ru</div><div><br /></div><pre><code>require 'rack'
+require 'yabeda'
+require 'puma/plugin/yabeda'
+require 'yabeda/prometheus'
+
+app = lambda do |_|
+  sleep rand(5)
+  [200, { 'Content-Type' => 'text/html' }, ['OK']]
+end
+
+use Yabeda::Prometheus::Exporter, path: "/metrics"
+run app
+
+# 记得加这行
+Yabeda.configure!
+</code></pre><div><br /></div><div>puma.rb</div><div><br /></div><pre><code>threads 5, 10
+
+activate_control_app
+plugin :yabeda
+</code></pre><div><br /></div><div>concurrent_get.rb</div><div><br /></div><pre><code>require 'uri'
+require 'net/http'
+
+threads = 6.times.map do
+  Thread.new do
+    loop do
+      url = URI("http://192.168.31.200:9292/")
+      http = Net::HTTP.new(url.host, url.port)
+      request = Net::HTTP::Get.new(url)
+      response = http.request(request)
+      puts response.read_body
+      sleep rand(3)
+    end
+  end
+end
+
+threads.each(&:join)
+</code></pre><div><br /></div><div>分别在两个会话中执行</div><div><br /></div><pre><code># 启动服务
+bundle exec puma -C puma.rb
+
+# 并发访问
+ruby concurrent_get.rb
+</code></pre><div><br /></div><div>访问/metrics，可得类似以下统计信息</div><div><br /></div><pre><code># TYPE puma_backlog gauge
+# HELP puma_backlog Number of established but unaccepted connections in the backlog
+puma_backlog{index="0"} 0.0
+# TYPE puma_running gauge
+# HELP puma_running Number of running worker threads
+puma_running{index="0"} 7.0
+# TYPE puma_pool_capacity gauge
+# HELP puma_pool_capacity Number of allocatable worker threads
+puma_pool_capacity{index="0"} 6.0
+# TYPE puma_max_threads gauge
+# HELP puma_max_threads Maximum number of worker threads
+puma_max_threads{index="0"} 10.0
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>源码</span></div><div><br /></div><div>它是以puma插件的形式运作的（[[puma的plugin机制]]）。流程可以这么简单概括：</div><div><br /></div>
+<ul>
+<li>在puma启动时，获取control server的地址（[[puma的activate<em>control</em>app]]）</li>
+<li>并且定义指标</li>
+<li>当监控系统例如yabeda-prometheus拉取数据时，从control server读取统计信息，返回出去</li>
+</ul>
+<pre><code># yabeda-puma-plugin-0.7.0/lib/puma/plugin/yabeda.rb
+Puma::Plugin.create do
+  def start(launcher)
+    clustered = (launcher.options[:workers] || 0) > 0
+
+    # 获取puma的control app的socket地址和token
+    # 并记录下来
+    control_url = launcher.options[:control_url]
+    raise StandardError, "Puma control app is not activated" if control_url == nil
+
+    Yabeda::Puma::Plugin.tap do |puma|
+      puma.control_url = control_url
+      puma.control_auth_token = launcher.options[:control_auth_token]
+    end
+
+    # 定义指标
+    Yabeda.configure do
+      # 使以下指标带前缀，例如puma_backlog、puma_running
+      group :puma
+
+      gauge :backlog, tags: %i[index], comment: 'Number of established but unaccepted connections in the backlog', aggregation: :most_recent
+      gauge :running, tags: %i[index], comment: 'Number of running worker threads', aggregation: :most_recent
+      gauge :pool_capacity, tags: %i[index], comment: 'Number of allocatable worker threads', aggregation: :most_recent
+      gauge :max_threads, tags: %i[index], comment: 'Maximum number of worker threads', aggregation: :most_recent
+
+      # 如果是多进程模式，则还会读取到这些统计信息
+      if clustered
+        gauge :workers, comment: 'Number of configured workers', aggregation: :most_recent
+        gauge :booted_workers, comment: 'Number of booted workers', aggregation: :most_recent
+        gauge :old_workers, comment: 'Number of old workers', aggregation: :most_recent
+      end
+
+      # 当监控系统例如yabeda-prometheus拉取数据时，会执行此block
+      collect do
+        require 'yabeda/puma/plugin/statistics/fetcher'
+        stats = Yabeda::Puma::Plugin::Statistics::Fetcher.call
+        require 'yabeda/puma/plugin/statistics/parser'
+        Yabeda::Puma::Plugin::Statistics::Parser.new(clustered: clustered, data: stats).call.each do |item|
+          send("puma_#{item[:name]}").set(item[:labels], item[:value])
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>其中Fetcher就是用来读取control server的</div><div><br /></div><pre><code># yabeda-puma-plugin-0.7.0/lib/yabeda/puma/plugin/statistics/fetcher.rb
+module Yabeda
+  module Puma
+    module Plugin
+      module Statistics
+        class Fetcher
+          def self.call
+            control_url = Yabeda::Puma::Plugin.control_url
+
+            body = if control_url.start_with? "unix://"
+              path = control_url.gsub("unix://", '')
+              Socket.unix(path, &socket_block)
+            elsif control_url.start_with? "tcp://"
+              host, port = control_url.match(/^tcp:\/\/([a-z0-9\-._~%]+):([0-9]+)/).captures
+              Socket.tcp(host, port, &socket_block)
+            else
+              raise ArgumentError.new("Unknown puma control url type #{control_url}")
+            end
+
+            JSON.parse(body.split("\n").last)
+          end
+
+          private
+
+          def self.socket_block
+            Proc.new do |s|
+              s << "GET /stats?token=#{Yabeda::Puma::Plugin.control_auth_token} HTTP/1.0\r\n\r\n"
+              s.read
+            end
+          end
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>上述<code>body.split(&quot;\n&quot;).last</code>会取得形如下文的统计数据</div><div><br /></div><div>单进程</div><div><br /></div><pre><code>{
+    "started_at": "2022-10-15T06:10:45Z",
+    "backlog": 0,
+    "running": 6,
+    "pool_capacity": 5,
+    "max_threads": 10,
+    "requests_count": 16
+}
+</code></pre><div><br /></div><div>多进程</div><div><br /></div><pre><code>{
+    "started_at": "2022-10-15T06:01:16Z",
+    "workers": 2,
+    "phase": 0,
+    "booted_workers": 2,
+    "old_workers": 0,
+    "worker_status": [
+        {
+            "started_at": "2022-10-15T06:01:16Z",
+            "pid": 6185,
+            "index": 0,
+            "phase": 0,
+            "booted": true,
+            "last_checkin": "2022-10-15T06:01:21Z",
+            "last_status": {
+                "backlog": 0,
+                "running": 5,
+                "pool_capacity": 6,
+                "max_threads": 10,
+                "requests_count": 10
+            }
+        },
+        {
+            "started_at": "2022-10-15T06:01:16Z",
+            "pid": 6187,
+            "index": 1,
+            "phase": 0,
+            "booted": true,
+            "last_checkin": "2022-10-15T06:01:21Z",
+            "last_status": {
+                "backlog": 0,
+                "running": 5,
+                "pool_capacity": 10,
+                "max_threads": 10,
+                "requests_count": 3
+            }
+        }
+    ]
+}
+</code></pre><div><br /></div><div>最终转换成prometheus的格式</div><div><br /></div><div>单进程</div><div><br /></div><pre><code># TYPE puma_backlog gauge
+# HELP puma_backlog Number of established but unaccepted connections in the backlog
+puma_backlog{index="0"} 0.0
+# TYPE puma_running gauge
+# HELP puma_running Number of running worker threads
+puma_running{index="0"} 6.0
+# TYPE puma_pool_capacity gauge
+# HELP puma_pool_capacity Number of allocatable worker threads
+puma_pool_capacity{index="0"} 5.0
+# TYPE puma_max_threads gauge
+# HELP puma_max_threads Maximum number of worker threads
+puma_max_threads{index="0"} 10.0
+</code></pre><div><br /></div><div>多进程</div><div><br /></div><pre><code># TYPE puma_backlog gauge
+# HELP puma_backlog Number of established but unaccepted connections in the backlog
+puma_backlog{index="0"} 0.0
+puma_backlog{index="1"} 0.0
+# TYPE puma_running gauge
+# HELP puma_running Number of running worker threads
+puma_running{index="0"} 5.0
+puma_running{index="1"} 5.0
+# TYPE puma_pool_capacity gauge
+# HELP puma_pool_capacity Number of allocatable worker threads
+puma_pool_capacity{index="0"} 5.0
+puma_pool_capacity{index="1"} 9.0
+# TYPE puma_max_threads gauge
+# HELP puma_max_threads Maximum number of worker threads
+puma_max_threads{index="0"} 10.0
+puma_max_threads{index="1"} 10.0
+# TYPE puma_workers gauge
+# HELP puma_workers Number of configured workers
+puma_workers 2.0
+# TYPE puma_booted_workers gauge
+# HELP puma_booted_workers Number of booted workers
+puma_booted_workers 2.0
+# TYPE puma_old_workers gauge
+# HELP puma_old_workers Number of old workers
+puma_old_workers 0.0
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

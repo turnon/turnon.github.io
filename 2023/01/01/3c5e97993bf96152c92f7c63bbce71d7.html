@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>concurrent-ruby Event</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="concurrent-ruby Event" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-01-01T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"concurrent-ruby Event","dateModified":"2023-01-01T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2023-01-01T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">concurrent-ruby Event</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-01-01T00:00:00+00:00" itemprop="datePublished">Jan 1, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div>
+<ul>
+<li>继承<code>MutexLockableObject</code>，在初始化时会内含<code>Mutex</code>和<code>ConditionVariable</code>，简化它们的组合使用</li>
+<li>自身有<code>@set</code>记录状态和<code>@iteration</code>记录重置次数</li>
+<li>调用<code>set</code>会设置<code>@set = true</code>，并利用<code>ConditionVariable</code>通知其他所有等待中的线程</li>
+<li>在<code>@set == true</code>事件发生后调用<code>reset</code>，会将<code>@set</code>重置为<code>false</code>，并<code>@iteration</code>加一</li>
+<li>其他线程调用<code>wait</code>会先检查<code>@set</code>状态，如果<code>true</code>则直接通过，否则就在<code>ConditionVariable</code>上等待通知（可设置超时时间）</li>
+</ul>
+<div><span style='font-weight: bold;'>源码</span></div><div><br /></div><div>检查其继承链</div><div><br /></div><pre><code>require 'concurrent-ruby'
+Concurrent::Event.ancestors.each{ |a| p a }
+# Concurrent::Event
+# Concurrent::Synchronization::LockableObject
+# Concurrent::Synchronization::MutexLockableObject
+# Concurrent::Synchronization::ConditionSignalling
+# Concurrent::Synchronization::AbstractLockableObject
+# Concurrent::Synchronization::Object
+# Concurrent::Synchronization::MriObject
+# Concurrent::Synchronization::MriAttrVolatile
+# Concurrent::Synchronization::AbstractObject
+# Object
+# Kernel
+# BasicObject
+</code></pre><div><br /></div><div>源码如下</div><div><br /></div><div><code>Event</code>所继承的<code>MutexLockableObject</code>，在初始化时会内含<code>Mutex</code>和<code>ConditionVariable</code></div><div><br /></div><pre><code>module Concurrent
+  class Event < Synchronization::LockableObject
+    def initialize
+      super
+      synchronize { ns_initialize }
+    end
+
+    def set
+      synchronize { ns_set }
+    end
+
+    def reset
+      synchronize do
+        if @set
+          @set       = false
+          @iteration +=1
+        end
+        true
+      end
+    end
+
+    # 如果@set == true，则马上通过
+    # 否则等待，直至超时或者被通知
+    # 此处使用ns_wait_until而不是ns_wait，可能是为免某些平台上误触发condition
+    # https://stackoverflow.com/questions/7766057/why-do-you-need-a-while-loop-while-waiting-for-a-condition-variable
+    # https://en.wikipedia.org/wiki/Spurious_wakeup
+    def wait(timeout = nil)
+      synchronize do
+        unless @set
+          iteration = @iteration
+          ns_wait_until(timeout) { iteration < @iteration || @set }
+        else
+          true
+        end
+      end
+    end
+
+    protected
+
+    def ns_set
+      unless @set
+        @set = true
+        ns_broadcast
+      end
+      true
+    end
+
+    def ns_initialize
+      @set       = false
+      @iteration = 0
+    end
+  end
+end
+</code></pre><div><br /></div><div>上述<code>ns_wait_until</code>来自<code>AbstractLockableObject</code></div><div><br /></div><pre><code>module Concurrent
+  module Synchronization
+    class AbstractLockableObject < Synchronization::Object
+      def ns_wait_until(timeout = nil, &condition)
+        if timeout
+          wait_until = Concurrent.monotonic_time + timeout
+          loop do
+            now              = Concurrent.monotonic_time
+            condition_result = condition.call
+            return condition_result if now >= wait_until || condition_result
+            ns_wait wait_until - now
+          end
+        else
+          ns_wait timeout until condition.call
+          true
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>而<code>ns_wait</code>来自<code>MutexLockableObject</code>。（如果是mruby）</div><div><br /></div><pre><code>module Concurrent
+  module Synchronization
+    class MutexLockableObject < AbstractLockableObject
+      def initialize(*defaults)
+        super(*defaults)
+        @__Lock__      = ::Mutex.new
+        @__Condition__ = ::ConditionVariable.new
+      end
+
+      protected
+
+      def ns_wait(timeout = nil)
+        @__Condition__.wait @__Lock__, timeout
+        self
+      end
+    end
+    end
+  end
+end
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

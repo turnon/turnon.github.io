@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>ruby的opentelemetry的resource</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="ruby的opentelemetry的resource" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-07-12T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"ruby的opentelemetry的resource","dateModified":"2023-07-12T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2023-07-12T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">ruby的opentelemetry的resource</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-07-12T00:00:00+00:00" itemprop="datePublished">Jul 12, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div>
+<ul>
+<li>resource用于描述“产生otel数据的实体”的一些属性</li>
+<li>可以通过<code>OTEL_RESOURCE_ATTRIBUTES</code>配置额外的resource属性</li>
+<li>也可以在配置sdk时，通过<code>c.resource = OpenTelemetry::SDK::Resources::Resource.create({})</code>添加属性</li>
+<li>还有<code>c.service_name=</code>和<code>c.service_version=</code></li>
+<li><code>OpenTelemetry::SDK.configure</code>所配置的resource，会用来创建<code>TracerProvider</code>，然后<code>TracerProvider</code>产生span时，会使用这个resource</li>
+</ul>
+<div><span style='font-weight: bold;'>什么是resource</span></div><div><br /></div>
+<ul>
+<li><a href="https://opentelemetry.io/docs/specs/otel/resource/sdk/">Resource SDK | OpenTelemetry</a></li>
+<li><a href="https://scoutapm.com/blog/configuring-opentelemetry-in-ruby">Configuring OpenTelemetry in Ruby | Scout APM Blog</a></li>
+<li>resource用于描述“产生otel数据的实体”的一些属性</li>
+</ul>
+<div><span style='font-weight: bold;'>环境变量OTEL<em>RESOURCE</em>ATTRIBUTES</span></div><div><br /></div><div>搜索<code>OTEL_RESOURCE_ATTRIBUTES</code>，可见位于 opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/resources/resource.rb</div><div><br /></div><div>打印其调用栈</div><div><br /></div><pre><code> def telemetry_sdk
++  pp caller
+   resource_attributes = {
+     # ...
+   }
+
+   resource_pairs = ENV['OTEL_RESOURCE_ATTRIBUTES']
+   return create(resource_attributes) unless resource_pairs.is_a?(String)
+
+   # ...
+   create(resource_attributes)
+ end
+</code></pre><div><br /></div><div>得</div><div><br /></div><pre><code>[".../opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/resources/resource.rb:34:in `default'",
+ ".../opentelemetry-exporter-zipkin-0.21.0/lib/opentelemetry/exporter/zipkin/transformer.rb:37:in `<module:Transformer>'",
+ ".../opentelemetry-exporter-zipkin-0.21.0/lib/opentelemetry/exporter/zipkin/transformer.rb:12:in `<module:Zipkin>'",
+ ".../opentelemetry-exporter-zipkin-0.21.0/lib/opentelemetry/exporter/zipkin/transformer.rb:10:in `<module:Exporter>'",
+ ".../opentelemetry-exporter-zipkin-0.21.0/lib/opentelemetry/exporter/zipkin/transformer.rb:9:in `<module:OpenTelemetry>'",
+ ".../opentelemetry-exporter-zipkin-0.21.0/lib/opentelemetry/exporter/zipkin/transformer.rb:8:in `<main>'",
+ # ...
+ ".../opentelemetry-exporter-zipkin-0.21.0/lib/opentelemetry/exporter/zipkin.rb:25:in `<main>'",
+ # ...
+ ".../opentelemetry-exporter-zipkin-0.21.0/lib/opentelemetry-exporter-zipkin.rb:7:in `<main>'",
+ # ...
+ ".../bundler.rb:114:in `require'",
+ ".../config/application.rb:16:in `<main>'",
+ # ...
+ "bin/rails:4:in `<main>'"]
+</code></pre><div><br /></div><div>回到代码</div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/resources/resource.rb
+def default
+  @default ||= create(SemanticConventions::Resource::SERVICE_NAME => 'unknown_service').merge(process).merge(telemetry_sdk).merge(service_name_from_env)
+end
+
+def process
+  resource_attributes = {
+    SemanticConventions::Resource::PROCESS_PID => Process.pid,
+    # ...
+  }
+
+  create(resource_attributes)
+end
+
+def telemetry_sdk
+  resource_attributes = {
+    # ...
+  }
+
+  resource_pairs = ENV['OTEL_RESOURCE_ATTRIBUTES']
+  return create(resource_attributes) unless resource_pairs.is_a?(String)
+
+  # ...
+  create(resource_attributes)
+end
+
+def service_name_from_env
+  service_name = ENV['OTEL_SERVICE_NAME']
+  create(SemanticConventions::Resource::SERVICE_NAME => service_name) unless service_name.nil?
+end
+</code></pre><div><br /></div><div>可见resource在创建时会收集进程ID、环境变量（如<code>OTEL_RESOURCE_ATTRIBUTES</code>）</div><div><br /></div><div><span style='font-weight: bold;'>添加属性</span></div><div><br /></div><div>除了用<code>OTEL_RESOURCE_ATTRIBUTES</code>配置属性，还可以在配置sdk时，手动merge。例如：</div><div><br /></div><pre><code>OpenTelemetry::SDK.configure do |c|
+  c.add_span_processor(
+    # ...
+  )
+  c.resource = OpenTelemetry::SDK::Resources::Resource.create({
+    OpenTelemetry::SemanticConventions::Resource::SERVICE_NAMESPACE => 'tracing',
+    # ...
+  })
+end
+</code></pre><div><br /></div><div>源码如下，虽然是<code>=</code>，但其实是<code>merge</code></div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/configurator.rb
+module OpenTelemetry
+  module SDK
+    class Configurator
+      def initialize
+        # ...
+        @resource = Resources::Resource.default
+      end
+
+      def resource=(new_resource)
+        @resource = @resource.merge(new_resource)
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>其他修改方式</span></div><div><br /></div><div>观察configurator的代码，发现还有<code>service_name=</code>和<code>service_version=</code></div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/configurator.rb
+def service_name=(service_name)
+  self.resource = OpenTelemetry::SDK::Resources::Resource.create(
+    OpenTelemetry::SemanticConventions::Resource::SERVICE_NAME => service_name
+  )
+end
+
+def service_version=(service_version)
+  self.resource = OpenTelemetry::SDK::Resources::Resource.create(
+    OpenTelemetry::SemanticConventions::Resource::SERVICE_VERSION => service_version
+  )
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>resource的使用</span></div><div><br /></div><div>configurator执行时，会用resource创建<code>TracerProvider</code></div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/configurator.rb
+def configure
+  # ...
+  OpenTelemetry.tracer_provider = tracer_provider
+  install_instrumentation
+end
+
+private
+
+def tracer_provider
+  @tracer_provider ||= Trace::TracerProvider.new(resource: @resource)
+end
+</code></pre><div><br /></div><div>然后<code>TracerProvider</code>产生span时，会使用这个resource</div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/tracer_provider.rb
+def internal_start_span(name, kind, attributes, links, start_timestamp, parent_context, instrumentation_scope) # rubocop:disable Metrics/MethodLength
+  # ...
+  if result.recording? && !@stopped
+    # ...
+    Span.new(
+      # ...
+      @resource,
+      instrumentation_scope
+    )
+  else
+    OpenTelemetry::Trace.non_recording_span(OpenTelemetry::Trace::SpanContext.new(trace_id: trace_id, span_id: span_id, tracestate: result.tracestate))
+  end
+end
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

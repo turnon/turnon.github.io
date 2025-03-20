@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>opentelemetry的batch_span_processor.rb</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="opentelemetry的batch_span_processor.rb" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-01-19T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"opentelemetry的batch_span_processor.rb","dateModified":"2023-01-19T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2023-01-19T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">opentelemetry的batch_span_processor.rb</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-01-19T00:00:00+00:00" itemprop="datePublished">Jan 19, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>以下来自于opentelemetry-sdk-1.2.0的<code>OpenTelemetry::SDK::Trace::Export::BatchSpanProcessor</code></div><div><br /></div><div><span style='font-weight: bold;'>初始化</span></div><div><br /></div><div>注入exporter，并配置参数（默认取环境变量）</div><div><br /></div>
+<ul>
+<li><code>exporter_timeout</code>：控制连接和发送远端的超时时间</li>
+<li><code>schedule_delay</code>：超过此值，即使未凑满<code>max_export_batch_size</code>，也会发送</li>
+<li><code>max_queue_size</code>：如果<code>spans</code>体积超过此值，则丢弃早期的span</li>
+<li><code>max_export_batch_size</code>：一批的最大体积，如果<code>spans</code>累积超过此值，则触发发送</li>
+<li><code>start_thread_on_boot</code>：是否初始化时就启动异步发送span的线程，默认是</li>
+</ul>
+<div>然后就会初始化<code>spans</code>（span暂存容器）、<code>@condition</code>（通知发送）、<code>@thread</code>异步发送线程。源码如下</div><div><br /></div><pre><code>def initialize(exporter,
+               exporter_timeout: Float(ENV.fetch('OTEL_BSP_EXPORT_TIMEOUT', 30_000)),
+               schedule_delay: Float(ENV.fetch('OTEL_BSP_SCHEDULE_DELAY', 5_000)),
+               max_queue_size: Integer(ENV.fetch('OTEL_BSP_MAX_QUEUE_SIZE', 2048)),
+               max_export_batch_size: Integer(ENV.fetch('OTEL_BSP_MAX_EXPORT_BATCH_SIZE', 512)),
+               start_thread_on_boot: String(ENV['OTEL_RUBY_BSP_START_THREAD_ON_BOOT']) !~ /false/i,
+               metrics_reporter: nil)
+  raise ArgumentError if max_export_batch_size > max_queue_size
+  raise ArgumentError, "exporter #{exporter.inspect} does not appear to be a valid exporter" unless Common::Utilities.valid_exporter?(exporter)
+
+  @exporter = exporter
+  @exporter_timeout_seconds = exporter_timeout / 1000.0
+  @mutex = Mutex.new
+  @export_mutex = Mutex.new
+  @condition = ConditionVariable.new
+  @keep_running = true
+  @delay_seconds = schedule_delay / 1000.0
+  @max_queue_size = max_queue_size
+  @batch_size = max_export_batch_size
+  @metrics_reporter = metrics_reporter || OpenTelemetry::SDK::Trace::Export::MetricsReporter
+  @spans = []
+  @pid = nil
+  @thread = nil
+  reset_on_fork(restart_thread: start_thread_on_boot)
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>收集</span></div><div><br /></div><div>如果暂存的数量超过容量限制，则入队前先清掉早期的span</div><div><br /></div><div>如果暂存的数量超过一批的大小限制，则通知异步线程发送</div><div><br /></div><pre><code>def on_finish(span)
+  return unless span.context.trace_flags.sampled?
+
+  lock do
+    reset_on_fork
+    n = spans.size + 1 - max_queue_size
+    if n.positive?
+      spans.shift(n)
+      report_dropped_spans(n, reason: 'buffer-full')
+    end
+    spans << span
+    @condition.signal if spans.size > batch_size
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>发送</span></div><div><br /></div><div>为免运行过程中fork了，需要经常检查pid。如果pid不同了，就要新建异步线程，并清空<code>spans</code>以免读取父进程的span</div><div><br /></div><pre><code>def reset_on_fork(restart_thread: true)
+  pid = Process.pid
+  return if @pid == pid
+
+  @pid = pid
+  spans.clear
+  @thread = restart_thread ? Thread.new { work } : nil
+rescue ThreadError => e
+  @metrics_reporter.add_to_counter('otel.bsp.error', labels: { 'reason' => 'ThreadError' })
+  OpenTelemetry.handle_error(exception: e, message: 'unexpected error in BatchSpanProcessor#reset_on_fork')
+end
+</code></pre><div><br /></div><div>轮询<code>spans</code>，如果批次未满，则等一段时间。如果超时了或者批次满了，则发送</div><div><br /></div><pre><code>def work
+  loop do
+    batch = lock do
+      @condition.wait(@mutex, @delay_seconds) if spans.size < batch_size && @keep_running
+      @condition.wait(@mutex, @delay_seconds) while spans.empty? && @keep_running
+      return unless @keep_running
+
+      fetch_batch
+    end
+
+    @metrics_reporter.observe_value('otel.bsp.buffer_utilization', value: spans.size / max_queue_size.to_f)
+
+    export_batch(batch)
+  end
+end
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

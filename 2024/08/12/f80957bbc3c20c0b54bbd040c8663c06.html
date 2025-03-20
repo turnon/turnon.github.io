@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Span vs Context vs SpanContext</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="Span vs Context vs SpanContext" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-08-12T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"Span vs Context vs SpanContext","dateModified":"2024-08-12T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2024-08-12T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Span vs Context vs SpanContext</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-08-12T00:00:00+00:00" itemprop="datePublished">Aug 12, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>Context</span></div><div><br /></div><div>官方解释：<a href="https://opentelemetry.io/docs/specs/otel/trace/api/#context-interaction">Context specs</a></div><div><br /></div><div><code>Context</code>是一个包含<code>{ CURRENT_SPAN_KEY =&gt; span, k1 =&gt; v1, k2 =&gt; v2 ... }</code>的map，其中可能有<code>CURRENT_SPAN_KEY</code>只向当前<code>Span</code></div><div><br /></div><div>每个线程都会维护一个context栈，栈底是懒生成的<code>Context::ROOT</code>（<code>new(EMPTY_ENTRIES)</code>）</div><div><br /></div><pre><code># opentelemetry-api-1.1.0/lib/opentelemetry/context.rb
+module OpenTelemetry
+  class Context
+    def set_value(key, value)
+      new_entries = @entries.dup
+      new_entries[key] = value
+      Context.new(new_entries)
+    end
+
+    class << self
+      def with_value(key, value)
+        ctx = current.set_value(key, value)
+        token = attach(ctx)
+        yield ctx, value
+      ensure
+        detach(token)
+      end
+
+      def current
+        stack.last || ROOT
+      end
+
+      def attach(context)
+        stack.push(context)
+      end
+
+      def detach(token)
+        stack.pop
+      end
+
+      private
+
+      def stack
+        Thread.current[STACK_KEY] ||= []
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>SpanContext</span></div><div><br /></div><div>官方解释：<a href="https://opentelemetry.io/docs/specs/otel/trace/api/#spancontext">SpanContext specs</a></div><div><br /></div><div><code>SpanContext</code>是一个包含trace<em>id、span</em>id等每个span独有信息的对象</div><div><br /></div><pre><code># opentelemetry-api-1.1.0/lib/opentelemetry/trace/span_context.rb
+module OpenTelemetry
+  module Trace
+    class SpanContext
+
+      def initialize(
+        trace_id: Trace.generate_trace_id,
+        span_id: Trace.generate_span_id,
+        trace_flags: TraceFlags::DEFAULT,
+        tracestate: Tracestate::DEFAULT,
+        remote: false
+      )
+        @trace_id = trace_id
+        @span_id = span_id
+        @trace_flags = trace_flags
+        @tracestate = tracestate
+        @remote = remote
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>Span</span></div><div><br /></div><div>官方解释：<a href="https://opentelemetry.io/docs/specs/otel/trace/api/#span">Span specs</a></div><div><br /></div><div><code>Span</code>内含<code>SpanContext</code>，并且记有attributes、links等信息</div><div><br /></div><pre><code># opentelemetry-api-1.1.0/lib/opentelemetry/trace/span.rb
+module OpenTelemetry
+  module Trace
+    class Span
+      attr_reader :context
+
+      def initialize(span_context: nil)
+        @context = span_context || SpanContext.new
+      end
+    end
+  end
+end
+
+# opentelemetry-sdk-1.2.1/lib/opentelemetry/sdk/trace/span.rb
+module OpenTelemetry
+  module SDK
+    module Trace
+      class Span < OpenTelemetry::Trace::Span
+        def initialize(context, parent_context, parent_span, name, kind,
+          parent_span_id, span_limits, span_processors, attributes, links,
+          start_timestamp, resource, instrumentation_scope
+        )
+          super(span_context: context)
+          @mutex = Mutex.new
+          @name = name
+          @kind = kind
+          # ...
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>交互</span></div><div><br /></div><div>每次<code>in_span</code>都会以<code>Context.current</code>为parent，创建一个新的<code>Span</code>（内含新的<code>SpanContext</code>），并将原context的键值对dup，更新<code>CURRENT_SPAN_KEY</code>为新的span，然后入栈</div><div><br /></div><div>对于跨进程（跨线程）的跟踪，需要在下层<code>OpenTelemetry::Context.with_current(extracted_ctx){ tracer.in_span(span_name){} }</code>，使<code>in_span</code>能关联上层context的<code>Span</code></div><div><br /></div><pre><code># opentelemetry-api-1.1.0/lib/opentelemetry/trace/tracer.rb
+class OpenTelemetry::Trace::Tracer
+  def in_span(name, attributes: nil, links: nil, start_timestamp: nil, kind: nil, &block)
+    span = start_span name# ...
+    Trace.with_span(span, &block)
+    # ...
+  end
+end
+
+# opentelemetry-sdk-1.2.1/lib/opentelemetry/sdk/trace/tracer.rb
+module OpenTelemetry
+  module SDK
+    module Trace
+      class Tracer < OpenTelemetry::Trace::Tracer
+        def start_span(name, with_parent: nil, attributes: nil, links: nil, start_timestamp: nil, kind: nil)
+          with_parent ||= Context.current
+          return super(name, with_parent: with_parent, attributes: attributes, links: links, start_timestamp: start_timestamp, kind: kind) if Common::Utilities.untraced?(with_parent)
+
+          name ||= 'empty'
+          kind ||= :internal
+
+          @tracer_provider.internal_start_span(name, kind, attributes, links, start_timestamp, with_parent, @instrumentation_scope)
+        end
+      end
+    end
+  end
+end
+
+# opentelemetry-sdk-1.2.1/lib/opentelemetry/sdk/trace/tracer_provider.rb
+module OpenTelemetry
+  module SDK
+    module Trace
+      # {TracerProvider} is the SDK implementation of {OpenTelemetry::Trace::TracerProvider}.
+      class TracerProvider < OpenTelemetry::Trace::TracerProvider
+        def internal_start_span(name, kind, attributes, links, start_timestamp, parent_context, instrumentation_scope) # rubocop:disable Metrics/MethodLength
+          parent_span = OpenTelemetry::Trace.current_span(parent_context)
+          parent_span_context = parent_span.context
+
+          if parent_span_context.valid?
+            parent_span_id = parent_span_context.span_id
+            trace_id = parent_span_context.trace_id
+          end
+
+          trace_id ||= @id_generator.generate_trace_id
+          result = @sampler.should_sample?(trace_id: trace_id, parent_context: parent_context, links: links, name: name, kind: kind, attributes: attributes)
+          span_id = @id_generator.generate_span_id
+          if result.recording? && !@stopped
+            trace_flags = result.sampled? ? OpenTelemetry::Trace::TraceFlags::SAMPLED : OpenTelemetry::Trace::TraceFlags::DEFAULT
+            context = OpenTelemetry::Trace::SpanContext.new(trace_id: trace_id, span_id: span_id, trace_flags: trace_flags, tracestate: result.tracestate)
+            attributes = attributes&.merge(result.attributes) || result.attributes
+            Span.new(
+              context,
+              parent_context,
+              parent_span,
+              name,
+              kind,
+              parent_span_id,
+              @span_limits,
+              @span_processors,
+              attributes,
+              links,
+              start_timestamp,
+              @resource,
+              instrumentation_scope
+            )
+          else
+            OpenTelemetry::Trace.non_recording_span(OpenTelemetry::Trace::SpanContext.new(trace_id: trace_id, span_id: span_id, tracestate: result.tracestate))
+          end
+        end
+      end
+    end
+  end
+end
+
+# opentelemetry-api-1.1.0/lib/opentelemetry/trace.rb
+module OpenTelemetry::Trace
+  def with_span(span)
+    Context.with_value(CURRENT_SPAN_KEY, span) { |c, s| yield s, c }
+  end
+end
+</code></pre><div><br /></div><div>另外可见，如果使用过<code>OpenTelemetry::Common::Utilities.untraced{ ... }</code>，则会创建一个<code>{UNTRACED_KEY =&gt; true}</code>的context，在此context内不会创建新的<code>Span</code></div><div><br /></div><pre><code># opentelemetry-common-0.19.7/lib/opentelemetry/common/utilities.rb
+module OpenTelemetry
+  module Common
+    module Utilities
+      def untraced
+        Context.with_value(UNTRACED_KEY, true) do |ctx, _|
+          yield ctx
+        end
+      end
+
+      def untraced?(context = nil)
+        context ||= Context.current
+        !!context.value(UNTRACED_KEY)
+      end
+    end
+  end
+end
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

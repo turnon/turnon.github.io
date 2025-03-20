@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>go的errors</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="go的errors" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-11-21T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"go的errors","dateModified":"2023-11-21T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2023-11-21T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">go的errors</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-11-21T00:00:00+00:00" itemprop="datePublished">Nov 21, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>用<code>fmt.Errorf</code>创建嵌套error</span></div><div><br /></div><div><code>fmt.Errorf</code>如果含<code>%w</code>，则会创建<code>wrapError</code></div><div><br /></div><pre><code>// go1.18/src/fmt/errors.go
+func Errorf(format string, a ...any) error {
+    p := newPrinter()
+    // wrapErrs is set when the format string may contain a %w verb.
+    p.wrapErrs = true
+    p.doPrintf(format, a)
+    s := string(p.buf)
+    var err error
+    // 如果格式中没有%w，则创建一个新的err，否则创建wrapError
+    if p.wrappedErr == nil {
+        err = errors.New(s)
+    } else {
+        err = &wrapError{s, p.wrappedErr}
+    }
+    p.free()
+    return err
+}
+</code></pre><div><br /></div><div>而<code>wrapError</code>有<code>Error() string</code>方法，符合error接口；另外还有<code>Unwrap() error</code>方法</div><div><br /></div><pre><code>type wrapError struct {
+    msg string
+    err error
+}
+
+func (e *wrapError) Error() string {
+    return e.msg
+}
+
+func (e *wrapError) Unwrap() error {
+    return e.err
+}
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>用<code>errors.Is</code>递归检查嵌套error是否某个错误</span></div><div><br /></div><div>循环<code>errors.Unwrap</code>解除嵌套，如果解出的值<code>== target</code>或者<code>Is(target)</code>，就返回<code>true</code></div><div><br /></div><div>直至解出的是<code>nil</code>，就返回<code>false</code></div><div><br /></div><pre><code>// go1.18/src/errors/wrap.go
+func Is(err, target error) bool {
+    if target == nil {
+        return err == target
+    }
+
+    isComparable := reflectlite.TypeOf(target).Comparable()
+    for {
+        if isComparable && err == target {
+            return true
+        }
+        if x, ok := err.(interface{ Is(error) bool }); ok && x.Is(target) {
+            return true
+        }
+        if err = Unwrap(err); err == nil {
+            return false
+        }
+    }
+}
+</code></pre><div><br /></div><div>而<code>errors.Unwrap</code>就是检查有没Unwrap接口，有就Unwrap，否则返回<code>nil</code></div><div><br /></div><pre><code>// go1.18/src/errors/wrap.go
+func Unwrap(err error) error {
+    u, ok := err.(interface {
+        Unwrap() error
+    })
+    if !ok {
+        return nil
+    }
+    return u.Unwrap()
+}
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>用<code>errors.As</code>抽取链中某类型的error，并赋值到另一个变量中</span></div><div><br /></div><div>一般用法：创建一个某类型的指针的空变量，将该指针传递给<code>errors.As</code>，则该指针能赋值为同类型error的报错信息</div><div><br /></div><pre><code>var badInputErr *BadInputError
+if errors.As(err, &badInputErr) {
+    fmt.Printf("bad input error occured: %s\n", badInputErr)
+}
+</code></pre><div><br /></div><div>也是循环<code>Unwrap</code>，然后检查能否赋值</div><div><br /></div><pre><code>func As(err error, target any) bool {
+    if target == nil {
+        panic("errors: target cannot be nil")
+    }
+    val := reflectlite.ValueOf(target)
+    typ := val.Type()
+    if typ.Kind() != reflectlite.Ptr || val.IsNil() {
+        panic("errors: target must be a non-nil pointer")
+    }
+    targetType := typ.Elem()
+    if targetType.Kind() != reflectlite.Interface && !targetType.Implements(errorType) {
+        panic("errors: *target must be interface or implement error")
+    }
+    for err != nil {
+        if reflectlite.TypeOf(err).AssignableTo(targetType) {
+            val.Elem().Set(reflectlite.ValueOf(err))
+            return true
+        }
+        if x, ok := err.(interface{ As(any) bool }); ok && x.As(target) {
+            return true
+        }
+        err = Unwrap(err)
+    }
+    return false
+}
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>参考</span></div><div><br /></div><div><span style='font-weight: bold;'>- <a href="https://www.cnblogs.com/YLTFY1998/p/16741285.html">Go 源码解读｜如何用好 errors 库的 errors.Is() 与 errors.As() 方法 - 白泽来了 - 博客园</a></span></div><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

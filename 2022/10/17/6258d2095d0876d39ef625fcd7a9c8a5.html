@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>sidekiq-prometheus-exporter浅析</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="sidekiq-prometheus-exporter浅析" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-10-17T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"sidekiq-prometheus-exporter浅析","dateModified":"2022-10-17T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2022-10-17T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">sidekiq-prometheus-exporter浅析</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-10-17T00:00:00+00:00" itemprop="datePublished">Oct 17, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div>
+<ul>
+<li>本质上是一个rack app，访问其 /metrics 接口，会使用 sidekiq/api 读取 redis 中的统计信息，然后用 erb 渲染成 prometheus 格式</li>
+<li>指标均采自sidekiq 存于 redis 中的状态快照</li>
+<li>自带 sidekiq-scheduler 和 sidekiq-cron 的监控</li>
+<li>不太支持扩展。比较方便的做法是增加一层 rack middleware，拼接上这个 gem 返回的 response body</li>
+</ul>
+<div><span style='font-weight: bold;'>官网</span></div><div><br /></div><div><a href="https://github.com/Strech/sidekiq-prometheus-exporter">Strech/sidekiq-prometheus-exporter: Basic metrics of Sidekiq with pluggable contribs</a></div><div><br /></div><div><span style='font-weight: bold;'>环境搭建</span></div><div><br /></div><div>在 [[sidekiq环境]] 的环境基础上，加上sidekiq-prometheus-exporter</div><div><br /></div><div>文件Gemfile</div><div><br /></div><pre><code>source 'https://mirrors.tuna.tsinghua.edu.cn/rubygems/'
+
+gem 'sidekiq', '~> 6.5.7'
+gem 'sidekiq-prometheus-exporter', '~> 0.1.17'
+</code></pre><div><br /></div><div>启动sidekiq客户端</div><div><br /></div><pre><code>bundle exec irb -r ./por.rb
+irb(main):001:0> PlainOldRuby.perform_async "like a dog", 3
+=> "a070cbe003929cd8aa0921a1"
+</code></pre><div><br /></div><div>启动sidekiq服务端</div><div><br /></div><pre><code>bundle exec sidekiq -r ./por.rb
+</code></pre><div><br /></div><div>启动sidekiq-prometheus-exporter。<code>bundle exec rackup -p9292 -o0.0.0.0</code></div><div><br /></div><pre><code>require './por.rb'
+
+require "rack"
+require "sidekiq/prometheus/exporter"
+
+run Sidekiq::Prometheus::Exporter.to_app
+</code></pre><div><br /></div><div>访问 <a href="http://localhost:9292/metrics">http://localhost:9292/metrics</a></div><div><br /></div><div><span style='font-weight: bold;'>源码</span></div><div><br /></div><div>提供/metrics接口的服务器</div><div><br /></div><pre><code># sidekiq-prometheus-exporter-0.1.17/lib/sidekiq/prometheus/exporter.rb
+module Sidekiq
+  module Prometheus
+    # Expose Prometheus metrics via Rack application or Sidekiq::Web application
+    module Exporter
+      # ...
+      MOUNT_PATH = '/metrics'.freeze
+      EXPORTERS = Exporters.new
+
+      class << self
+        def to_app
+          Rack::Builder.app do
+            map(MOUNT_PATH) do
+              run Sidekiq::Prometheus::Exporter
+            end
+          end
+        end
+
+        def call(env)
+          # ...
+          [200, HEADERS, [EXPORTERS.to_s]]
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>访问/metrics接口会返回各种已加载的<code>Sidekiq::Prometheus::Exporter::XXX</code>的<code>to_s</code>结果</div><div><br /></div><pre><code># sidekiq-prometheus-exporter-0.1.17/lib/sidekiq/prometheus/exporter/exporters.rb
+module Sidekiq
+  module Prometheus
+    module Exporter
+      class Exporters
+        AVAILABLE_EXPORTERS = {
+          standard: Sidekiq::Prometheus::Exporter::Standard,
+          cron: Sidekiq::Prometheus::Exporter::Cron,
+          scheduler: Sidekiq::Prometheus::Exporter::Scheduler
+        }.freeze
+
+        attr_reader :enabled
+
+        def initialize
+          @enabled = AVAILABLE_EXPORTERS.values.select(&:available?)
+        end
+
+        def to_s
+          @enabled.map { |exporter| exporter.new.to_s }.join("\n".freeze)
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>以<code>Sidekiq::Prometheus::Exporter::Standard</code>为例，就是直接通过 [[sidekiq的api]] 读取队列、集合、统计信息，然后通过模板渲染成prometheus接受的格式</div><div><br /></div><pre><code># sidekiq-prometheus-exporter-0.1.17/lib/sidekiq/prometheus/exporter/standard.rb
+require 'erb'
+require 'sidekiq/api'
+
+module Sidekiq
+  module Prometheus
+    module Exporter
+      class Standard
+        TEMPLATE = ERB.new(File.read(File.expand_path('templates/standard.erb', __dir__)))
+
+        QueueStats = Struct.new(:name, :size, :latency)
+        QueueWorkersStats = Struct.new(:total_workers, :busy_workers, :processes)
+        WorkersStats = Struct.new(:total_workers, :by_queue)
+
+        def self.available?
+          true
+        end
+
+        def initialize
+          @overview_stats = Sidekiq::Stats.new
+          @queues_stats = queues_stats
+          @workers_stats = workers_stats
+          @max_processing_times = max_processing_times
+        end
+
+        def to_s
+          TEMPLATE.result(binding).chomp!
+        end
+
+        private
+
+        def queues_stats
+          Sidekiq::Queue.all.map do |queue|
+            QueueStats.new(queue.name, queue.size, queue.latency)
+          end
+        end
+
+        def workers_stats
+          workers_stats = WorkersStats.new(0, {})
+
+          Sidekiq::ProcessSet.new.each_with_object(workers_stats) do |process, stats|
+            stats.total_workers += process['concurrency'].to_i
+
+            process['queues'].each do |queue|
+              stats.by_queue[queue] ||= QueueWorkersStats.new(0, 0, 0)
+              stats.by_queue[queue].processes += 1
+              stats.by_queue[queue].busy_workers += process['busy'].to_i
+              stats.by_queue[queue].total_workers += process['concurrency'].to_i
+            end
+          end
+        end
+
+        def max_processing_times
+          now = Time.now.to_i
+
+          Sidekiq::Workers.new
+            .map { |_, _, execution| execution }
+            .group_by { |execution| execution['queue'] }
+            .each_with_object({}) do |(queue, executions), memo|
+              oldest_execution = executions.min_by { |execution| execution['run_at'] }
+              memo[queue] = now - oldest_execution['run_at']
+            end
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>而模板 sidekiq-prometheus-exporter-0.1.17/lib/sidekiq/prometheus/exporter/templates/standard.erb 内容如下</div><div><br /></div><pre><code># HELP sidekiq_processed_jobs_total The total number of processed jobs.
+# TYPE sidekiq_processed_jobs_total counter
+sidekiq_processed_jobs_total <%= format('%d', @overview_stats.processed) %>
+
+# HELP sidekiq_failed_jobs_total The total number of failed jobs.
+# TYPE sidekiq_failed_jobs_total counter
+sidekiq_failed_jobs_total <%= format('%d', @overview_stats.failed) %>
+
+# HELP sidekiq_workers The number of workers across all the processes.
+# TYPE sidekiq_workers gauge
+sidekiq_workers <%= format('%d', @workers_stats.total_workers) %>
+
+# HELP sidekiq_processes The number of processes.
+# TYPE sidekiq_processes gauge
+sidekiq_processes <%= format('%d', @overview_stats.processes_size) %>
+
+# HELP sidekiq_busy_workers The number of workers performing the job.
+# TYPE sidekiq_busy_workers gauge
+sidekiq_busy_workers <%= format('%d', @overview_stats.workers_size) %>
+
+# HELP sidekiq_enqueued_jobs The number of enqueued jobs.
+# TYPE sidekiq_enqueued_jobs gauge
+sidekiq_enqueued_jobs <%= format('%d', @overview_stats.enqueued) %>
+
+# HELP sidekiq_scheduled_jobs The number of jobs scheduled for a future execution.
+# TYPE sidekiq_scheduled_jobs gauge
+sidekiq_scheduled_jobs <%= format('%d', @overview_stats.scheduled_size) %>
+
+# HELP sidekiq_retry_jobs The number of jobs scheduled for the next try.
+# TYPE sidekiq_retry_jobs gauge
+sidekiq_retry_jobs <%= format('%d', @overview_stats.retry_size) %>
+
+# HELP sidekiq_dead_jobs The number of jobs being dead.
+# TYPE sidekiq_dead_jobs gauge
+sidekiq_dead_jobs <%= format('%d', @overview_stats.dead_size) %>
+
+# HELP sidekiq_queue_latency_seconds The number of seconds between oldest job being pushed to the queue and current time.
+# TYPE sidekiq_queue_latency_seconds gauge
+<% @queues_stats.each do |queue| %>sidekiq_queue_latency_seconds{name="<%= queue.name %>"} <%= format('%.3f', queue.latency) %>
+<% end %>
+# HELP sidekiq_queue_enqueued_jobs The number of enqueued jobs in the queue.
+# TYPE sidekiq_queue_enqueued_jobs gauge
+<% @queues_stats.each do |queue| %>sidekiq_queue_enqueued_jobs{name="<%= queue.name %>"} <%= format('%d', queue.size) %>
+<% end %>
+# HELP sidekiq_queue_max_processing_time_seconds The number of seconds between oldest job of the queue being executed and current time.
+# TYPE sidekiq_queue_max_processing_time_seconds gauge
+<% @max_processing_times.each do |queue, max_processing_time| %>sidekiq_queue_max_processing_time_seconds{name="<%= queue %>"} <%= format('%i', max_processing_time) %>
+<% end %>
+# HELP sidekiq_queue_workers The number of workers serving the queue.
+# TYPE sidekiq_queue_workers gauge
+<% @workers_stats.by_queue.each do |queue, stats| %>sidekiq_queue_workers{name="<%= queue %>"} <%= format('%i', stats.total_workers) %>
+<% end %>
+# HELP sidekiq_queue_processes The number of processes serving the queue.
+# TYPE sidekiq_queue_processes gauge
+<% @workers_stats.by_queue.each do |queue, stats| %>sidekiq_queue_processes{name="<%= queue %>"} <%= format('%i', stats.processes) %>
+<% end %>
+# HELP sidekiq_queue_busy_workers The number of workers performing the job for the queue.
+# TYPE sidekiq_queue_busy_workers gauge
+<% @workers_stats.by_queue.each do |queue, stats| %>sidekiq_queue_busy_workers{name="<%= queue %>"} <%= format('%i', stats.busy_workers) %>
+<% end %>
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>增减监控指标</span></div><div><br /></div><div>不能增加。只可以通过以下方式移除 sidekiq-scheduler 和 sidekiq-cron 的监控</div><div><br /></div><pre><code>Sidekiq::Prometheus::Exporter.configure do |config|
+  config.exporters = # ..
+end
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

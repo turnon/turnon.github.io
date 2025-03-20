@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>acts_as_paranoid</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="acts_as_paranoid" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-09-02T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"acts_as_paranoid","dateModified":"2023-09-02T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2023-09-02T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">acts_as_paranoid</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-09-02T00:00:00+00:00" itemprop="datePublished">Sep 2, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div>
+<ul>
+<li>假删除和恢复（可级联）</li>
+<li><code>default_scope</code>查询未被假删除的记录，也提供方法查询假删除的记录</li>
+<li>可以仅校验未被假删除的记录的唯一性</li>
+<li>小心<code>unscoped</code>意外</li>
+</ul>
+<div><span style='font-weight: bold;'>源码分析</span></div><div><br /></div><div>需假删除的model，要在定义时标记为<code>acts_as_paranoid</code>方法，并且建立<code>deleted_at</code>字段（可选其他名称）</div><div><br /></div><div><code>acts_as_paranoid</code>方法内容如下。其作用是记住“删除标识字段”的名称和类型，并定义默认查询范围为“未作假删除的记录”，重写activerecord的删除方法，增加恢复方法</div><div><br /></div><pre><code>def acts_as_paranoid(options = {})
+  if !options.is_a?(Hash) && !options.empty?
+    raise ArgumentError, "Hash expected, got #{options.class.name}"
+  end
+
+  class_attribute :paranoid_configuration
+
+  self.paranoid_configuration = {
+    column: "deleted_at",
+    column_type: "time",
+    recover_dependent_associations: true,
+    dependent_recovery_window: 2.minutes,
+    double_tap_destroys_fully: true
+  }
+  if options[:column_type] == "string"
+    paranoid_configuration.merge!(deleted_value: "deleted")
+  end
+
+  paranoid_configuration.merge!(options) # user options
+
+  unless %w[time boolean string].include? paranoid_configuration[:column_type]
+    raise ArgumentError, "'time', 'boolean' or 'string' expected" \
+      " for :column_type option, got #{paranoid_configuration[:column_type]}"
+  end
+
+  return if paranoid?
+
+  include ActsAsParanoid::Core
+
+  # Magic!
+  default_scope { where(paranoid_default_scope) }
+
+  define_deleted_time_scopes if paranoid_column_type == :time
+end
+</code></pre><div><br /></div><div><code>default_scope</code>、<code>only_deleted</code>、<code>with_deleted</code>定义如下</div><div><br /></div><pre><code>def with_deleted
+  without_paranoid_default_scope
+end
+
+def without_paranoid_default_scope
+  scope = all
+
+  scope = scope.unscope(where: paranoid_column)
+  # Fix problems with unscope group chain
+  scope = scope.unscoped if scope.to_sql.include? paranoid_default_scope.to_sql
+
+  scope
+end
+
+def only_deleted
+  if string_type_with_deleted_value?
+    without_paranoid_default_scope
+      .where(paranoid_column_reference => paranoid_configuration[:deleted_value])
+  elsif boolean_type_not_nullable?
+    without_paranoid_default_scope.where(paranoid_column_reference => true)
+  else
+    without_paranoid_default_scope.where.not(paranoid_column_reference => nil)
+  end
+end
+
+def paranoid_default_scope
+  if string_type_with_deleted_value?
+    all.table[paranoid_column].eq(nil)
+      .or(all.table[paranoid_column].not_eq(paranoid_configuration[:deleted_value]))
+  elsif boolean_type_not_nullable?
+    all.table[paranoid_column].eq(false)
+  else
+    all.table[paranoid_column].eq(nil)
+  end
+end
+</code></pre><div><br /></div><div>如果删除标识是时间字段，则还会给model增加<code>deleted_inside_time_window</code>、<code>deleted_after_time</code>、<code>deleted_before_time</code>方法</div><div><br /></div><pre><code>def define_deleted_time_scopes
+  scope :deleted_inside_time_window, lambda { |time, window|
+    deleted_after_time((time - window)).deleted_before_time((time + window))
+  }
+  scope :deleted_after_time, lambda { |time|
+    only_deleted
+      .where("#{table_name}.#{paranoid_column} > ?", time)
+  }
+  scope :deleted_before_time, lambda { |time|
+    only_deleted
+      .where("#{table_name}.#{paranoid_column} < ?", time)
+  }
+end
+</code></pre><div><br /></div><div>删除方法<code>delete_all</code>、<code>destroy!</code>、<code>destroy</code>重定义如下，转化为更新删除标识字段</div><div><br /></div><pre><code>module ClassMethods
+  def delete_all(conditions = nil)
+    where(conditions)
+      .update_all(["#{paranoid_configuration[:column]} = ?", delete_now_value])
+  end
+end
+
+def destroy!
+  if !deleted?
+    with_transaction_returning_status do
+      run_callbacks :destroy do
+        if persisted?
+          # Handle composite keys, otherwise we would just use
+          # `self.class.primary_key.to_sym => self.id`.
+          self.class
+            .delete_all([Array(self.class.primary_key), Array(id)].transpose.to_h)
+          decrement_counters_on_associations
+        end
+
+        @_trigger_destroy_callback = true
+
+        stale_paranoid_value
+        self
+      end
+    end
+  elsif paranoid_configuration[:double_tap_destroys_fully]
+    destroy_fully!
+  end
+end
+
+alias destroy destroy!
+</code></pre><div><br /></div><div>若想执行真删除，可以<code>delete_all!</code>或<code>destroy_fully!</code>，又或者二次<code>destroy!</code></div><div><br /></div><pre><code>module ClassMethods
+  def delete_all!(conditions = nil)
+    without_paranoid_default_scope.delete_all!(conditions)
+  end
+end
+
+def destroy_fully!
+  with_transaction_returning_status do
+    run_callbacks :destroy do
+      destroy_dependent_associations!
+
+      if persisted?
+        # Handle composite keys, otherwise we would just use
+        # `self.class.primary_key.to_sym => self.id`.
+        self.class
+          .delete_all!([Array(self.class.primary_key), Array(id)].transpose.to_h)
+        decrement_counters_on_associations
+      end
+
+      stale_paranoid_value
+      @destroyed = true
+      freeze
+    end
+  end
+end
+</code></pre><div><br /></div><div>这里<code>destroy_dependent_associations!</code>的效果如下</div><div><br /></div><div>（因为dependent会设置<code>before_destroy</code>回调，如果子表也是<code>acts_as_paranoid</code>，那么子表就仅会假删除，所以这里还要再对其二次<code>destroy!</code>）</div><div><br /></div><pre><code>[8] pry(main)> Magazine.new(issues: [Issue.new])
+=> #<Magazine:0x00007f867ba2d010 id: nil, name: nil, found_at: nil, created_at: nil, updated_at: nil, deleted_at: nil>
+[9] pry(main)> _.save
+  TRANSACTION (0.0ms)  begin transaction
+  Magazine Create (0.3ms)  INSERT INTO "magazines" ("name", "found_at", "created_at", "updated_at", "deleted_at") VALUES (?, ?, ?, ?, ?)  [["name", nil], ["found_at", nil], ["created_at", "2021-10-25 05:45:16.832457"], ["updated_at", "2021-10-25 05:45:16.832457"], ["deleted_at", nil]]
+  Issue Create (0.1ms)  INSERT INTO "issues" ("issue_no", "magazine_id", "created_at", "updated_at", "deleted_at") VALUES (?, ?, ?, ?, ?)  [["issue_no", nil], ["magazine_id", 2], ["created_at", "2021-10-25 05:45:16.833498"], ["updated_at", "2021-10-25 05:45:16.833498"], ["deleted_at", nil]]
+  TRANSACTION (0.7ms)  commit transaction
+=> true
+[10] pry(main)> Magazine.last.destroy_fully!
+  Magazine Load (0.1ms)  SELECT "magazines".* FROM "magazines" WHERE "magazines"."deleted_at" IS NULL ORDER BY "magazines"."id" DESC LIMIT ?  [["LIMIT", 1]]
+  TRANSACTION (0.0ms)  begin transaction
+  Issue Load (0.1ms)  SELECT "issues".* FROM "issues" WHERE "issues"."deleted_at" IS NULL AND "issues"."magazine_id" = ?  [["magazine_id", 2]]
+  Issue Update All (0.3ms)  UPDATE "issues" SET deleted_at = '2021-10-25 05:45:25.338030' WHERE "issues"."deleted_at" IS NULL AND "issues"."id" = ?  [["id", 2]]
+  Issue Load (0.0ms)  SELECT "issues".* FROM "issues" WHERE "issues"."deleted_at" IS NOT NULL AND "issues"."magazine_id" = ?  [["magazine_id", 2]]
+  Issue Delete All (0.1ms)  DELETE FROM "issues" WHERE "issues"."id" = ?  [["id", 2]]
+  Magazine Delete All (0.1ms)  DELETE FROM "magazines" WHERE "magazines"."id" = ?  [["id", 2]]
+  TRANSACTION (0.9ms)  commit transaction
+</code></pre><div><br /></div><div>恢复方法<code>recover</code>和<code>recover!</code>实现如下。</div><div><br /></div><div>可以自定恢复前后的回调，是否级联恢复（默认级联恢复2分钟内的关联记录）</div><div><br /></div><pre><code>module ClassMethods
+  def before_recover(method)
+    set_callback :recover, :before, method
+  end
+
+  def after_recover(method)
+    set_callback :recover, :after, method
+  end
+end
+
+def recover(options = {})
+  return if !deleted?
+
+  options = {
+    recursive: self.class.paranoid_configuration[:recover_dependent_associations],
+    recovery_window: self.class.paranoid_configuration[:dependent_recovery_window],
+    raise_error: false
+  }.merge(options)
+
+  self.class.transaction do
+    run_callbacks :recover do
+      increment_counters_on_associations
+      deleted_value = paranoid_value
+      self.paranoid_value = self.class.recovery_value
+      result = if options[:raise_error]
+                 save!
+               else
+                 save
+               end
+      recover_dependent_associations(deleted_value, options) if options[:recursive]
+      result
+    end
+  end
+end
+
+def recover!(options = {})
+  options[:raise_error] = true
+
+  recover(options)
+end
+
+def recover_dependent_associations(deleted_value, options)
+  self.class.dependent_associations.each do |reflection|
+    recover_dependent_association(reflection, deleted_value, options)
+  end
+end
+
+def recover_dependent_association(reflection, deleted_value, options)
+  assoc = association(reflection.name)
+  return unless (klass = assoc.klass).paranoid?
+
+  if reflection.belongs_to? && attributes[reflection.association_foreign_key].nil?
+    return
+  end
+
+  scope = klass.only_deleted.merge(get_association_scope(assoc))
+
+  # We can only recover by window if both parent and dependant have a
+  # paranoid column type of :time.
+  if self.class.paranoid_column_type == :time && klass.paranoid_column_type == :time
+    scope = scope.deleted_inside_time_window(deleted_value, options[:recovery_window])
+  end
+
+  recovered = false
+  scope.each do |object|
+    object.recover(options)
+    recovered = true
+  end
+
+  assoc.reload if recovered && reflection.has_one? && assoc.loaded?
+end
+</code></pre><div><br /></div><div>关于唯一性校验，因activerecord自带的校验对<code>acts_as_paranoid</code>的删除标识毫不知情，所以如果你想仅对未作假删除的记录校验唯一性，需要调用<code>validates_as_paranoid</code>和<code>validates_uniqueness_of_without_deleted :xxx</code></div><div><br /></div><pre><code>module ActsAsParanoid
+  module Validations
+    def self.included(base)
+      base.extend ClassMethods
+    end
+
+    class UniquenessWithoutDeletedValidator < ActiveRecord::Validations::UniquenessValidator
+      private
+
+      def build_relation(klass, attribute, value)
+        super.where(klass.paranoid_default_scope)
+      end
+    end
+
+    module ClassMethods
+      def validates_uniqueness_of_without_deleted(*attr_names)
+        validates_with UniquenessWithoutDeletedValidator, _merge_attributes(attr_names)
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>如果父表<code>acts_as_paranoid</code>，而子表不是，但又想子表查到被假删除的父表，可以在<code>belongs_to</code>定义加上<code>:with_deleted</code>选项。该选项会给<code>belongs_to</code>的scope在链式增加<code>with_deleted</code>的scope</div><div><br /></div><pre><code>module ActsAsParanoid
+  module Associations
+    def self.included(base)
+      base.extend ClassMethods
+      class << base
+        alias_method :belongs_to_without_deleted, :belongs_to
+        alias_method :belongs_to, :belongs_to_with_deleted
+      end
+    end
+
+    module ClassMethods
+      def belongs_to_with_deleted(target, scope = nil, options = {})
+        if scope.is_a?(Hash)
+          options = scope
+          scope = nil
+        end
+
+        with_deleted = options.delete(:with_deleted)
+        if with_deleted
+          if scope
+            old_scope = scope
+            scope = proc do |*args|
+              if old_scope.arity == 0
+                instance_exec(&old_scope).with_deleted
+              else
+                old_scope.call(*args).with_deleted
+              end
+            end
+          else
+            scope = proc do
+              if respond_to? :with_deleted
+                self.with_deleted
+              else
+                all
+              end
+            end
+          end
+        end
+
+        result = belongs_to_without_deleted(target, scope, **options)
+
+        result.values.last.options[:with_deleted] = with_deleted if with_deleted
+
+        result
+      end
+    end
+  end
+end
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

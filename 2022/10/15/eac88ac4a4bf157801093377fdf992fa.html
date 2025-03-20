@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>sidekiq中间件</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="sidekiq中间件" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-10-15T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"sidekiq中间件","dateModified":"2022-10-15T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2022-10-15T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">sidekiq中间件</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-10-15T00:00:00+00:00" itemprop="datePublished">Oct 15, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>配置方法</span></div><div><br /></div><div>sidekiq中间件写法如下：</div><div><br /></div>
+<ul>
+<li>需要有实例方法<code>call</code>，接收<code>Sidekiq::Job</code>实例、原始值（json）、队列名</li>
+<li>并且里面视情况调用block去执行下一层的中间件</li>
+<li>如需获取redis连接，还得<code>include Sidekiq::ServerMiddleware</code>或提供<code>config=</code>方法</li>
+</ul>
+<pre><code>class MyServerHook
+  include Sidekiq::ServerMiddleware
+
+  def call(job_instance, msg, queue)
+    logger.info "Before job"
+    redis {|conn| conn.get("foo") } # do something in Redis
+    yield
+    logger.info "After job"
+  end
+end
+</code></pre><div><br /></div><div>可以通过以下方法配置中间件</div><div><br /></div><pre><code>Sidekiq.configure_client do |config|
+  config.client_middleware do |chain|
+    chain.add MyClientHook
+  end
+end
+
+Sidekiq.configure_server do |config|
+  config.server_middleware do |chain|
+    chain.add MyServerHook
+    chain.remove ActiveRecord
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>运作机制</span></div><div><br /></div><div>上述的配置方法，会先获取sidekiq全局的<code>Sidekiq::Middleware::Chain</code>实例（有分<code>@client_chain</code>和<code>@server_chain</code>）</div><div><br /></div><pre><code># sidekiq-6.5.7/lib/sidekiq.rb
+module Sidekiq
+  def self.configure_server
+    yield self if server?
+  end
+
+  def self.configure_client
+    yield self unless server?
+  end
+
+  def self.client_middleware
+    @client_chain ||= Middleware::Chain.new(self)
+    yield @client_chain if block_given?
+    @client_chain
+  end
+
+  def self.server_middleware
+    @server_chain ||= default_server_middleware
+    yield @server_chain if block_given?
+    @server_chain
+  end
+end
+</code></pre><div><br /></div><div>而<code>Sidekiq::Middleware::Chain</code>本质上是一个<code>Sidekiq::Middleware::Entry</code>数组。当中间件被<code>invoke</code>时，它会执行第一个中间件的<code>call</code>方法，并传递第二个中间进去，如此类推。直到最后一个中间件，它接收到的才是sidekiq任务的<code>perform</code>方法</div><div><br /></div><pre><code># sidekiq-6.5.7/lib/sidekiq/middleware/chain.rb
+module Sidekiq
+  module Middleware
+    class Chain
+      include Enumerable
+
+      # Iterate through each middleware in the chain
+      def each(&block)
+        entries.each(&block)
+      end
+
+      # @api private
+      def initialize(config = nil) # :nodoc:
+        @config = config
+        @entries = nil
+        yield self if block_given?
+      end
+
+      def entries
+        @entries ||= []
+      end
+
+      # Remove all middleware matching the given Class
+      # @param klass [Class]
+      def remove(klass)
+        entries.delete_if { |entry| entry.klass == klass }
+      end
+
+      def add(klass, *args)
+        remove(klass)
+        entries << Entry.new(@config, klass, *args)
+      end
+
+      def retrieve
+        map(&:make_new)
+      end
+
+      def invoke(*args)
+        return yield if empty?
+
+        chain = retrieve
+        traverse_chain = proc do
+          if chain.empty?
+            yield
+          else
+            chain.shift.call(*args, &traverse_chain)
+          end
+        end
+        traverse_chain.call
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>每次中间件链被<code>invoke</code>，都会重新实例化每一个中间件，并且如果中间件有<code>config=</code>方法，还会把sidekiq配置（内含redis）注入给它</div><div><br /></div><pre><code># sidekiq-6.5.7/lib/sidekiq/middleware/chain.rb
+module Sidekiq
+  module Middleware
+    class Chain
+      def retrieve
+        map(&:make_new)
+      end
+    end
+
+    class Entry
+      attr_reader :klass
+
+      def make_new
+        x = @klass.new(*@args)
+        x.config = @config if @config && x.respond_to?(:config=)
+        x
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>如果中间件想要取得sidekiq的redis连接，则它必须<code>include Sidekiq::ServerMiddleware</code>，或者提供<code>config=</code>方法，这样sidekiq将中间件实例化时，才会将sidekiq配置（内含redis）注入给它</div><div><br /></div><pre><code># sidekiq-6.5.7/lib/sidekiq/middleware/modules.rb
+module Sidekiq
+  # Server-side middleware must import this Module in order
+  # to get access to server resources during `call`.
+  module ServerMiddleware
+    attr_accessor :config
+    def redis_pool
+      config.redis_pool
+    end
+
+    def logger
+      config.logger
+    end
+
+    def redis(&block)
+      config.redis(&block)
+    end
+  end
+
+  # no difference for now
+  ClientMiddleware = ServerMiddleware
+end
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>opentelemetry-ruby</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="opentelemetry-ruby" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-12-12T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"opentelemetry-ruby","dateModified":"2022-12-12T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2022-12-12T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">opentelemetry-ruby</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-12-12T00:00:00+00:00" itemprop="datePublished">Dec 12, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div>
+<ul>
+<li>先使用<code>OpenTelemetry.tracer_provider.tracer</code>创建并注册一个<code>OpenTelemetry::SDK::Trace::Tracer</code>，（甚至可设为全局的常量以便引用）
+
+<ul>
+<li>tracer_provider有预先建好的<code>Internal::ProxyTracerProvider</code></li>
+<li>返回的tracer是<code>OpenTelemetry::SDK::Trace::Tracer &lt; OpenTelemetry::Trace::Tracer</code></li>
+</ul></li>
+<li>使用<code>OpenTelemetry::SDK::Trace::Tracer#in_span</code>创建顶层或嵌套的<code>OpenTelemetry::SDK::Trace::Span</code>
+
+<ul>
+<li>使用<code>OpenTelemetry::Context.stack</code>维护父子span关系，这个栈存于线程变量中</li>
+<li>在深层次调用中，可使用<code>OpenTelemetry::Trace.current_span</code>获取当前span来设置attribute、event等等（它也是从context中取的）</li>
+<li><code>in_span</code>的block执行完后，会将当前span交给processor处理</li>
+</ul></li>
+</ul>
+<div><span style='font-weight: bold;'>资料</span></div><div><br /></div>
+<ul>
+<li><a href="https://opentelemetry.io/docs/instrumentation/ruby/manual/">Manual Instrumentation | OpenTelemetry</a></li>
+<li><a href="https://docs.honeycomb.io/getting-data-in/opentelemetry/ruby/">OpenTelemetry for Ruby | Honeycomb</a></li>
+<li><a href="https://logz.io/blog/ruby-opentelemetry-auto-instrumentation/">Auto-Instrumenting Ruby Apps with OpenTelemetry | Logz.io</a></li>
+<li><a href="https://help.sumologic.com/docs/apm/traces/get-started-transaction-tracing/opentelemetry-instrumentation/ruby-on-rails/">Ruby on Rails OpenTelemetry auto-instrumentation | Sumo Logic Docs</a></li>
+<li><a href="https://uptrace.dev/opentelemetry/ruby-tracing.html">OpenTelemetry Tracing API for Ruby</a></li>
+<li><a href="https://opentelemetry.lightstep.com/core-concepts/context-propagation/">OpenTelemetry | Core Concepts</a></li>
+<li><a href="https://github.com/open-telemetry/opentelemetry-ruby/tree/main/examples">github.com/open-telemetry/opentelemetry-ruby/examples</a></li>
+<li>with_parent context</li>
+</ul>
+<div><span style='font-weight: bold;'>包结构</span></div><div><br /></div><div><a href="https://raw.githubusercontent.com/xcrossing/misc-refs/master/otel.html">constree包结构</a></div><div><br /></div><div><span style='font-weight: bold;'>配置组合</span></div><div><br /></div><div>配置processor和exporter，例如：</div><div><br /></div><pre><code>OpenTelemetry::SDK.configure do |c|
+  exporter = OpenTelemetry::SDK::Trace::Export::SpanExporter.new
+  processor = OpenTelemetry::SDK::Trace::Export::SimpleSpanProcessor.new(exporter)
+  c.add_span_processor(processor)
+  c.use_all
+end
+</code></pre><div><br /></div><div>当然，也可以编写自己的processor和exporter。一个应用可有多个processor，一个processor可有多个exporter。</div><div><br /></div><div>如果没有注册任何processor，则所有span相当于被丢弃掉</div><div><br /></div><div>可以将exporter的逻辑融合到processor中</div><div><br /></div><div><span style='font-weight: bold;'>获取Tracer</span></div><div><br /></div><div>跟踪一下</div><div><br /></div><pre><code>tracer =
+  binding.trace_tree(htmp: 'new_tracer') do
+    OpenTelemetry.tracer_provider.tracer('my_app', '0.1.0')
+  end
+</code></pre><div><br /></div><div>得调用栈<a href="https://raw.githubusercontent.com/xcrossing/misc-refs/master/20221211_115752_090_new_tracer.html">new_tracer</a> 如下</div><div><br /></div><pre><code> - Object#block in <main> otel.rb:16
+ ├─ - OpenTelemetry.tracer_provider $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry.rb:64
+ │  └─ - Thread::Mutex#synchronize $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry.rb:65
+ │     └─   OpenTelemetry.block in tracer_provider $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry.rb:65
+ └─ - OpenTelemetry::SDK::Trace::TracerProvider#tracer $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb:51
+    └─ - Thread::Mutex#synchronize $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb:55
+       └─ - OpenTelemetry::SDK::Trace::TracerProvider#block in tracer $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb:55
+          ├─ - #<Class:OpenTelemetry::SDK::Trace::TracerProvider::Key>#new $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb:55
+          │  └─   Struct#initialize $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb:55
+          ├─ - Class#new $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb:55
+          │  └─ - OpenTelemetry::SDK::Trace::Tracer#initialize $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer.rb:21
+          │     └─ - #<Class:OpenTelemetry::SDK::InstrumentationLibrary>#new $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer.rb:22
+          │        └─   Struct#initialize $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer.rb:22
+          └─ - Struct#hash $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb:55
+             ├─   Kernel#hash $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb:55
+             ├─   String#hash $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb:55
+             └─   String#hash $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb:55
+</code></pre><div><br /></div><div>先获取tracer_provider，默认就是预先建好的<code>Internal::ProxyTracerProvider</code></div><div><br /></div><pre><code># opentelemetry-api-1.1.0/lib/opentelemetry.rb
+module OpenTelemetry
+  extend self
+
+  @mutex = Mutex.new
+  @tracer_provider = Internal::ProxyTracerProvider.new
+
+  def tracer_provider
+    @mutex.synchronize { @tracer_provider }
+  end
+end
+</code></pre><div><br /></div><div>然后从中获取<code>OpenTelemetry::SDK::Trace::Tracer &lt; OpenTelemetry::Trace::Tracer</code>，并注册起来</div><div><br /></div><pre><code># opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb
+module OpenTelemetry
+  module SDK
+    module Trace
+      class TracerProvider < OpenTelemetry::Trace::TracerProvider
+        Key = Struct.new(:name, :version)
+        private_constant(:Key)
+
+        def initialize(sampler: sampler_from_environment(Samplers.parent_based(root: Samplers::ALWAYS_ON)),
+                       resource: OpenTelemetry::SDK::Resources::Resource.create,
+                       id_generator: OpenTelemetry::Trace,
+                       span_limits: SpanLimits::DEFAULT)
+          @registry = {}
+          @registry_mutex = Mutex.new
+          # ...
+        end
+
+        def tracer(name = nil, version = nil)
+          name ||= ''
+          version ||= ''
+          @registry_mutex.synchronize { @registry[Key.new(name, version)] ||= Tracer.new(name, version, self) }
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>获取span</span></div><div><br /></div><div>一般都是在tracer上调用<code>in_span{ |span, context| ... }</code>新开一个span，然后在block中执行自己的逻辑</div><div><br /></div><div><span style='font-weight: bold;'>使用者调用<code>OpenTelemetry::SDK::Trace::Tracer#in_span</code>新开span</span></div><div><br /></div><div>跟踪一下<code>OpenTelemetry::SDK::Trace::Tracer#in_span</code>。（因为返回值含有一些acsii-8bit，所以配置<code>return: false</code>）</div><div><br /></div><pre><code>binding.trace_tree(htmp: 'in_span', transcode: true, return: false) do
+  tracer.in_span('foo') do |span|
+    tracer.in_span('bar') do |child_span|
+    end
+  end
+end
+</code></pre><div><br /></div><div>得调用栈<a href="https://raw.githubusercontent.com/xcrossing/misc-refs/master/20221211_130859_635_in_span.html">in_span</a>，简单来看如下</div><div><br /></div><pre><code> - Object#block in <main> otel.rb:21
+ └─ - OpenTelemetry::SDK::Trace::Tracer#in_span $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/trace/tracer.rb:26
+    ├─ - OpenTelemetry::SDK::Trace::Tracer#start_span $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer.rb:30
+    │  ├─ + OpenTelemetry::Context.current $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/context.rb:31
+    │  ├─ + OpenTelemetry::Trace.current_span $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/trace.rb:50
+    │  ├─ + OpenTelemetry::Trace.current_span $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/trace.rb:50
+    │  ├─   OpenTelemetry::Trace::SpanContext#valid? $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/trace/span_context.rb:65
+    │  └─ - OpenTelemetry::SDK::Trace::TracerProvider#internal_create_span $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb:129
+    │     ├─   OpenTelemetry::Trace::SpanContext#valid? $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/trace/span_context.rb:65
+    │     ├─ + OpenTelemetry::Trace.generate_trace_id $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/trace.rb:28
+    │     ├─ + OpenTelemetry::SDK::Trace::Samplers::ParentBased#should_sample? $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/samplers/parent_based.rb:47
+    │     ├─ + OpenTelemetry::Trace.generate_span_id $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/trace.rb:39
+    │     ├─   OpenTelemetry::SDK::Trace::Samplers::Result#recording? $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/samplers/result.rb:59
+    │     ├─   OpenTelemetry::SDK::Trace::Samplers::Result#sampled? $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/samplers/result.rb:52
+    │     ├─ - Class#new $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb:142
+    │     │  └─   OpenTelemetry::Trace::SpanContext#initialize $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/trace/span_context.rb:24
+    │     └─ - Class#new $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb:144
+    │        └─ + OpenTelemetry::SDK::Trace::Span#initialize $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/span.rb:279
+    ├─ - OpenTelemetry::Trace.with_span $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/trace.rb:71
+    │  └─ - OpenTelemetry::Context.with_value $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/context.rb:84
+    │     ├─ + OpenTelemetry::Context.current $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/context.rb:31
+    │     ├─ + OpenTelemetry::Context#set_value $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/context.rb:150
+    │     ├─ + OpenTelemetry::Context.attach $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/context.rb:42
+    │     ├─ - OpenTelemetry::Trace.block in with_span $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/trace.rb:72
+    │     │  └─ - Object#block (2 levels) in <main> otel.rb:22
+    │     │     └─ + OpenTelemetry::SDK::Trace::Tracer#in_span $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/trace/tracer.rb:26
+    │     └─ + OpenTelemetry::Context.detach $GemPath0/gems/opentelemetry-api-1.1.0/lib/opentelemetry/context.rb:55
+    └─ - OpenTelemetry::SDK::Trace::Span#finish $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/span.rb:230
+       ├─ + Thread::Mutex#synchronize $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/span.rb:231
+       └─ - Array#each $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/span.rb:241
+          └─ - OpenTelemetry::SDK::Trace::Span#block in finish $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/span.rb:241
+             └─ + OpenTelemetry::SDK::Trace::Export::BatchSpanProcessor#on_finish $GemPath0/gems/opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/export/batch_span_processor.rb:77
+</code></pre><div><br /></div><div>首先是<code>OpenTelemetry::SDK::Trace::Tracer#in_span</code>方法，它继承于<code>OpenTelemetry::Trace::Tracer</code></div><div><br /></div><pre><code># opentelemetry-api-1.1.0/lib/opentelemetry/trace/tracer.rb
+module OpenTelemetry
+  module Trace
+    class Tracer
+      def in_span(name, attributes: nil, links: nil, start_timestamp: nil, kind: nil, &block)
+        span = nil
+        span = start_span(name, attributes: attributes, links: links, start_timestamp: start_timestamp, kind: kind)
+        Trace.with_span(span, &block)
+      rescue Exception => e
+        span&.record_exception(e)
+        span&.status = Status.error("Unhandled exception of type: #{e.class}")
+        raise e
+      ensure
+        span&.finish
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>但<code>start_span</code>方法，他自己有重写过。</div><div><br /></div><pre><code># opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer.rb
+module OpenTelemetry
+  module SDK
+    module Trace
+      class Tracer < OpenTelemetry::Trace::Tracer
+        def initialize(name, version, tracer_provider)
+          @instrumentation_library = InstrumentationLibrary.new(name, version)
+          @tracer_provider = tracer_provider
+        end
+
+        def start_span(name, with_parent: nil, attributes: nil, links: nil, start_timestamp: nil, kind: nil)
+          name ||= 'empty'
+
+          with_parent ||= Context.current
+          parent_span = OpenTelemetry::Trace.current_span(with_parent)
+          parent_span_context = OpenTelemetry::Trace.current_span(with_parent).context
+          if parent_span_context.valid?
+            parent_span_id = parent_span_context.span_id
+            trace_id = parent_span_context.trace_id
+          end
+
+          @tracer_provider.internal_create_span(name, kind, trace_id, parent_span_id, attributes, links, start_timestamp, with_parent, parent_span, @instrumentation_library)
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>首先是调用<code>Context.current</code>，从栈顶取上下文。初次调用是没有的，会返回<code>OpenTelemetry::Context::ROOT</code></div><div><br /></div><pre><code># opentelemetry-api-1.1.0/lib/opentelemetry/context.rb
+module OpenTelemetry
+  class Context
+    EMPTY_ENTRIES = {}.freeze
+    STACK_KEY = :__opentelemetry_context_storage__
+
+    class << self
+      def current
+        stack.last || ROOT
+      end
+
+      def stack
+        Thread.current[STACK_KEY] ||= []
+      end
+
+      def empty
+        new(EMPTY_ENTRIES)
+      end
+    end
+
+    def initialize(entries)
+      @entries = entries.freeze
+    end
+
+    ROOT = empty.freeze
+  end
+end
+</code></pre><div><br /></div><div>然后用<code>OpenTelemetry::Trace.current_span</code>在这个<code>OpenTelemetry::Context::ROOT</code>上通过<code>CURRENT_SPAN_KEY</code>键，获取parent_span</div><div><br /></div><div>因为其<code>Context</code>的<code>@entries</code>为空，只会获取到<code>OpenTelemetry::Trace::Span::INVALID</code></div><div><br /></div><pre><code># opentelemetry-api-1.1.0/lib/opentelemetry/trace.rb
+module OpenTelemetry
+  module Trace
+    extend self
+    def current_span(context = nil)
+      context ||= Context.current
+      context.value(CURRENT_SPAN_KEY) || Span::INVALID
+    end
+  end
+end
+
+# opentelemetry-api-1.1.0/lib/opentelemetry/trace/span.rb
+module OpenTelemetry
+  module Trace
+    class Span
+      attr_reader :context
+
+      def initialize(span_context: nil)
+        @context = span_context || SpanContext.new
+      end
+
+      INVALID = new(span_context: SpanContext::INVALID)
+    end
+  end
+end
+</code></pre><div><br /></div><div>而从中获取的parent<em>span</em>context，也是<code>OpenTelemetry::Trace::SpanContext::INVALID</code></div><div><br /></div><pre><code># opentelemetry-api-1.1.0lib/opentelemetry/trace/span_context.rb
+module OpenTelemetry
+  module Trace
+    class SpanContext
+      def initialize(
+        trace_id: Trace.generate_trace_id,
+        span_id: Trace.generate_span_id,
+        trace_flags: TraceFlags::DEFAULT,
+        tracestate: Tracestate::DEFAULT,
+        remote: false
+      )
+        @trace_id = trace_id
+        @span_id = span_id
+        @trace_flags = trace_flags
+        @tracestate = tracestate
+        @remote = remote
+      end
+
+      INVALID = new(trace_id: INVALID_TRACE_ID, span_id: INVALID_SPAN_ID)
+    end
+  end
+end
+</code></pre><div><br /></div><div>最终<code>internal_create_span</code>如下</div><div><br /></div><pre><code># opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/tracer_provider.rb
+module OpenTelemetry
+  module SDK
+    module Trace
+      class TracerProvider < OpenTelemetry::Trace::TracerProvider
+        def internal_create_span(name, kind, trace_id, parent_span_id, attributes, links, start_timestamp, parent_context, parent_span, instrumentation_library)
+          # 此处似乎多余
+          parent_span_context = parent_span.context
+          if parent_span_context.valid?
+            parent_span_id = parent_span_context.span_id
+            trace_id = parent_span_context.trace_id
+          end
+          name ||= 'empty'
+          trace_id ||= @id_generator.generate_trace_id
+          kind ||= :internal
+          result = @sampler.should_sample?(trace_id: trace_id, parent_context: parent_context, links: links, name: name, kind: kind, attributes: attributes)
+          span_id = @id_generator.generate_span_id
+          if result.recording? && !@stopped
+            trace_flags = result.sampled? ? OpenTelemetry::Trace::TraceFlags::SAMPLED : OpenTelemetry::Trace::TraceFlags::DEFAULT
+            context = OpenTelemetry::Trace::SpanContext.new(trace_id: trace_id, span_id: span_id, trace_flags: trace_flags, tracestate: result.tracestate)
+            attributes = attributes&.merge(result.attributes) || result.attributes
+            Span.new(context, parent_context, parent_span, name, kind, parent_span_id, @span_limits, @span_processors,
+              attributes, links, start_timestamp, @resource, instrumentation_library)
+          else
+            OpenTelemetry::Trace.non_recording_span(OpenTelemetry::Trace::SpanContext.new(trace_id: trace_id, span_id: span_id, tracestate: result.tracestate))
+          end
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>内部调用<code>Trace.with_span</code>新开Context入栈，将span返回使用者，出栈</span></div><div><br /></div><div>使用<code>with_span</code>会创建一个<code>{ CURRENT_SPAN_KEY =&gt; new_span }</code>的<code>Context</code>，并将其压入栈中，然后执行block</div><div><br /></div><div>于是当下层再次调用<code>in_span</code>时，就能通过<code>CURRENT_SPAN_KEY</code>，取到这个<code>Span</code></div><div><br /></div><pre><code># opentelemetry-api-1.1.0/lib/opentelemetry/trace.rb
+module OpenTelemetry
+  module Trace
+    extend self
+    CURRENT_SPAN_KEY = Context.create_key('current-span')
+    def with_span(span)
+      Context.with_value(CURRENT_SPAN_KEY, span) { |c, s| yield s, c }
+    end
+  end
+end
+
+# opentelemetry-api-1.1.0/lib/opentelemetry/context.rb
+module OpenTelemetry
+  class Context
+    class << self
+      def with_value(key, value)
+        ctx = current.set_value(key, value)
+        token = attach(ctx)
+        yield ctx, value
+      ensure
+        detach(token)
+      end
+
+      def attach(context)
+        s = stack
+        s.push(context)
+        s.size
+      end
+
+      def detach(token)
+        s = stack
+        calls_matched = (token == s.size)
+        OpenTelemetry.handle_error(exception: DetachError.new('calls to detach should match corresponding calls to attach.')) unless calls_matched
+        s.pop
+        calls_matched
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>内部调用<code>OpenTelemetry::SDK::Trace::Span#finish</code>收尾，丢给processor</span></div><div><br /></div><div><code>finish</code>方法比较清晰，就是记录结束时间，然后丢给各个processor处理</div><div><br /></div><pre><code># opentelemetry-sdk-1.0.3/lib/opentelemetry/sdk/trace/span.rb
+module OpenTelemetry
+  module SDK
+    module Trace
+      class Span < OpenTelemetry::Trace::Span
+        def finish(end_timestamp: nil)
+          @mutex.synchronize do
+            if @ended
+              OpenTelemetry.logger.warn('Calling finish on an ended Span.')
+              return self
+            end
+            @end_timestamp = relative_timestamp(end_timestamp)
+            @attributes = validated_attributes(@attributes).freeze
+            @events.freeze
+            @ended = true
+          end
+          @span_processors.each { |processor| processor.on_finish(self) }
+          self
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>Span与Context与SpanContext</span></div><div><br /></div><div>[[Span vs Context vs SpanContext]]</div><div><br /></div><div><span style='font-weight: bold;'>processor接收span再转发exporter</span></div><div><br /></div><div>span被收尾后，会发给各个processor的<code>on_finish</code></div><div><br /></div><div>例如以下<code>SimpleSpanProcessor</code>，接收span后就直接转发给exporter的export方法了。注意export方法接受的是span数组</div><div><br /></div><div>（此外还有[[opentelemetry的batch<em>span</em>processor.rb]]）</div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/export/simple_span_processor.rb
+module OpenTelemetry
+  module SDK
+    module Trace
+      module Export
+        class SimpleSpanProcessor
+          def initialize(span_exporter)
+            raise ArgumentError, "exporter #{span_exporter.inspect} does not appear to be a valid exporter" unless Common::Utilities.valid_exporter?(span_exporter)
+
+            @span_exporter = span_exporter
+          end
+
+          def on_start(span, parent_context)
+            # Do nothing.
+          end
+
+          def on_finish(span)
+            return unless span.context.trace_flags.sampled?
+
+            @span_exporter&.export([span.to_span_data])
+          rescue => e # rubocop:disable Style/RescueStandardError
+            OpenTelemetry.handle_error(exception: e, message: 'unexpected error in span.on_finish')
+          end
+
+          def force_flush(timeout: nil)
+            @span_exporter&.force_flush(timeout: timeout) || SUCCESS
+          end
+
+          def shutdown(timeout: nil)
+            @span_exporter&.shutdown(timeout: timeout) || SUCCESS
+          end
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>使用exporter发送span</span></div><div><br /></div><div><code>OpenTelemetry::SDK::Trace::Export::SpanExporter</code>是一个null object</div><div><br /></div><div>它也展示了一个ruby opentelemetry export所需实现的接口：<code>export</code>、<code>force_flush</code>、<code>shutdown</code></div><div><br /></div><div>其他实现包括：</div><div><br /></div>
+<ul>
+<li>[[opentelemetry的console<em>span</em>exporter.rb]]</li>
+<li>[[opentelemetry的in<em>memory</em>span_exporter.rb]]</li>
+<li>[[ruby的opentelemetry-exporter-zipkin]]</li>
+<li>[[ruby的opentelemetry-exporter-jaeger]]</li>
+</ul>
+<div><code>SpanExporter</code>源码如下</div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/export/span_exporter.rb
+module OpenTelemetry
+  module SDK
+    module Trace
+      module Export
+        class SpanExporter
+          def initialize
+            @stopped = false
+          end
+
+          def export(span_data, timeout: nil)
+            return SUCCESS unless @stopped
+            FAILURE
+          end
+
+          def force_flush(timeout: nil)
+            SUCCESS
+          end
+
+          def shutdown(timeout: nil)
+            @stopped = true
+            SUCCESS
+          end
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div>在<code>export</code>中加入<code>pp caller</code>检查它在哪里被调用</div><div><br /></div><pre><code> def export(span_data, timeout: nil)
++  pp caller
+   return SUCCESS unless @stopped
+
+   FAILURE
+ end
+</code></pre><div><br /></div><div>得：</div><div><br /></div><pre><code>[".../opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/export/batch_span_processor.rb:187:in `block in export_batch'",
+ ".../opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/export/batch_span_processor.rb:187:in `synchronize'",
+ ".../opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/export/batch_span_processor.rb:187:in `export_batch'",
+ ".../opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/export/batch_span_processor.rb:170:in `block in work'",
+ ".../opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/export/batch_span_processor.rb:159:in `loop'",
+ ".../opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/export/batch_span_processor.rb:159:in `work'",
+ ".../opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/export/batch_span_processor.rb:180:in `block in reset_on_fork'"]
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

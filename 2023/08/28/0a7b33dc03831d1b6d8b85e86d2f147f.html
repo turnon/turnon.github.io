@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>再议假删除</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="再议假删除" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-08-28T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"再议假删除","dateModified":"2023-08-28T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2023-08-28T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">再议假删除</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-08-28T00:00:00+00:00" itemprop="datePublished">Aug 28, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div><div>“假删除”有一定概率是需求分析不彻底所产生的一种解决方案，应尽可能细化为状态筛选、事件溯源、数据审计、归档备份等具体需求</div><div><br /></div><div><span style='font-weight: bold;'>为什么要假删除？</span></div><div><br /></div>
+<ul>
+<li>防止误删（无意、恶意）</li>
+<li>暂时删除</li>
+</ul>
+<div><span style='font-weight: bold;'>一般实现方法</span></div><div><br /></div>
+<ul>
+<li>加字段is<em>deleted，甚至deleted</em>at/deleted_by</li>
+<li>改写删除接口，填充上述字段；改写查询接口，默认情况下只查询未被假删除的记录（API层、应用内部、数据层……）</li>
+</ul>
+<div><span style='font-weight: bold;'>gem</span></div><div><br /></div>
+<ul>
+<li><a href="https://github.com/rubysherpas/paranoia">rubysherpas/paranoia</a></li>
+<li><a href="https://github.com/ActsAsParanoid/acts_as_paranoid">ActsAsParanoid/acts_as_paranoid</a></li>
+<li><a href="https://github.com/JackDanger/permanent_records">JackDanger/permanent_records</a></li>
+<li><a href="https://github.com/jhawthorn/discard">jhawthorn/discard</a></li>
+</ul>
+<div><span style='font-weight: bold;'>如果我真的想删除呢？</span></div><div><br /></div>
+<ul>
+<li>同时提供真删除和假删除的接口</li>
+<li>只提供一个删除接口，但根据权限，一些人假删，另一些人真删</li>
+<li>定期将假删除的记录真删除</li>
+<li>组合上述做法</li>
+</ul>
+<div><span style='font-weight: bold;'>修改接口的局限与危害</span></div><div><br /></div>
+<ul>
+<li>还是有可能绕过默认查询。不管是通过应用层的限制（如ActiveRecord的default_scope），或数据库层的视图，如果没做好权限控制，那么还是有可能通过更底层的方式访问到假删除的记录</li>
+<li>在底层增加拦截时，上层可能并不知情</li>
+</ul>
+<div><span style='font-weight: bold;'>级联删除（以具体业务需求为准）</span></div><div><br /></div>
+<ul>
+<li>子记录要真删除还是假删除还是清空外键？</li>
+<li>对于deleted<em>at方案，是级联地为子孙表增加deleted</em>at，还是查询时连接父表检查可见性？</li>
+<li>若假删除子记录，那么还能不能通过它另一父记录查询到它？</li>
+<li>子记录有没有自己的假删除动作？恢复父记录时怎样判断是否级联恢复子记录？是否需要记录删除原因？</li>
+</ul>
+<div><span style='font-weight: bold;'>数据校验</span></div><div><br /></div>
+<ul>
+<li>唯一性校验是否应包含假删除的记录？（离职、重新入职）</li>
+<li>考虑到未来恢复数据，增加校验规则时要不要也修正假删除的记录？</li>
+<li>应用层还是数据库层？</li>
+</ul>
+<div><span style='font-weight: bold;'>性能</span></div><div><br /></div>
+<ul>
+<li>假删除和真删除的数据分表存储，或分别索引</li>
+<li>用户配额是否包含假删除的数据</li>
+</ul>
+<div><span style='font-weight: bold;'>误解需求？</span></div><div><br /></div>
+<ul>
+<li>状态筛选：枚举字段，aborted/inactive……</li>
+<li>归档备份：不止转移到另一表中，甚至转移到另一库中，或者导出至其他载体；CDC工具</li>
+<li>数据审计：不止deleted<em>at/deleted</em>by，连所有updated<em>at/updated</em>by操作也记录下来，例如<a href="https://github.com/paper-trail-gem/paper_trail">paper-trail-gem/paper_trail</a>（[[对比各种日志审计gem]]）</li>
+<li>事件溯源</li>
+</ul>
+<div><span style='font-weight: bold;'>参考</span></div><div><br /></div>
+<ul>
+<li><a href="https://build.diligent.com/soft-deletion-is-actually-pretty-hard-cb434e24825c">Soft-deletion is actually pretty hard | by Eugene Gilburg | Build Diligent</a></li>
+<li><a href="https://entrision.com/blog/comparing-paranoia-vs-discard/">Soft Delete with Ruby on Rails: Paranoia or Discard</a></li>
+</ul>
+
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

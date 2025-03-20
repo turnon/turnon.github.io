@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>flipper浅析</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="flipper浅析" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-05-28T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"flipper浅析","dateModified":"2022-05-28T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2022-05-28T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">flipper浅析</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-05-28T00:00:00+00:00" itemprop="datePublished">May 28, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div><div>feature：功能
+gate：范围的类型（Boolean、Actor、Group、Percentage）
+type：范围的值（true/false、id、组名、百分比）</div><div><br /></div><div>因为判断 feature 是否启用时，需要加载该 feature 关联的所有 gate ，所以不适合一个 feature 关联大量 Actor/Group</div><div><br /></div><div><span style='font-weight: bold;'>开始探究源码</span></div><div><br /></div><div>看看 Flipper.enabled? 方法到底会干些什么</div><div><br /></div><pre><code>[1] pry(main)> Flipper.enabled? :search
+  Flipper::Adapters::ActiveRecord::Gate Load (0.1ms)  SELECT "flipper_gates".* FROM "flipper_gates" WHERE "flipper_gates"."feature_key" = ?  [["feature_key", "search"]]
+=> false
+[2] pry(main)> $ Flipper.enabled?
+
+From: /home/z/datahouse/asdf/installs/ruby/2.7.5/lib/ruby/2.7.0/forwardable.rb:226:
+
+Owner: Flipper
+Visibility: public
+Signature: enabled?(*args, &block)
+Number of lines: 5
+
+def #{ali}(*args, &block)
+  #{pre}
+  begin
+    #{accessor}
+  end#{method_call}
+[3] pry(main)>
+</code></pre><div><br /></div><div>因为同时使用了 flipper-active_record，所以开关记录在了数据库了。</div><div><br /></div><div>而 Flipper.enabled? 方法的定义来自 forwardable，不好查看。于是跟踪一下enabled?方法的调用栈</div><div><br /></div><pre><code>binding.trace_tree(htmp: 'flipper_enabled_quiz'){ Flipper.enabled? :search }
+</code></pre><div><br /></div><div>得：</div><div><br /></div><div>![[flipper-enabled-quiz-trace-20220525.html]]</div><div><br /></div><div>概览如此</div><div><br /></div><div><img src='/assets/files/wRJFtmy.png'>
+调用 Flipper.enabled?，会取全局的 Flipper::Configuration 对象 （如果未有则 new 一个），然后再取线程缓存的 Flipper::DSL 对象（如果未有则 new 一个）。dsl 内含一个 @adapter，例如 Flipper::Adapters::ActiveRecord.new。</div><div><br /></div><div>然后产生一个 Flipper::Feature.new(name, @adapter, instrumenter: instrumenter)，并调用 Flipper::Feature#enabled?</div><div><br /></div><pre><code>module Flipper
+  class DSL
+
+    def enabled?(name, *args)
+      feature(name).enabled?(*args)
+    end
+
+    def feature(name)
+      # ...
+      @memoized_features[name.to_sym] ||= Feature.new(name, @adapter, instrumenter: instrumenter)
+    end
+
+  end
+end
+</code></pre><div><br /></div><div>而 Flipper::Feature#enabled? 源码如下</div><div><br /></div><pre><code># flipper-0.21.0/lib/flipper/feature.rb
+module Flipper
+  class Feature
+
+    def enabled?(thing = nil)
+      instrument(:enabled?) do |payload|
+        values = gate_values
+        thing = gate(:actor).wrap(thing) unless thing.nil?
+        payload[:thing] = thing
+        context = FeatureCheckContext.new(
+          feature_name: @name,
+          values: values,
+          thing: thing
+        )
+
+        if open_gate = gates.detect { |gate| gate.open?(context) }
+          payload[:gate_name] = open_gate.name
+          true
+        else
+          false
+        end
+      end
+    end
+
+  end
+end
+</code></pre><div><br /></div><div>看起来有点复杂，或者先看看 Flipper.enable 吧</div><div><br /></div><div><span style='font-weight: bold;'>开闭功能</span></div><div><br /></div><div>Flipper.enable 经过 DSL 最终会去到 Flipper::Feature#enable 源码如下。而其他 enable_xxx 都是想将“范围”包装成 Type::XXX ，然后传给 enable</div><div><br /></div><pre><code>def enable(thing = true)
+  instrument(:enable) do |payload|
+    adapter.add self
+
+    gate = gate_for(thing)
+    wrapped_thing = gate.wrap(thing)
+    payload[:gate_name] = gate.name
+    payload[:thing] = wrapped_thing
+
+    adapter.enable self, gate, wrapped_thing
+  end
+end
+
+def enable_actor(actor)
+  enable Types::Actor.wrap(actor)
+end
+
+def enable_group(group)
+  enable Types::Group.wrap(group)
+end
+
+def enable_percentage_of_time(percentage)
+  enable Types::PercentageOfTime.wrap(percentage)
+end
+
+def enable_percentage_of_actors(percentage)
+  enable Types::PercentageOfActors.wrap(percentage)
+end
+</code></pre><div><br /></div><div>Flipper::Feature#enable 内部会先根据 Type::XXX 找到对应的 Gates::XXX 。</div><div><br /></div><div>（这里 @gates 数组的顺序似乎固定如此，否则影响 detect ）</div><div><br /></div><pre><code>def gates
+  @gates ||= [
+    Gates::Boolean.new,
+    Gates::Actor.new,
+    Gates::PercentageOfActors.new,
+    Gates::PercentageOfTime.new,
+    Gates::Group.new,
+  ]
+end
+
+def gate_for(thing)
+  gates.detect { |gate| gate.protects?(thing) } || raise(GateNotFound, thing)
+end
+</code></pre><div><br /></div><div>然后 gate.wrap(thing) 返回的是 Types::XXX 。对于 enable 方法来说，这步就是把 true 转成 Types::Boolean；而对于 enable_xxx 来说，返回的就是 thing</div><div><br /></div><div>最后，会用 adapter 保存设置。如果用的是 flipper-active_record，则保存逻辑如下</div><div><br /></div><pre><code># flipper-active_record-0.24.1/lib/flipper/adapters/active_record.rb
+def set(feature, gate, thing, options = {})
+  clear_feature = options.fetch(:clear, false)
+  @gate_class.transaction do
+    clear(feature) if clear_feature
+    @gate_class.where(feature_key: feature.key, key: gate.key).destroy_all
+    begin
+      @gate_class.create! do |g|
+        g.feature_key = feature.key
+        g.key = gate.key
+        g.value = thing.value.to_s
+      end
+    rescue ::ActiveRecord::RecordNotUnique
+    end
+  end
+  nil
+end
+</code></pre><div><br /></div><div>关闭功能同理，如果用的是 flipper-active_record，则会清除数据库中的配置</div><div><br /></div><div><span style='font-weight: bold;'>检查功能</span></div><div><br /></div><div>源码如下</div><div><br /></div><pre><code>def enabled?(thing = nil)
+  instrument(:enabled?) do |payload|
+    values = gate_values
+    thing = gate(:actor).wrap(thing) unless thing.nil?
+    payload[:thing] = thing
+    context = FeatureCheckContext.new(
+      feature_name: @name,
+      values: values,
+      thing: thing
+    )
+
+    if open_gate = gates.detect { |gate| gate.open?(context) }
+      payload[:gate_name] = open_gate.name
+      true
+    else
+      false
+    end
+  end
+end
+
+</code></pre><div><br /></div><div>首先会通过 gate_values，间接调用 adapter 获取 feature 关联的各种 gate</div><div><br /></div><div>然后 gates.detect 寻找是否有某类 gate 符合条件</div><div><br /></div><div>各种范围类型（gate）的判断逻辑如下</div><div><br /></div><pre><code># lib/flipper/gates/boolean.rb
+def open?(context)
+  context.values[key]
+end
+
+# lib/flipper/gates/actor.rb
+# 会加载出这个feature关联的所有flipper_id
+def open?(context)
+  value = context.values[key]
+  if context.thing.nil?
+    false
+  else
+    if protects?(context.thing)
+      actor = wrap(context.thing)
+      enabled_actor_ids = value
+      enabled_actor_ids.include?(actor.value)
+    else
+      false
+    end
+  end
+end
+
+# lib/flipper/gates/group.rb
+# 会加载出这个feature关联的所有组名，然后利用组名关联的注册block去验证
+def open?(context)
+  value = context.values[key]
+  if context.thing.nil?
+    false
+  else
+    value.any? do |name|
+      group = Flipper.group(name)
+      group.match?(context.thing, context)
+    end
+  end
+end
+
+# lib/flipper/gates/percentage_of_time.rb
+# 使用随机数
+def open?(context)
+  value = context.values[key]
+  rand < (value / 100.0)
+end
+
+# lib/flipper/gates/percentage_of_actors.rb
+# 计算flipper_id哈希值。随着百分比增长，原本不生效的flipper_id会变成生效
+def open?(context)
+  percentage = context.values[key]
+
+  if Types::Actor.wrappable?(context.thing)
+    actor = Types::Actor.wrap(context.thing)
+    id = "#{context.feature_name}#{actor.value}"
+    # this is to support up to 3 decimal places in percentages
+    scaling_factor = 1_000
+    Zlib.crc32(id) % (100 * scaling_factor) < percentage * scaling_factor
+  else
+    false
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>适配器</span></div><div><br /></div><div>flipper-active_record 适配器的注入如下</div><div><br /></div><pre><code># flipper-active_record-0.21.0/lib/flipper-active_record.rb
+ActiveSupport.on_load(:active_record) do
+  require 'flipper/adapters/active_record'
+end
+
+# flipper-active_record-0.21.0/lib/flipper/adapters/active_record.rb
+Flipper.configure do |config|
+  config.adapter { Flipper::Adapters::ActiveRecord.new }
+end
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

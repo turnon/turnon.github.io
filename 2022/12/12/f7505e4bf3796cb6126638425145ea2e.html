@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>opentelemetry-ruby分布式跟踪</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="opentelemetry-ruby分布式跟踪" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-12-12T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"opentelemetry-ruby分布式跟踪","dateModified":"2022-12-12T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2022-12-12T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">opentelemetry-ruby分布式跟踪</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-12-12T00:00:00+00:00" itemprop="datePublished">Dec 12, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>opentelemetry #distributed-tracing #ruby</span></div><div><br /></div><div><span style='font-weight: bold;'>利用到分布式跟踪的库</span></div><div><br /></div>
+<ul>
+<li>[[opentelemetry-instrumentation-http浅析]]</li>
+<li>[[opentelemetry-instrumentation-rack浅析]]</li>
+</ul>
+<div><span style='font-weight: bold;'>- [[opentelemetry-instrumentation-active_job浅析]]</span></div><div><br /></div><div><span style='font-weight: bold;'>配置</span></div><div><br /></div><div>可通过环境变量<code>OTEL_PROPAGATORS</code>设置传递格式</div><div><br /></div><div>搜索该环境变量，可见默认使用tracecontext和baggage方式传递，会组装成<code>Context::Propagation::CompositeTextMapPropagator</code></div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/configurator.rb
+def configure_propagation
+  propagators = ENV.fetch('OTEL_PROPAGATORS', 'tracecontext,baggage').split(',').uniq.collect do |propagator|
+    case propagator
+    when 'tracecontext' then OpenTelemetry::Trace::Propagation::TraceContext.text_map_propagator
+    when 'baggage' then OpenTelemetry::Baggage::Propagation.text_map_propagator
+    when 'b3' then fetch_propagator(propagator, 'OpenTelemetry::Propagator::B3::Single')
+    when 'b3multi' then fetch_propagator(propagator, 'OpenTelemetry::Propagator::B3::Multi', 'b3')
+    when 'jaeger' then fetch_propagator(propagator, 'OpenTelemetry::Propagator::Jaeger')
+    when 'xray' then fetch_propagator(propagator, 'OpenTelemetry::Propagator::XRay')
+    when 'ottrace' then fetch_propagator(propagator, 'OpenTelemetry::Propagator::OTTrace')
+    when 'none' then NoopTextMapPropagator.new
+    else
+      OpenTelemetry.logger.warn "The #{propagator} propagator is unknown and cannot be configured"
+      NoopTextMapPropagator.new
+    end
+  end
+  OpenTelemetry.propagation = Context::Propagation::CompositeTextMapPropagator.compose_propagators((@propagators || propagators).compact)
+end
+</code></pre><div><br /></div><div>tracecontext和baggage以外的，需要另外引入gem</div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/configurator.rb
+def fetch_propagator(name, class_name, gem_suffix = name)
+  Kernel.const_get(class_name).text_map_propagator
+rescue NameError
+  OpenTelemetry.logger.warn "The #{name} propagator cannot be configured - please add opentelemetry-propagator-#{gem_suffix} to your Gemfile"
+  nil
+end
+</code></pre><div><br /></div><div>另外可见优先使用<code>@propagators</code>，而这是可以在<code>SDK.configure</code>中设置的，例如</div><div><br /></div><pre><code>OpenTelemetry::SDK.configure do |c|
+  c.propagators = [
+    OpenTelemetry::Trace::Propagation::TraceContext.text_map_propagator,
+    OpenTelemetry::Baggage::Propagation.text_map_propagator,
+    Sentry::OpenTelemetry::Propagator.new
+  ]
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>使用propagator注入trace<em>id和span</em>id</span></div><div><br /></div><div>调用方使用<code>inject</code>方法将context注入到carrier（消息结构的消息头，例如http头，grpc的metadata……）中</div><div><br /></div><div>接收方从中还原出context</div><div><br /></div><div>例如<code>OpenTelemetry::Trace:: Propagation::TraceContext::TextMapPropagator</code>，他将trace<em>id和span</em>id拼接，以<code>TRACEPARENT_KEY</code>标识，塞到carrier中</div><div><br /></div><pre><code># opentelemetry-api-1.1.0/lib/opentelemetry/trace/propagation/trace_context/text_map_propagator.rb
+def inject(carrier, context: Context.current, setter: Context::Propagation.text_map_setter)
+  span_context = Trace.current_span(context).context
+  return unless span_context.valid?
+
+  setter.set(carrier, TRACEPARENT_KEY, TraceParent.from_span_context(span_context).to_s)
+  setter.set(carrier, TRACESTATE_KEY, span_context.tracestate.to_s) unless span_context.tracestate.empty?
+  nil
+end
+
+def extract(carrier, context: Context.current, getter: Context::Propagation.text_map_getter)
+  trace_parent_value = getter.get(carrier, TRACEPARENT_KEY)
+  return context unless trace_parent_value
+
+  tp = TraceParent.from_string(trace_parent_value)
+  tracestate = Tracestate.from_string(getter.get(carrier, TRACESTATE_KEY))
+
+  span_context = Trace::SpanContext.new(trace_id: tp.trace_id,
+                                        span_id: tp.span_id,
+                                        trace_flags: tp.flags,
+                                        tracestate: tracestate,
+                                        remote: true)
+  span = OpenTelemetry::Trace.non_recording_span(span_context)
+  OpenTelemetry::Trace.context_with_span(span, parent_context: context)
+rescue OpenTelemetry::Error
+  context
+end
+</code></pre><div><br /></div><div>又例如<code>OpenTelemetry::Context::Propagation::CompositeTextMapPropagator</code>，它可以组合多种propagator，使上下游兼容不同的协议</div><div><br /></div><pre><code># opentelemetry-api-1.1.0/lib/opentelemetry/context/propagation/composite_text_map_propagator.rb
+def inject(carrier, context: Context.current, setter: Context::Propagation.text_map_setter)
+  injectors = @injectors || @propagators
+  injectors.each do |injector|
+    injector.inject(carrier, context: context, setter: setter)
+  rescue StandardError => e
+    OpenTelemetry.logger.warn "Error in CompositePropagator#inject #{e.message}"
+  end
+  nil
+end
+
+def extract(carrier, context: Context.current, getter: Context::Propagation.text_map_getter)
+  extractors = @extractors || @propagators
+  extractors.inject(context) do |ctx, extractor|
+    extractor.extract(carrier, context: ctx, getter: getter)
+  rescue StandardError => e
+    OpenTelemetry.logger.warn "Error in CompositePropagator#extract #{e.message}"
+    ctx
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>生成trace_id</span></div><div><br /></div><div>?</div><div><br /></div><div><span style='font-weight: bold;'>相关模块</span></div><div><br /></div><div>如下</div><div><br /></div><pre><code> - OpenTelemetry {:kla=>Module}
+ ├─ - Baggage {:kla=>Module}
+ │  └─ - Propagation {:kla=>Module}
+ │     ├─   ContextKeys {:kla=>Module}
+ │     └─   TextMapPropagator {:kla=>Class}
+ ├─ - Common {:kla=>Module}
+ │  └─ - Propagation {:kla=>Module}
+ │     ├─   RackEnvGetter {:kla=>Class}
+ │     └─   SymbolKeyGetter {:kla=>Class}
+ ├─ - Context {:kla=>Class}
+ │  └─ - Propagation {:kla=>Module}
+ │     ├─   CompositeTextMapPropagator {:kla=>Class}
+ │     ├─   NoopTextMapPropagator {:kla=>Class}
+ │     ├─   RackEnvGetter {:kla=>Class}
+ │     ├─   TextMapGetter {:kla=>Class}
+ │     ├─   TextMapPropagator {:kla=>Class}
+ │     └─   TextMapSetter {:kla=>Class}
+ ├─ - SDK {:kla=>Module}
+ │  └─ - Configurator {:kla=>Class}
+ │     └─   NoopTextMapPropagator {:kla=>Class}
+ └─ - Trace {:kla=>Module}
+    └─ - Propagation {:kla=>Module}
+       └─ - TraceContext {:kla=>Module}
+          ├─   TextMapPropagator {:kla=>Class}
+          └─ + TraceParent {:kla=>Class}
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

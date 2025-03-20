@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>active_job.rb</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="active_job.rb" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-08-11T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"active_job.rb","dateModified":"2024-08-11T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2024-08-11T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">active_job.rb</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-08-11T00:00:00+00:00" itemprop="datePublished">Aug 11, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>源码：<a href="https://github.com/rails/rails/tree/6d638f9f30c976d3e8899714459e776b3acb0cf2/activejob">rails/activejob · rails/rails</a></div><div><br /></div><div><span style='font-weight: bold;'>config配置</span></div><div><br /></div><div>在<code>config/application.rb</code>或<code>config/environments/{RAILS_ENV}.rb</code>设置<code>config.active_job.xxx = yyy</code>，会延迟到active_job加载后设置到<code>ActiveJob::Base</code>上</div><div><br /></div><pre><code># activejob-7.0.8.7/lib/active_job/railtie.rb
+initializer "active_job.set_configs" do |app|
+  options = app.config.active_job
+  # ...
+  ActiveSupport.on_load(:active_job) do
+    # ...
+    options.each do  |k, v|
+      k = "#{k}="
+      send(k, v) if respond_to? k
+    end
+  end
+  # ...
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>adapter适配器</span></div><div><br /></div><div><code>ActiveJob::Base.queue_adapter</code>是<code>class_attribute</code>，可以<code>config.active_job.queue_adapter = xxx</code>全局设置，也可以在子类上<code>self.queue_adapter = :yyy</code>单独设置</div><div><br /></div><pre><code>module ActiveJob
+  # activejob-7.0.8.7/lib/active_job/base.rb
+  class Base
+    # ...
+    include QueueAdapter
+    # ...
+  end
+
+  # activejob-7.0.8.7/lib/active_job/queue_adapter.rb
+  module QueueAdapter
+    extend ActiveSupport::Concern
+
+    included do
+      class_attribute :_queue_adapter, instance_accessor: false, instance_predicate: false
+      delegate :queue_adapter, to: :class
+      self.queue_adapter = :async
+    end
+
+    module ClassMethods
+      def queue_adapter
+        _queue_adapter
+      end
+
+      def queue_adapter=(name_or_adapter)
+        case name_or_adapter
+        when Symbol, String
+          queue_adapter = ActiveJob::QueueAdapters.lookup(name_or_adapter).new
+          assign_adapter(name_or_adapter.to_s, queue_adapter)
+        else
+          if queue_adapter?(name_or_adapter)
+            adapter_name = "#{name_or_adapter.class.name.demodulize.remove('Adapter').underscore}"
+            assign_adapter(adapter_name, name_or_adapter)
+          else
+            raise ArgumentError
+          end
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>perform_later延迟执行</span></div><div><br /></div><div><code>ActiveJob::Base.perform_later</code>会创建一个<code>ActiveJob::Base</code>实例，并调用adapter的<code>enqueue</code>或<code>enqueue_at</code>实例方法</div><div><br /></div><pre><code># activejob-7.0.8.7/lib/active_job/enqueuing.rb
+module ActiveJob
+  module Enqueuing
+    extend ActiveSupport::Concern
+
+    module ClassMethods
+      def perform_later(...)
+        job = job_or_instantiate(...)
+        enqueue_result = job.enqueue
+        yield job if block_given?
+        enqueue_result
+      end
+
+      private
+        def job_or_instantiate(*args)
+          args.first.is_a?(self) ? args.first : new(*args)
+        end
+    end
+
+    def enqueue(options = {})
+      set(options)
+      self.successfully_enqueued = false
+
+      run_callbacks :enqueue do
+        if scheduled_at
+          queue_adapter.enqueue_at self, scheduled_at
+        else
+          queue_adapter.enqueue self
+        end
+
+        self.successfully_enqueued = true
+      rescue EnqueueError => e
+        self.enqueue_error = e
+      end
+
+      if successfully_enqueued?
+        self
+      else
+        false
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>set参数</span></div><div><br /></div><div><code>ActiveJob::Base.set</code>会创建一个 <code>ActiveJob::ConfiguredJob</code>收纳<code>wait</code>、<code>wait_until</code>、<code>queue</code>、<code>priority</code>，等待后续调用<code>perform_later</code>、<code>perform_now</code></div><div><br /></div><pre><code>module ActiveJob
+  # activejob-7.0.8.7/lib/active_job/core.rb
+  module Core
+    extend ActiveSupport::Concern
+
+    module ClassMethods
+      def set(options = {})
+        ConfiguredJob.new(self, options)
+      end
+    end
+
+    def set(options = {})
+      self.scheduled_at = options[:wait].seconds.from_now.to_f if options[:wait]
+      self.scheduled_at = options[:wait_until].to_f if options[:wait_until]
+      self.queue_name   = self.class.queue_name_from_part(options[:queue]) if options[:queue]
+      self.priority     = options[:priority].to_i if options[:priority]
+      self
+    end
+  end
+
+  # activejob-7.0.8.7/lib/active_job/configured_job.rb
+  class ConfiguredJob
+    def initialize(job_class, options = {})
+      @options = options
+      @job_class = job_class
+    end
+
+    def perform_now(...)
+      @job_class.new(...).set(@options).perform_now
+    end
+
+    def perform_later(...)
+      @job_class.new(...).enqueue @options
+    end
+  end
+end
+
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>execute执行序列化的任务</span></div><div><br /></div><div>将序列化的<code>{job_id: &#39;...&#39;, job_class: &#39;...&#39;, arguments: &#39;...&#39; ...}</code>恢复为具体<code>ActiveJob::Base</code>子类，并调用<code>perform_now</code></div><div><br /></div><div>（其他adapter入队时可以保存序列化参数，然后出队时使用这个<code>ActiveJob::Base.execute</code>去执行）</div><div><br /></div><pre><code>
+module ActiveJob
+  # activejob-7.0.8.7/lib/active_job/execution.rb
+  module Execution
+    extend ActiveSupport::Concern
+
+    module ClassMethods
+      def execute(job_data)
+        ActiveJob::Callbacks.run_callbacks(:execute) do
+          job = deserialize(job_data)
+          job.perform_now
+        end
+      end
+    end
+  end
+
+  # activejob-7.0.8.7/lib/active_job/core.rb
+  module Core
+    extend ActiveSupport::Concern
+
+    module ClassMethods
+      def deserialize(job_data)
+        job = job_data["job_class"].constantize.new
+        job.deserialize(job_data)
+        job
+      end
+    end
+  end
+end
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

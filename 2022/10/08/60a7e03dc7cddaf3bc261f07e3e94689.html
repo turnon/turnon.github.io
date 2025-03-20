@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>puma的plugin机制</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="puma的plugin机制" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-10-08T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"puma的plugin机制","dateModified":"2022-10-08T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2022-10-08T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">puma的plugin机制</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-10-08T00:00:00+00:00" itemprop="datePublished">Oct 8, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>编写plugin代码</span></div><div><br /></div><div>在gem的lib/puma/plugin/gem_name.rb中编写如下代码，例如yabeda-puma-plugin（[[yabeda-puma-plugin浅析]]）</div><div><br /></div><pre><code># yabeda-puma-plugin-0.6.0/lib/puma/plugin/yabeda.rb
+Puma::Plugin.create do
+  def start(launcher)
+    # ...
+  end
+end
+</code></pre><div><br /></div><div>puma就会以该block创建一个Plugin子类，并以名字<code>yabeda</code>注册到<code>Plugins</code>中</div><div><br /></div><pre><code># puma-5.6.5/lib/puma/plugin.rb
+module Puma
+  class Plugin
+    # Matches
+    #  "C:/Ruby22/lib/ruby/gems/2.2.0/gems/puma-3.0.1/lib/puma/plugin/tmp_restart.rb:3:in `<top (required)>'"
+    #  AS
+    #  C:/Ruby22/lib/ruby/gems/2.2.0/gems/puma-3.0.1/lib/puma/plugin/tmp_restart.rb
+    CALLER_FILE = /
+      \A       # start of string
+      .+       # file path (one or more characters)
+      (?=      # stop previous match when
+        :\d+     # a colon is followed by one or more digits
+        :in      # followed by a colon followed by in
+      )
+    /x
+
+    def self.extract_name(ary)
+      path = ary.first[CALLER_FILE]
+      m = %r!puma/plugin/([^/]*)\.rb$!.match(path)
+      return m[1]
+    end
+
+    def self.create(&blk)
+      name = extract_name(caller)
+      cls = Class.new(self)
+      cls.class_eval(&blk)
+      Plugins.register name, cls
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>在项目中使用plugin</span></div><div><br /></div><div>在config/puma.rb中，使用plugin命令</div><div><br /></div><pre><code># puma-5.6.5/lib/puma/dsl.rb
+module Puma
+  class DSL
+    def plugin(name)
+      @plugins << @config.load_plugin(name)
+    end
+  end
+end
+</code></pre><div><br /></div><div>例如<code>plugin :yabeda</code>，就会尝试从<code>Plugins</code>找回名为<code>yabeda</code>的那个插件，如果没有就会尝试<code>require</code></div><div><br /></div><div>（这个<code>require</code>是改写过的，会搜寻gems目录下每个gem看是否有匹配的<code>puma/plugin/xxx.rb</code>，有就加载该文件）</div><div><br /></div><pre><code># puma-5.6.5/lib/puma/configuration.rb
+module Puma
+  class Configuration
+    def load_plugin(name)
+      @plugins.create name
+    end
+  end
+end
+
+# puma-5.6.5/lib/puma/plugin.rb
+module Puma
+  class PluginLoader
+    def create(name)
+      if cls = Plugins.find(name)
+        plugin = cls.new
+        @instances << plugin
+        return plugin
+      end
+
+      raise UnknownPlugin, "File failed to register properly named plugin"
+    end
+  end
+
+  class PluginRegistry
+    def find(name)
+      name = name.to_s
+
+      if cls = @plugins[name]
+        return cls
+      end
+
+      begin
+        require "puma/plugin/#{name}"
+      rescue LoadError
+        raise UnknownPlugin, "Unable to find plugin: #{name}"
+      end
+
+      if cls = @plugins[name]
+        return cls
+      end
+
+      raise UnknownPlugin, "file failed to register a plugin"
+    end
+  end
+
+  Plugins = PluginRegistry.new
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>puma运行plugin</span></div><div><br /></div><div>puma启动后，就会调用每个Plugin子类的start方法，也就是<code>Puma::Plugin.create{ }</code>中所编写的那个</div><div><br /></div><pre><code># puma-5.6.5/lib/puma/launcher.rb
+module Puma
+  class Launcher
+    def run
+      # ...
+      @config.plugins.fire_starts self
+      # ...
+    end
+  end
+end
+
+# puma-5.6.5/lib/puma/plugin.rb
+module Puma
+  class PluginLoader
+    def fire_starts(launcher)
+      @instances.each do |i|
+        if i.respond_to? :start
+          i.start(launcher)
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

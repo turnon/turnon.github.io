@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>concurrent-ruby Async</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="concurrent-ruby Async" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-12-28T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"concurrent-ruby Async","dateModified":"2022-12-28T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2022-12-28T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">concurrent-ruby Async</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-12-28T00:00:00+00:00" itemprop="datePublished">Dec 28, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div>
+<ul>
+<li>文档：<a href="https://ruby-concurrency.github.io/concurrent-ruby/master/Concurrent/Async.html">Module: Concurrent::Async — Concurrent Ruby</a></li>
+<li>目的：使实例方法调用变成异步非阻塞，且线程安全</li>
+<li>在类中<code>include Concurrent::Async</code>，然后调用实例方法前，先调用<code>async</code>（返回pending状态的<code>IVar</code>）或<code>await</code>（返回complete状态的<code>IVar</code>）</li>
+<li><code>async</code>会将方法调用加入该对象自身的队列，然后由<code>Concurrent.global_io_executor</code>逐个出队来执行</li>
+<li>这就使得并发调用一个对象的各种方法，都会变成线性的，线程安全的</li>
+<li><code>await</code>也是调用<code>async</code>，但等待<code>Ivar</code>被设值才返回</li>
+<li>如果你有某些调用是不加<code>async</code>或<code>await</code>的，那么还是需要注意线程安全问题</li>
+</ul>
+<div><span style='font-weight: bold;'>include Concurrent::Async</span></div><div><br /></div><div>在类中<code>include Concurrent::Async</code>，例如</div><div><br /></div><pre><code>class A
+  include Concurrent::Async
+
+  def a
+    sleep 1
+    Time.now
+  end
+end
+</code></pre><div><br /></div><div>这会导致类的<code>new</code>方法被重新定义，使其创建创建出的对象内含<code>AsyncDelegator.new(self)</code>和<code>AwaitDelegator.new(@__async_delegator__)</code></div><div><br /></div><pre><code>module Concurrent
+  module Async
+    def self.included(base)
+      base.singleton_class.send(:alias_method, :original_new, :new)
+      base.extend(ClassMethods)
+      super(base)
+    end
+
+    # @!visibility private
+    module ClassMethods
+      def new(*args, &block)
+        obj = original_new(*args, &block)
+        obj.send(:init_synchronization)
+        obj
+      end
+      ruby2_keywords :new if respond_to?(:ruby2_keywords, true)
+    end
+
+    def init_synchronization
+      return self if defined?(@__async_initialized__) && @__async_initialized__
+      @__async_initialized__ = true
+      @__async_delegator__ = AsyncDelegator.new(self)
+      @__await_delegator__ = AwaitDelegator.new(@__async_delegator__)
+      self
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>async方法</span></div><div><br /></div><div>一般使用就是调用实例方法前加上<code>async</code>，使其返回一个<code>IVar</code>。这里跟踪一下</div><div><br /></div><pre><code>binding.trace_tree(htmp: 'include_async') do
+  A.new.async.a
+end
+</code></pre><div><br /></div><div>得</div><div><br /></div><pre><code> - Object#block in __pry__ (pry):6
+ ├─ - A.new $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/async.rb:270
+ │  ├─ + #<Class:A>#new $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/async.rb:271
+ │  └─ + A#init_synchronization $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/async.rb:441
+ ├─   A#async $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/async.rb:412
+ └─ - Concurrent::Async::AsyncDelegator#method_missing $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/async.rb:305
+    ├─   Kernel#respond_to? $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/async.rb:306
+    ├─ + Concurrent::Async.validate_argc $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/async.rb:250
+    ├─ + Concurrent::IVar.new $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/synchronization/object.rb:58
+    └─ + Concurrent::Async::AsyncDelegator#synchronize $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/synchronization/mutex_lockable_object.rb:43
+</code></pre><div><br /></div><div>如上所述，实例化时会创建<code>AsyncDelegator</code>和<code>AwaitDelegator</code></div><div><br /></div><div>然后调用<code>async</code>会返回这个<code>AsyncDelegator</code>。接着调用原对象的任何方法，都会被其<code>method_missing</code>拦截，暂存到<code>@queue</code>中，并返回<code>IVar</code>。</div><div><br /></div><div>暂存的方法调用会由<code>Concurrent.global_io_executor</code>异步“逐个地”、“线性地”执行，并将结果设置到每个<code>IVar</code>中</div><div><br /></div><div>因为同一对象的多个方法调用是逐个执行的，所以可以认为是线程安全的</div><div><br /></div><pre><code># concurrent-ruby-1.2.2/lib/concurrent-ruby/concurrent/async.rb
+module Concurrent
+  module Async
+    class AsyncDelegator < Synchronization::LockableObject
+      safe_initialization!
+
+      def initialize(delegate)
+        super()
+        @delegate = delegate
+        @queue = []
+        @executor = Concurrent.global_io_executor
+        @ruby_pid = $$
+      end
+
+      def method_missing(method, *args, &block)
+        super unless @delegate.respond_to?(method)
+        Async::validate_argc(@delegate, method, *args)
+
+        ivar = Concurrent::IVar.new
+        synchronize do
+          reset_if_forked
+          @queue.push [ivar, method, args, block] # 将结果、方法、参数塞进队列
+          @executor.post { perform } if @queue.length == 1 # 发起perform以尽量清空队列
+        end
+
+        ivar
+      end
+
+      def perform
+        # 循环以尽量清空队列
+        loop do
+          ivar, method, args, block = synchronize { @queue.first }
+          break unless ivar # queue is empty
+
+          begin
+            ivar.set(@delegate.send(method, *args, &block)) # 调用方法并赋值结果
+          rescue => error
+            ivar.fail(error)
+          end
+
+          synchronize do
+            @queue.shift
+            return if @queue.empty?
+          end
+        end
+      end
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>await方法</span></div><div><br /></div><div><code>await</code>方法会将方法调用委派给<code>AsyncDelegator</code>，所以实际上也是在<code>Concurrent.global_io_executor</code>异步执行，但会对其返回的<code>IVar</code>等待</div><div><br /></div><div>感觉不如直接调用原实例方法？其实不然，因为这样相当于让一个对象的所有实例方法的调用都是线性的，保证线程安全</div><div><br /></div><div>注意不要在<code>async</code>方法调用中，又<code>await</code>一个方法调用，因为所有方法调用都是线性执行的，<code>async</code>没返回，则<code>await</code>也不会开始，这就死锁了</div><div><br /></div><pre><code>module Concurrent
+  module Async
+    class AwaitDelegator
+      def initialize(delegate)
+        @delegate = delegate
+      end
+
+      def method_missing(method, *args, &block)
+        ivar = @delegate.send(method, *args, &block)
+        ivar.wait
+        ivar
+      end
+    end
+  end
+end
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

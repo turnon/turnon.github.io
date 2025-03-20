@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>gvl-tracing.rb</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="gvl-tracing.rb" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-07-20T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"gvl-tracing.rb","dateModified":"2024-07-20T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2024-07-20T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">gvl-tracing.rb</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-07-20T00:00:00+00:00" itemprop="datePublished">Jul 20, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div>源码：<a href="https://github.com/ivoanjo/gvl-tracing">github.com/ivoanjo/gvl-tracing: Get a timeline view of Global VM Lock usage in your Ruby app</a></div><div><br /></div><div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div>
+<ul>
+<li>使用ruby3.2新增的<code>rb_internal_thread_add_event_hook</code>订阅同是3.2新增的<code>RUBY_INTERNAL_THREAD_EVENT_XXX</code>事件；每当线程状态改变，将当前时间记为该线程原状态的结束时间，以及该线程新状态的开始时间</li>
+<li>使用<code>rb_tracepoint_new</code>监控ruby3.2新增的<code>RUBY_INTERNAL_EVENT_GC_ENTER</code>和<code>RUBY_INTERNAL_EVENT_GC_EXIT</code>事件；每当回调时，将当前时间记为当前线程原状态的结束时间，以及线程新状态（gc、running）的开始时间</li>
+</ul>
+<div><span style='font-weight: bold;'>示例</span></div><div><br /></div><pre><code>require "gvl-tracing"
+
+def fib(n)
+  Object.new
+  return n if n <= 1
+  fib(n - 1) + fib(n - 2)
+end
+
+GvlTracing.start("example1.json", os_threads_view_enabled: false) do
+  Thread.new { sleep(0.05) while true }
+  sleep(0.05)
+  3.times.map { Thread.new { fib(37) } }.map(&:join)
+  sleep(0.05)
+end
+</code></pre><div><br /></div><div>得</div><div><br /></div><pre><code>[
+  {"ph": "M", "pid": 8191, "name": "process_name", "args": {"name": "Ruby threads view (3.3.6)"}},
+  {"ph": "E", "pid": 8191, "tid": 0, "ts": 62.000000},
+  {"ph": "B", "pid": 8191, "tid": 0, "ts": 62.000000, "name": "started_tracing"},
+  {"ph": "E", "pid": 8191, "tid": 1, "ts": 178.000000},
+  {"ph": "B", "pid": 8191, "tid": 1, "ts": 178.000000, "name": "started"},
+  {"ph": "E", "pid": 8191, "tid": 1, "ts": 207.000000},
+  {"ph": "B", "pid": 8191, "tid": 1, "ts": 207.000000, "name": "wants_gvl"},
+  {"ph": "E", "pid": 8191, "tid": 0, "ts": 268.000000},
+  {"ph": "B", "pid": 8191, "tid": 0, "ts": 268.000000, "name": "waiting"},
+  {"ph": "E", "pid": 8191, "tid": 1, "ts": 283.000000},
+  {"ph": "B", "pid": 8191, "tid": 1, "ts": 283.000000, "name": "running"},
+  {"ph": "E", "pid": 8191, "tid": 1, "ts": 304.000000},
+  {"ph": "B", "pid": 8191, "tid": 1, "ts": 304.000000, "name": "waiting"},
+  {"ph": "E", "pid": 8191, "tid": 1, "ts": 50774.000000},
+  {"ph": "B", "pid": 8191, "tid": 1, "ts": 50774.000000, "name": "wants_gvl"},
+  {"ph": "E", "pid": 8191, "tid": 1, "ts": 50782.000000},
+  {"ph": "B", "pid": 8191, "tid": 1, "ts": 50782.000000, "name": "running"},
+  {"ph": "E", "pid": 8191, "tid": 1, "ts": 50792.000000},
+  {"ph": "B", "pid": 8191, "tid": 1, "ts": 50792.000000, "name": "waiting"},
+  {"ph": "E", "pid": 8191, "tid": 0, "ts": 55286.000000},
+  {"ph": "B", "pid": 8191, "tid": 0, "ts": 55286.000000, "name": "wants_gvl"},
+  {"ph": "E", "pid": 8191, "tid": 0, "ts": 55289.000000},
+  {"ph": "B", "pid": 8191, "tid": 0, "ts": 55289.000000, "name": "running"},
+  {"ph": "E", "pid": 8191, "tid": 2, "ts": 55418.000000},
+  {"ph": "B", "pid": 8191, "tid": 2, "ts": 55418.000000, "name": "started"},
+  {"ph": "E", "pid": 8191, "tid": 2, "ts": 55465.000000},
+  {"ph": "B", "pid": 8191, "tid": 2, "ts": 55465.000000, "name": "wants_gvl"},
+  {"ph": "E", "pid": 8191, "tid": 3, "ts": 55513.000000},
+  {"ph": "B", "pid": 8191, "tid": 3, "ts": 55513.000000, "name": "started"},
+  {"ph": "E", "pid": 8191, "tid": 3, "ts": 55520.000000},
+  {"ph": "B", "pid": 8191, "tid": 3, "ts": 55520.000000, "name": "wants_gvl"},
+  {"ph": "E", "pid": 8191, "tid": 4, "ts": 55544.000000},
+  {"ph": "B", "pid": 8191, "tid": 4, "ts": 55544.000000, "name": "started"},
+  {"ph": "E", "pid": 8191, "tid": 4, "ts": 55551.000000},
+  {"ph": "B", "pid": 8191, "tid": 4, "ts": 55551.000000, "name": "wants_gvl"},
+  {"ph": "E", "pid": 8191, "tid": 0, "ts": 55595.000000},
+  {"ph": "B", "pid": 8191, "tid": 0, "ts": 55595.000000, "name": "waiting"},
+  {"ph": "E", "pid": 8191, "tid": 2, "ts": 55607.000000},
+  {"ph": "B", "pid": 8191, "tid": 2, "ts": 55607.000000, "name": "running"},
+  {"ph": "E", "pid": 8191, "tid": 2, "ts": 56135.000000},
+  {"ph": "B", "pid": 8191, "tid": 2, "ts": 56135.000000, "name": "gc"},
+  {"ph": "E", "pid": 8191, "tid": 2, "ts": 56221.000000},
+  {"ph": "B", "pid": 8191, "tid": 2, "ts": 56221.000000, "name": "running"},
+  // ...
+]
+</code></pre><div><br /></div><div>可视化</div><div><br /></div><div><img src='/assets/files/5wwJW2B.png'></div><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

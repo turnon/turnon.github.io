@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>concurrent-ruby ScheduledTask</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="concurrent-ruby ScheduledTask" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-12-31T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"concurrent-ruby ScheduledTask","dateModified":"2022-12-31T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2022-12-31T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">concurrent-ruby ScheduledTask</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-12-31T00:00:00+00:00" itemprop="datePublished">Dec 31, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div><div>用于提交延时任务，会用到[[concurrent-ruby TimerSet]]对提交过的任务进行排序执行</div><div><br /></div><div>一般用法如下</div><div><br /></div><pre><code>Concurrent::ScheduledTask.new(2){ 'What does the fox say?' }.execute
+
+# 或者
+Concurrent::ScheduledTask.execute(2){ 'What does the fox say?' }
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>分析</span></div><div><br /></div><div>跟踪一下</div><div><br /></div><pre><code>task = binding.trace_tree(htmp: 'schedule-task-execute') do
+  Concurrent::ScheduledTask.execute(2){ 123 }
+end
+</code></pre><div><br /></div><div>得调用栈如下</div><div><br /></div><div>调用<code>ScheduledTask.execute</code>会创建new一个<code>ScheduledTask</code>，并调用其<code>ScheduledTask#execute</code></div><div><br /></div><pre><code> - Object#block in __pry__ (pry):3
+ └─ - Concurrent::ScheduledTask.execute $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/scheduled_task.rb:290
+    ├─ - Concurrent::ScheduledTask.new $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/synchronization/object.rb:58
+    │  ├─ - Class#new $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/synchronization/object.rb:59
+    │  │  └─ + Concurrent::ScheduledTask#initialize $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/scheduled_task.rb:178
+    │  └─   Concurrent::ScheduledTask#full_memory_barrier $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/synchronization/mri_object.rb:28
+    └─ - Concurrent::ScheduledTask#execute $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/scheduled_task.rb:273
+       ├─ + Concurrent::ScheduledTask#compare_and_set_state $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/concern/obligation.rb:174
+       └─ - Concurrent::ScheduledTask#synchronize $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/synchronization/mutex_lockable_object.rb:43
+          ├─   Thread::Mutex#owned? $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/synchronization/mutex_lockable_object.rb:44
+          └─ - Thread::Mutex#synchronize $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/synchronization/mutex_lockable_object.rb:47
+             └─ - Concurrent::ScheduledTask#block in synchronize $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/synchronization/mutex_lockable_object.rb:47
+                └─ - Concurrent::ScheduledTask#block in execute $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/scheduled_task.rb:275
+                   └─ + Concurrent::ScheduledTask#ns_schedule $GemPath1/gems/concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/scheduled_task.rb:312
+</code></pre><div><br /></div><div>源码如下</div><div><br /></div><div>每个<code>ScheduledTask</code>初始化时，都会创建</div><div><br /></div>
+<ul>
+<li>一个<code>TimerSet</code>，默认引用<code>Concurrent.global_timer_set</code>，用于按时间排列任务并调取最近的任务来执行</li>
+<li>一个线程池，默认引用<code>Concurrent.global_io_executor</code>，用于执行任务</li>
+</ul>
+<div>然后<code>ScheduledTask#execute</code>会<code>TimerSet#post_task(self)</code>把自己丢进<code>TimerSet</code></div><div><br /></div><div>等到时间了，<code>TimerSet</code>就会执行<code>ScheduledTask#process_task</code></div><div><br /></div><pre><code># concurrent-ruby-1.1.10/lib/concurrent-ruby/concurrent/scheduled_task.rb
+module Concurrent
+  class ScheduledTask < IVar
+    def initialize(delay, opts = {}, &task)
+      raise ArgumentError.new('no block given') unless block_given?
+      raise ArgumentError.new('seconds must be greater than zero') if delay.to_f < 0.0
+
+      super(NULL, opts, &nil)
+
+      synchronize do
+        ns_set_state(:unscheduled)
+        @parent = opts.fetch(:timer_set, Concurrent.global_timer_set)
+        @args = get_arguments_from(opts)
+        @delay = delay.to_f
+        @task = task
+        @time = nil
+        @executor = Options.executor_from_options(opts) || Concurrent.global_io_executor
+        self.observers = Collection::CopyOnNotifyObserverSet.new
+      end
+    end
+
+    def process_task
+      safe_execute(@task, @args)
+    end
+
+    def execute
+      if compare_and_set_state(:pending, :unscheduled)
+        synchronize{ ns_schedule(@delay) }
+      end
+      self
+    end
+
+    def ns_schedule(delay)
+      @delay = delay
+      @time = Concurrent.monotonic_time + @delay
+      @parent.send(:post_task, self)
+    end
+  end
+end
+</code></pre><div><br /></div><div>如何传递参数据呢？从上面<code>initialize</code>可见，参数会用<code>get_arguments_from</code>抽取</div><div><br /></div><pre><code>def get_arguments_from(opts = {})
+  [*opts.fetch(:args, [])]
+end
+</code></pre><div><br /></div><div>所以这样传参就可以了</div><div><br /></div><pre><code>Concurrent::ScheduledTask.execute(0, {args: [1,2,3]}) do |a, b, c|
+  pp [a, b]
+end
+# [1, 2]
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

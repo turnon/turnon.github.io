@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>ruby的opentelemetry-exporter-zipkin</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="ruby的opentelemetry-exporter-zipkin" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-01-19T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"ruby的opentelemetry-exporter-zipkin","dateModified":"2023-01-19T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2023-01-19T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">ruby的opentelemetry-exporter-zipkin</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-01-19T00:00:00+00:00" itemprop="datePublished">Jan 19, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>使用</span></div><div><br /></div><div>启动zipkin</div><div><br /></div><div>[[使用zipkin]]</div><div><br /></div><div>文档</div><div><br /></div><div><a href="https://open-telemetry.github.io/opentelemetry-ruby/opentelemetry-exporter-zipkin/v0.20.0/">README - opentelemetry-exporter-zipkin</a></div><div><br /></div><div>配置参数</div><div><br /></div>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Environment variable</th>
+<th>Default</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>endpoint:</td>
+<td>OTEL<em>EXPORTER</em>ZIPKIN_ENDPOINT</td>
+<td>&quot;<a href="http://localhost:9411">http://localhost:9411</a>&quot;</td>
+</tr>
+<tr>
+<td>headers:</td>
+<td>OTEL<em>EXPORTER</em>ZIPKIN<em>TRACES</em>HEADERS</td>
+<td>nil</td>
+</tr>
+<tr>
+<td>timeoout:</td>
+<td>OTEL<em>EXPORTER</em>ZIPKIN<em>TRACES</em>TIMEOUT</td>
+<td>10</td>
+</tr>
+<tr>
+<td></td>
+<td>OTEL<em>TRACES</em>EXPORTER</td>
+<td>zipkin</td>
+</tr>
+</tbody></table>
+<div>Gemfile</div><div><br /></div><pre><code>gem 'opentelemetry-exporter-zipkin'
+gem 'opentelemetry-instrumentation-all'
+</code></pre><div><br /></div><div>对接</div><div><br /></div><div>（注意通过环境变量<code>OTEL_SERVICE_NAME</code>设置服务名的问题：因为zipkin会先加载<code>OpenTelemetry::SDK::Resources::Resource.default</code>，这时就已经要读取<code>OTEL_SERVICE_NAME</code>了）</div><div><br /></div><pre><code>require 'opentelemetry/exporter/zipkin'
+
+ENV['OTEL_BSP_MAX_EXPORT_BATCH_SIZE'] = 8.to_s
+
+OpenTelemetry::SDK.configure do |c|
+  c.service_name = 'little-survey'
+
+  export = OpenTelemetry::Exporter::Zipkin::Exporter.new
+  span_processor = OpenTelemetry::SDK::Trace::Export::BatchSpanProcessor.new(exporter)
+  c.add_span_processor(span_processor)
+
+  # c.use_all   #使用所有可用的监控
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>源码</span></div><div><br /></div><div>初始化时可配置zipkin地址、http header、超时控制</div><div><br /></div><pre><code>def initialize(endpoint: OpenTelemetry::Common::Utilities.config_opt('OTEL_EXPORTER_ZIPKIN_ENDPOINT', default: 'http://localhost:9411/api/v2/spans'),
+               headers: OpenTelemetry::Common::Utilities.config_opt('OTEL_EXPORTER_ZIPKIN_TRACES_HEADERS', 'OTEL_EXPORTER_ZIPKIN_HEADERS'),
+               timeout: OpenTelemetry::Common::Utilities.config_opt('OTEL_EXPORTER_ZIPKIN_TRACES_TIMEOUT', 'OTEL_EXPORTER_ZIPKIN_TIMEOUT', default: 10))
+  raise ArgumentError, "invalid url for Zipkin::Exporter #{endpoint}" unless OpenTelemetry::Common::Utilities.valid_url?(endpoint)
+  raise ArgumentError, 'headers must be comma-separated k=v pairs or a Hash' unless valid_headers?(headers)
+
+  @uri = if endpoint == ENV['OTEL_EXPORTER_ZIPKIN_ENDPOINT']
+           URI("#{endpoint}/api/v2/spans")
+         else
+           URI(endpoint)
+         end
+
+  @http = Net::HTTP.new(@uri.host, @uri.port)
+  @http.use_ssl = @uri.scheme == 'https'
+  @http.keep_alive_timeout = KEEP_ALIVE_TIMEOUT
+
+  @timeout = timeout.to_f
+  @path = @uri.path
+  @headers = case headers
+             when String then CSV.parse(headers, col_sep: '=', row_sep: ',').to_h
+             when Hash then headers
+             end
+
+  @shutdown = false
+end
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

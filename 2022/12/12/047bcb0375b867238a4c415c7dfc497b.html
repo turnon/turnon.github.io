@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>opentelemetry-ruby的采样策略</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="opentelemetry-ruby的采样策略" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-12-12T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"opentelemetry-ruby的采样策略","dateModified":"2022-12-12T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2022-12-12T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">opentelemetry-ruby的采样策略</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-12-12T00:00:00+00:00" itemprop="datePublished">Dec 12, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div>
+<ul>
+<li>策略
+
+<ul>
+<li>默认是<code>Samplers.parent_based(root: Samplers::ALWAYS_ON)</code></li>
+<li>可用环境变量<code>OTEL_TRACES_SAMPLER</code>指定使用哪个预定义的采样策略，也可在创建<code>TracerProvider</code>时传入采样策略对象</li>
+<li>使用<code>OTEL_TRACES_SAMPLER=parentbased_traceidratio</code>可实现head-based sampling</li>
+</ul></li>
+<li>实现
+
+<ul>
+<li>创建span时，otel内部会根据采样策略计算是否采样，并标记到span里</li>
+<li>span结束，传到<code>SpanProcessor#on_finish</code>中，会检查采样标记，如果是不采集，就不会转发给exporter</li>
+</ul></li>
+</ul>
+<div><span style='font-weight: bold;'>资料</span></div><div><br /></div>
+<ul>
+<li><a href="https://opentelemetry.io/docs/concepts/sdk-configuration/general-sdk-configuration/#otel_traces_sampler">General SDK Configuration # OTEL<em>TRACES</em>SAMPLER | OpenTelemetry</a></li>
+<li><a href="https://docs.honeycomb.io/getting-data-in/opentelemetry/ruby/#sampling">OpenTelemetry for Ruby # sampling | Honeycomb</a></li>
+<li><a href="https://www.aspecto.io/blog/opentelemetry-sampling-everything-you-need-to-know/">OpenTelemetry Sampling: Everything You Need to Know | Aspecto</a></li>
+<li><a href="https://uptrace.dev/opentelemetry/sampling.html#opentelemetry-head-based-sampling">OpenTelemetry: head-based and tail-based sampling, rate-limiting | uptrace</a></li>
+<li><a href="https://newrelic.com/blog/best-practices/open-telemetry-tail-sampling">Tail Sampling with OpenTelemetry and New Relic | New Relic</a></li>
+<li><a href="https://docs.datadoghq.com/opentelemetry/guide/ingestion_sampling_with_opentelemetry/">Ingestion Sampling with OpenTelemetry | datadog</a></li>
+<li><a href="https://medium.com/jaegertracing/adaptive-sampling-in-jaeger-50f336f4334">Adaptive Sampling in Jaeger. Introduction to the new adaptive… | by Yuri Shkuro | JaegerTracing | Medium</a></li>
+</ul>
+<div><span style='font-weight: bold;'>测试</span></div><div><br /></div><div>脚本sample.rb</div><div><br /></div><pre><code>require 'opentelemetry-sdk'
+
+exporter = OpenTelemetry::SDK::Trace::Export::InMemorySpanExporter.new
+processor = OpenTelemetry::SDK::Trace::Export::SimpleSpanProcessor.new(exporter)
+
+tracer_provider = OpenTelemetry::SDK::Trace::TracerProvider.new
+tracer_provider.add_span_processor(processor)
+
+tracer = tracer_provider.tracer('my_app', '0.1.0')
+
+100.times do
+  tracer.in_span("span") {}
+end
+
+spans = exporter.finished_spans
+
+pp spans.count
+</code></pre><div><br /></div><div>执行，收集到的span数量应该是50%左右</div><div><br /></div><pre><code>export OTEL_TRACES_SAMPLER="traceidratio"
+export OTEL_TRACES_SAMPLER_ARG="0.5"
+bundle exec ruby sample.rb
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>采样策略的指定与使用</span></div><div><br /></div><div>搜索<code>OTEL_TRACES_SAMPLER</code>，可见此环境变量用于决定采样策略</div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/tracer_provider.rb
+class OpenTelemetry::SDK::Trace::TracerProvider < OpenTelemetry::Trace::TracerProvider
+  def sampler_from_environment(default_sampler)
+    case ENV['OTEL_TRACES_SAMPLER']
+    when 'always_on' then Samplers::ALWAYS_ON
+    when 'always_off' then Samplers::ALWAYS_OFF
+    when 'traceidratio' then Samplers.trace_id_ratio_based(Float(ENV.fetch('OTEL_TRACES_SAMPLER_ARG', 1.0)))
+    when 'parentbased_always_on' then Samplers.parent_based(root: Samplers::ALWAYS_ON)
+    when 'parentbased_always_off' then Samplers.parent_based(root: Samplers::ALWAYS_OFF)
+    when 'parentbased_traceidratio' then Samplers.parent_based(root: Samplers.trace_id_ratio_based(Float(ENV.fetch('OTEL_TRACES_SAMPLER_ARG', 1.0))))
+    else default_sampler
+    end
+  rescue StandardError => e
+    OpenTelemetry.handle_error(exception: e, message: "installing default sampler #{default_sampler.description}")
+    default_sampler
+  end
+end
+</code></pre><div><br /></div><div>其中<code>Samplers.trace_id_ratio_based</code>会返回一个<code>TraceIdRatioBased</code>的对象。来跟踪一下它在哪里会用到</div><div><br /></div><pre><code>require 'object_tracer'
+
+print_instance_traces(OpenTelemetry::SDK::Trace::Samplers::TraceIdRatioBased)
+</code></pre><div><br /></div><div>得</div><div><br /></div><pre><code>Passed as :sampler in 'OpenTelemetry::SDK::Trace::TracerProvider#:initialize (private)' at sample.rb:9
+Called :should_sample? from: $GemPath1/opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/tracer_provider.rb:139
+Called :sample? (private) from: $GemPath1/opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/samplers/trace_id_ratio_based.rb:32
+</code></pre><div><br /></div><div>回到源码，可见<code>TracerProvider</code>创建时，会设置这个采样策略</div><div><br /></div><div>然后在创建span时，根据<code>trace_id</code>、<code>parent_context</code>等信息得出<code>Result</code>，再用其<code>recording?</code>和<code>sampled?</code>接口来决定创建什么样的span</div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/tracer_provider.rb
+class OpenTelemetry::SDK::Trace::TracerProvider < OpenTelemetry::Trace::TracerProvider
+  def initialize(sampler: sampler_from_environment(Samplers.parent_based(root: Samplers::ALWAYS_ON)),
+                 resource: OpenTelemetry::SDK::Resources::Resource.create,
+                 id_generator: OpenTelemetry::Trace,
+                 span_limits: SpanLimits::DEFAULT)
+    # ..
+    @sampler = sampler
+  end
+
+  def internal_create_span(name, kind, trace_id, parent_span_id, attributes, links, start_timestamp, parent_context, parent_span, instrumentation_library)
+    # ...
+    result = @sampler.should_sample?(trace_id: trace_id, parent_context: parent_context, links: links, name: name, kind: kind, attributes: attributes)
+    if result.recording? && !@stopped
+      trace_flags = result.sampled? ? OpenTelemetry::Trace::TraceFlags::SAMPLED : OpenTelemetry::Trace::TraceFlags::DEFAULT
+      context = OpenTelemetry::Trace::SpanContext.new(trace_flags: trace_flags #...
+      Span.new(context #..
+    else
+      OpenTelemetry::Trace.non_recording_span #...
+    end
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>策略：TraceIdRatioBased</span></div><div><br /></div><div>取<code>trace_id</code>第8位的随机数，看其是否在采样范围内。是就生成<code>Decision::RECORD_AND_SAMPLE</code>的<code>Result</code></div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/samplers/trace_id_ratio_based.rb
+class OpenTelemetry::SDK::Trace::Samplers::TraceIdRatioBased
+  def initialize(probability)
+    @probability = probability
+    @id_upper_bound = (probability * (2**64 - 1)).ceil
+    @description = format('TraceIdRatioBased{%.6f}', probability)
+  end
+
+  def should_sample?(trace_id:, parent_context:, links:, name:, kind:, attributes:)
+    tracestate = OpenTelemetry::Trace.current_span(parent_context).context.tracestate
+    if sample?(trace_id)
+      Result.new(decision: Decision::RECORD_AND_SAMPLE, tracestate: tracestate)
+    else
+      Result.new(decision: Decision::DROP, tracestate: tracestate)
+    end
+  end
+
+  private
+
+  def sample?(trace_id)
+    @probability == 1.0 || trace_id[8, 8].unpack1('Q>') < @id_upper_bound
+  end
+end
+</code></pre><div><br /></div><div><span style='font-weight: bold;'>策略：ParentBased</span></div><div><br /></div><div><code>ParentBased</code>其实就是根据父span（可能不存在、可能是远程的、可能是本服务的）是否采样来决定当前span是否采样</div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/samplers/parent_based.rb
+class OpenTelemetry::SDK::Trace::Samplers::ParentBased
+  def should_sample?(trace_id:, parent_context:, links:, name:, kind:, attributes:)
+    parent_span_context = OpenTelemetry::Trace.current_span(parent_context).context
+    delegate = if !parent_span_context.valid?
+                 @root
+               elsif parent_span_context.remote?
+                 parent_span_context.trace_flags.sampled? ? @remote_parent_sampled : @remote_parent_not_sampled
+               else
+                 parent_span_context.trace_flags.sampled? ? @local_parent_sampled : @local_parent_not_sampled
+               end
+    delegate.should_sample?(trace_id: trace_id, parent_context: parent_context, links: links, name: name, kind: kind, attributes: attributes)
+  end
+end
+</code></pre><div><br /></div><div>上面的<code>@root</code>，<code>@remote_parent_sampled</code>等策略都是可以自定的。而otel也有提供一个能用的组合：</div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/samplers.rb
+module OpenTelemetry::SDK::Trace::Samplers
+  def self.parent_based(
+    root:,
+    remote_parent_sampled: ALWAYS_ON,
+    remote_parent_not_sampled: ALWAYS_OFF,
+    local_parent_sampled: ALWAYS_ON,
+    local_parent_not_sampled: ALWAYS_OFF
+  )
+    ParentBased.new(root, remote_parent_sampled, remote_parent_not_sampled, local_parent_sampled, local_parent_not_sampled)
+  end
+end
+</code></pre><div><br /></div><div>该组合的作用在opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/samplers.rb里也有注释：</div><div><br /></div>
+<table><thead>
+<tr>
+<th>Parent</th>
+<th>parent.remote?</th>
+<th>parent.trace_flags.sampled?</th>
+<th>Invoke sampler</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>absent</td>
+<td>n/a</td>
+<td>n/a</td>
+<td>root</td>
+</tr>
+<tr>
+<td>present</td>
+<td>true</td>
+<td>true</td>
+<td>remote<em>parent</em>sampled</td>
+</tr>
+<tr>
+<td>present</td>
+<td>true</td>
+<td>false</td>
+<td>remote<em>parent</em>not_sampled</td>
+</tr>
+<tr>
+<td>present</td>
+<td>false</td>
+<td>true</td>
+<td>local<em>parent</em>sampled</td>
+</tr>
+<tr>
+<td>present</td>
+<td>false</td>
+<td>false</td>
+<td>local<em>parent</em>not_sampled</td>
+</tr>
+</tbody></table>
+<div><span style='font-weight: bold;'>处理样本</span></div><div><br /></div><div>采样策略的计算结果会被注入到span中，它可能是<code>SAMPLED</code>，或者是<code>DEFAULT</code>。来跟踪一下它们会在哪里用到</div><div><br /></div><pre><code>print_traces(OpenTelemetry::Trace::TraceFlags::SAMPLED)
+</code></pre><div><br /></div><div>得</div><div><br /></div><pre><code>Passed as :trace_flags in 'OpenTelemetry::Trace::SpanContext#:initialize (private)' at $GemPath1/opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/tracer_provider.rb:143
+Called :sampled? from: $GemPath1/opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/export/simple_span_processor.rb:58
+</code></pre><div><br /></div><div>该处源码如下。（其实<code>BatchSpanProcessor#on_finish</code>也有这样的判断）</div><div><br /></div><pre><code># opentelemetry-sdk-1.2.0/lib/opentelemetry/sdk/trace/export/simple_span_processor.rb
+def on_finish(span)
+  return unless span.context.trace_flags.sampled?
+  # ...
+end
+</code></pre><div><br /></div><div>也就是说，processor会根据采样策略计算结果，决定是否发给exporter</div><div><br /></div><div><span style='font-weight: bold;'>采样功能模块概览</span></div><div><br /></div><div>使用<code>FamilyTree.graph([OpenTelemetry])</code>查看采样相关的功能模块</div><div><br /></div><pre><code> - OpenTelemetry {:kla=>Module}
+ └─ - SDK {:kla=>Module}
+    └─ - Trace {:kla=>Module}
+       └─ - Samplers {:kla=>Module}
+          ├─   ALWAYS_OFF {:kla=>OpenTelemetry::SDK::Trace::Samplers::ConstantSampler} # decision为RECORD_AND_SAMPLE
+          ├─   ALWAYS_ON {:kla=>OpenTelemetry::SDK::Trace::Samplers::ConstantSampler} # decision为DROP，可在压测时不发送span
+          ├─   ConstantSampler {:kla=>Class} # 被ALWAYS_XX继承，提供should_sample?方法
+          ├─ - Decision {:kla=>Module}
+          │  ├─   DROP {:kla=>Symbol}
+          │  ├─   RECORD_AND_SAMPLE {:kla=>Symbol}
+          │  └─   RECORD_ONLY {:kla=>Symbol} # 暂没发现哪里用到
+          ├─   ParentBased {:kla=>Class} # 采样策略：基于父span
+          ├─   Result {:kla=>Class} # 采样策略计算结果
+          └─   TraceIdRatioBased {:kla=>Class} # 采样策略：根据trace_id中的随机数计算是否采样
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

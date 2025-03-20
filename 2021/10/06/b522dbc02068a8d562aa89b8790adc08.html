@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>go的semaphore</title>
+<meta name="generator" content="Jekyll v3.8.6" />
+<meta property="og:title" content="go的semaphore" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:description" content="beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-10-06T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"beego是一个MVC框架，与rails类似，其项目代码有一套推荐的目录结构，用户只需往里面填充代码即可实现路由、过滤、ORM等功能…","@type":"BlogPosting","headline":"go的semaphore","dateModified":"2021-10-06T00:00:00+00:00","url":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html","datePublished":"2021-10-06T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/2021/07/01/d4719e2ec0e7f6e099b645822bb66fd8.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">some<strong>think</strong></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/tags.html">标签</a><a class="page-link" href="/statistic.html">统计</a><a class="page-link" href="/about.html">关于</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">go的semaphore</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2021-10-06T00:00:00+00:00" itemprop="datePublished">Oct 6, 2021
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <div><span style='font-weight: bold;'>TL;DR</span></div><div><br /></div>
+<ul>
+<li>用法：<code>semaphore.NewWeighted(n); weighted.Acquire(context.Background(), n); weighted.Release(n)</code></li>
+<li>信号量相当于一个长度固定的通道，初始化后可被多个进程占有，每个进程申请的长度（信号量）可以不等。当剩余信号量不足时，企图占有的进程便会排队等待。进程放弃占用时应该恢复适当的信号量。当剩余信号量恢复到能够满足队头的进程时，队伍才会前移</li>
+<li>常用于实现“同一时间只允许限定数量进程运行”的需求</li>
+</ul>
+<div><span style='font-weight: bold;'>与其他同步原语对比一下</span></div><div><br /></div>
+<ul>
+<li>与sync.WaitGroup对比：WaitGroup可用于一个goroutine等待多个goroutine，如果用semaphore来做，就是初始化一个容量N的信号量，然后N个goroutine分别占用1，一个goroutine企图占用N，等待前N个goroutine释放各自的1个信号量。但WaitGroup也可以用于M个goroutine等待N个goroutine，而且WaitGroup是用完即弃的，semaphore则可以重复使用</li>
+<li>与sync.Mutex对比：semaphore的实现含有Mutex，用于排他地更新信号量的占用状态，并且通过close(channel)来使等待中的goroutine重新运行</li>
+<li>与channel对比：对带buffer的channel先写入再读出，也能实现“同一时间只允许限定数量进程运行”的需求，但无法做到“每个进程申请的信号量可以不等”</li>
+<li>与sync.Cond对比：Cond用于多个（或一个）goroutine等待一个goroutine的情况</li>
+</ul>
+<div><span style='font-weight: bold;'>资料</span></div><div><br /></div>
+<ul>
+<li>《go语言设计与实现》6.2.2.2</li>
+<li><a href="https://gocn.vip/column/L4RWxzHVQO/doc/r7Rb6WF5RM">semaphone实现分析 | GoCN社区</a></li>
+</ul>
+<div><span style='font-weight: bold;'>源码分析</span></div><div><br /></div><pre><code>// 代表一个被阻塞的goroutine，其所需的信号量和触发运行的channel
+type waiter struct {
+    n     int64
+    ready chan<- struct{} // Closed when semaphore acquired.
+}
+
+// 创建信号量，需指定最大信号数（也是初始信号数），必须大于零
+func NewWeighted(n int64) *Weighted {
+    w := &Weighted{size: n}
+    return w
+}
+
+// Weighted provides a way to bound concurrent access to a resource.
+// The callers can request access with a given weight.
+type Weighted struct {
+    size    int64 // 最大信号数
+    cur     int64
+    mu      sync.Mutex // 因获取和释放信号量涉及size、cur、waiters多个属性的操作，需加锁
+    waiters list.List
+}
+
+func (s *Weighted) Acquire(ctx context.Context, n int64) error {
+    s.mu.Lock()
+
+    // 如果想占用的信号量能被满足，且没有等待中的goroutine，则增加占用数，并放行
+    if s.size-s.cur >= n && s.waiters.Len() == 0 {
+        s.cur += n
+        s.mu.Unlock()
+        return nil
+    }
+
+    // 如果想占用的信号量大于最大信号数，则阻塞直到context被cancel
+    if n > s.size {
+        // Don't make other Acquire calls block on one that's doomed to fail.
+        s.mu.Unlock()
+        <-ctx.Done()
+        return ctx.Err()
+    }
+
+    // 创建一个waiter表示当前goroutine正在等待多少个信号量
+    // 并加入到等待队列的尾部
+    ready := make(chan struct{})
+    w := waiter{n: n, ready: ready}
+    elem := s.waiters.PushBack(w)
+    s.mu.Unlock()
+
+    // 等待context被cancel或者信号量得到满足
+    select {
+    case <-ctx.Done():
+        err := ctx.Err()
+        s.mu.Lock()
+        select {
+        case <-ready:
+            // 如果context被cancel时刚好也有被通知有信号量，则也只当作是因为信号量得到满足而放行
+            err = nil
+        default:
+            isFront := s.waiters.Front() == elem
+            s.waiters.Remove(elem)
+            // 如果当前goroutine因超时而不再需要抢夺信号量，并且现存的信号量有多余
+            // 则尝试唤醒排在后面的goroutine，说不定他能因此放行
+            if isFront && s.size > s.cur {
+                s.notifyWaiters()
+            }
+        }
+        s.mu.Unlock()
+        return err
+    case <-ready:
+        return nil
+    }
+}
+
+func (s *Weighted) TryAcquire(n int64) bool {
+    s.mu.Lock()
+    success := s.size-s.cur >= n && s.waiters.Len() == 0
+    if success {
+        s.cur += n
+    }
+    s.mu.Unlock()
+    return success
+}
+
+func (s *Weighted) Release(n int64) {
+    s.mu.Lock()
+    // 将占用数降低，但不允许变成负数
+    // 就是说，初始size必须大于零，有Acquire过才能Release
+    s.cur -= n
+    if s.cur < 0 {
+        s.mu.Unlock()
+        panic("semaphore: released more than held")
+    }
+    s.notifyWaiters()
+    s.mu.Unlock()
+}
+
+func (s *Weighted) notifyWaiters() {
+    for {
+        next := s.waiters.Front()
+        if next == nil {
+            break // No more waiters blocked.
+        }
+
+        w := next.Value.(waiter)
+        if s.size-s.cur < w.n {
+            // 如果队列中这个goroutine所需的信号量得不到满足，即使其后的goroutine满足也得先等这个通行了才能唤醒
+            // 这样做是为了避免信号量需求大的goroutine发生饥饿
+            break
+        }
+
+        // 占用信号量、移出等待队列、关闭阻塞channel使对应的goroutine重新运行
+        s.cur += w.n
+        s.waiters.Remove(next)
+        close(w.ready)
+    }
+}
+</code></pre><div><br /></div>
+  </div><a class="u-url" href="/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading"></h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name"></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
